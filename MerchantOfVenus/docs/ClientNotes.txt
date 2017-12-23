@@ -1,0 +1,130 @@
+code-design points for Merchant of Venus Client
+
+I. parser for board file XML
+	a) annotations for locations of spaces,
+		so that players can click on spaces to move
+	b) alter output of adjacent spaces so moving to an unknown space
+		produces ? for movement cost?
+
+	as we find out more about QBOXes and players buy Spaceports,
+	board will have to be updated
+
+	Is it worthwhile having a display of some kind indicating
+	who knows what the contents are of non-public qboxes?	
+
+	will the board be a fixed image or a synthetic from the
+	information in the board file xml?
+
+notes on XML parsing:
+	import javax.xml.parsers.DocumentBuilder;
+	import javax.xml.parsers.DocumentBuilderFactory;  
+	import javax.xml.parsers.FactoryConfigurationError;  
+	import javax.xml.parsers.ParserConfigurationException;
+ 
+	import org.xml.sax.SAXException;  
+	import org.xml.sax.SAXParseException;  
+	import java.io.*;
+	import java.net.*;
+
+	import org.w3c.dom.Document;
+	import org.w3c.dom.DOMException;
+	import org.w3c.dom.*;
+
+	try
+	{
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder = factory.newDocumentBuilder();
+		Document thedoc = builder.parse(xmlloc);
+
+		// process document here (in spawned thread so that
+		// the gui doesn't stop?)
+	}
+	catch (UnknownHostException uhe) {}
+	catch (MalformedURLException mue) {}
+	catch (SAXException sxe) {}
+	catch (ParserConfigurationException pce) {}
+	catch (IOException ioe) {}
+	catch (InterruptedException ie) {}
+	catch (java.lang.reflect.InvocationTargetException ite) {}
+
+// functions to operate on org.w3c.dom.Node objects:
+// * get root node of document:
+//   org.w3c.dom.Node root = thedoc.getChildNodes().item(0);
+// * get name of node:
+//   String name = root.getNodeName()
+// * get body of node (also value of attribute):
+//   String body = root.getNodeValue()
+// * iterate over children of node:
+//   DOMChildIterator dch = new DOMChildIterator(root);
+//   org.w3c.dom.Node childNode;
+//   while((childNode = dch.GetNext()) != null
+//   { 
+//     // operate on children
+//   }
+// * names:
+//   if node is a normal tag, like <event></event>, or <event/>
+//   name will be 'event'
+//   name can also be 
+//     '#text' (text, i.e. a body)
+//     '#comment' (a comment)
+//     '#cdata-section' (a CDATA (escaped text))
+// * attributes
+//   * does node have any attributes (call this first)
+//     bool hasAny = node.hasAttributes();
+//   * gets an attribute with a particular name
+//     String s = node.getAttributes().getNamedItem(name)
+//   * iterates over attributes
+//     for (int i = 0 ; i < node.getAttributes().getLength() ; ++i)
+//     {
+//       String s = node.getAttributes().item(i).getNodeName();
+//       String v = node.getAttributes().item(i).getNodeValue();
+//     }
+
+
+
+
+II. Player stuff -- for each player
+	ship
+	deeds/ious
+	equipment/drives/relics
+	goods/fares
+	money/barter/net worth
+	race
+	
+	COLOR SELECTION!  (I see no reason why two player can't both play
+		yellow...no one else has to see the colors any player
+		assigns to themselves and other players in their clients
+
+
+III. Open question: given transactions
+	GETRELIC
+	REDEEMIOU
+	BUY
+	SELL
+	TRADEIN
+	PICKUP
+	DROPOFF
+	JETTISON
+	-- is client, server, or player responsible for determine
+	which actions can be applied to which items?
+
+IV. Similar stuff about Trade Bases
+	ships
+	equipment
+	goods
+	deeds
+	left-behind relics
+	race
+
+	how to attach to Solar System once that information becomes known?
+	
+	how to differentiate between 'player knows it' and 'everyone knows it'?
+
+	is it worthwhile having a display of some kind indicating who knows
+	the solar system of the non-public trade bases?
+
+	trade base has mark indicating ownership of factory when the deed is 
+	bought?
+
+V. translation of items from Encoding's to graphics...simple mapping, or
+synthetic?

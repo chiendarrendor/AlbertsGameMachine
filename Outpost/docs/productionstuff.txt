@@ -1,0 +1,19 @@
+
+Initializing Game State:
+
+  SetCurTurn(1);
+  GetCommodities().ApplyResearchMegaStatus(GetOptions().ResearchMega());
+  GetUnownedItems().Initialize(GetPlayers().size());
+
+
+
+Info in OutpostState for Production:
+
+  int m_curplayer;
+  CommodityType m_curtype;
+  int m_numunproduced;
+
+
+    SERIALIZE(m_curplayer);
+    SERIALIZE(m_curtype);
+    SERIALIZE(m_numunproduced);

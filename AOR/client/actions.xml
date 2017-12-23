@@ -1,0 +1,18 @@
+<actions>
+  <action name="JOIN"/>
+  <action name="STARTGAME">
+    <var name="numepochs" text="Game Length (# of epochs)">
+      <fixedselection varname="numepochs" list="1,2,3"/>
+    </var>
+  </action>
+  <action name="MAKECAPITALBID">
+    <var name="capitalbid" text="Amount to bid on Capital">
+      <varspinner varname="capitalbid" listvar="capitalbids"/>
+    </var>
+  </action>
+  <action name="CHOOSECAPITAL">
+    <var name="capital" text="Capital (color) you will play">
+      <varselection varname="capital" listvar="capitals"/>
+    </var>
+  </action>
+</actions>

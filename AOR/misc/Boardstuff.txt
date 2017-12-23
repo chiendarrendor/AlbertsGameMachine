@@ -1,0 +1,434 @@
+class IsNameFilter : public SpaceFilter
+{
+public:
+
+	IsNameFilter(const std::string &i_Name) : m_Name(i_Name) {}
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		return i_space.GetName() == m_Name;
+	}
+private:
+	std::string m_Name;
+};
+
+
+class OverseasGrowFilter : public GrowFilter
+{
+public:
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		if (i_space.GetType() == OCEAN) return false;
+		return true;
+	}
+};
+
+void GameBoard::SetOverseas()
+{
+	SpaceInfoMap center(m_spaces,IsNameFilter("Sicily"));
+
+	FingerSet oldworld(center);
+	OverseasGrowFilter ogf;
+	oldworld.RegisterGrowFilter(ogf);
+	oldworld.Grow();
+
+	SpaceInfoMap oldmap(oldworld);
+
+	SpaceInfoMap::iterator spaceit;
+
+	for (spaceit = m_spaces.begin() ; spaceit != m_spaces.end() ; ++spaceit)
+	{
+		SpaceInfo *pSpace = spaceit->second;
+		if (pSpace->GetType() != LAND) continue;
+
+		if (!oldmap.GetSpace(pSpace->GetName()))
+		{
+			std::cout << "Space " << pSpace->GetName() << " is overseas." << std::endl;
+			pSpace->SetOverseas();
+		}
+	}
+}
+
+
+
+
+
+
+
+
+class SatGrowFilter : public GrowFilter
+{
+public:
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		if (i_space.GetType() == SEA || i_space.GetType() == OCEAN) return false;
+		return true;
+	}
+};
+
+class SatPathFilter : public PathFilter
+{
+public:
+	virtual bool operator()(const Finger &i_finger) const
+	{
+		const std::vector<SpaceInfo *> &history = i_finger.GetHistory();
+		std::vector<SpaceInfo *>::const_iterator histit;
+		int numland = 0;
+		int numcoast = 0;
+		for (histit = history.begin() ; histit != history.end() ; ++histit)
+		{
+			SpaceInfo *pSpace = *histit;
+			if (pSpace->GetType() == LAND) numland++;
+			if (pSpace->GetType() == COAST) numcoast++;
+		}
+		if (numland > 2) return false;
+		if (numcoast > 2) return false;
+		return true;
+	}
+};
+
+class SatFinalFilter : public PathFilter
+{
+public:
+	virtual bool operator()(const Finger &i_finger) const
+	{
+		const std::vector<SpaceInfo *> &history = i_finger.GetHistory();
+
+		if (history[0] == history[history.size() - 1]) return false;
+
+		return i_finger.GetCurSpace().GetMarketSize() == 1;
+	}
+};
+
+
+
+void GameBoard::BuildSatellites()
+{
+	SpaceInfoMap::iterator spaceit;
+
+	for (spaceit = m_spaces.begin() ; spaceit != m_spaces.end() ; ++spaceit)
+	{
+		SpaceInfo *pSpace = spaceit->second;
+
+		if (pSpace->GetType() != LAND || pSpace->GetMarketSize() < 2) continue;
+
+		SpaceInfoMap curspacemap;
+		curspacemap[pSpace->GetName()] = pSpace;
+
+		FingerSet satfingerset(curspacemap);
+		SatPathFilter spf;
+		SatGrowFilter sgf;
+		SatFinalFilter sff;
+
+
+		satfingerset.RegisterPathFilter(spf);
+		satfingerset.RegisterGrowFilter(sgf);
+		satfingerset.RegisterFinalPathFilter(sff);
+		satfingerset.Grow();
+		
+		const std::vector<Finger *> &satfingers = satfingerset.GetFingers();
+		std::vector<Finger *>::const_iterator fit;
+
+		std::cout << "Satellites for " << pSpace->GetName() << ": ";
+
+		for (fit = satfingers.begin() ; fit != satfingers.end() ; ++fit)
+		{
+			SpaceInfo &satSpace = (*fit)->GetCurSpace();
+			std::cout << " " << satSpace.GetName();
+			pSpace->AddSatellite(satSpace);
+		}
+		std::cout << std::endl;
+	}
+}
+
+
+
+
+
+void SpaceInfoMap::Show(const std::string &i_header) const
+{
+	SpaceInfoMap::const_iterator it;
+
+	std::cout << i_header << std::endl;
+
+	for (it = this->begin() ; it != this->end() ; ++it)
+	{
+		std::cout << "    " << it->second->GetName() << std::endl;
+	}
+}
+
+class IsTypeFilter : public SpaceFilter
+{
+public:
+
+	IsTypeFilter(SpaceType i_type) : m_type(i_type) {}
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		return i_space.GetType() == m_type;
+	}
+private:
+	SpaceType m_type;
+};
+
+
+class IsSizeFilter : public SpaceFilter
+{
+public:
+
+	IsSizeFilter(int i_size) : m_size(i_size) {}
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		if (i_space.GetType() != LAND) return false;
+		return i_space.GetMarketSize() == m_size;
+	}
+private:
+	int m_size;
+};
+
+class IsCommodityFilter : public SpaceFilter
+{
+public:
+	IsCommodityFilter(const std::string &i_commodity) : m_commodity(i_commodity) {}
+	virtual bool operator()(const SpaceInfo &i_space) const
+	{
+		if (i_space.GetType() != LAND) return false;
+		const std::map<std::string,const Commodity *> &comms = i_space.GetCommodities();
+
+		return comms.find(m_commodity) != comms.end();
+	}
+
+private:
+	std::string m_commodity;
+};
+
+
+void GameBoard::PrintAttributes() const
+{
+	SpaceInfoMap(m_spaces,IsTypeFilter(OCEAN)).Show("Ocean Spaces");
+	SpaceInfoMap(m_spaces,IsTypeFilter(SEA)).Show("Sea Spaces");
+	SpaceInfoMap(m_spaces,IsTypeFilter(LAND)).Show("Land Spaces");
+
+	SpaceInfoMap(m_spaces,IsSizeFilter(0)).Show("0 Land Spaces?");
+	SpaceInfoMap(m_spaces,IsSizeFilter(1)).Show("Satellites");
+	SpaceInfoMap(m_spaces,IsSizeFilter(2)).Show("2 Land Spaces");
+	SpaceInfoMap(m_spaces,IsSizeFilter(3)).Show("3 Land Spaces");
+	SpaceInfoMap(m_spaces,IsSizeFilter(4)).Show("4 Land Spaces");
+	SpaceInfoMap(m_spaces,IsSizeFilter(5)).Show("5 Land Spaces");
+	SpaceInfoMap(m_spaces,IsSizeFilter(6)).Show("6 Land Spaces");
+	SpaceInfoMap(m_spaces,IsSizeFilter(7)).Show("7 Land Spaces?");
+
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Stone")).Show("Stone");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Wool")).Show("Wool");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Timber")).Show("Timber");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Grain")).Show("Grain");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Cloth")).Show("Cloth");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Wine")).Show("Wine");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Metal")).Show("Metal");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Fur")).Show("Fur");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Silk")).Show("Silk");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Spice")).Show("Spice");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Gold")).Show("Gold");
+	SpaceInfoMap(m_spaces,IsCommodityFilter("Ivory")).Show("Ivory");
+
+
+
+}
+
+const SpaceMap &GameBoard::GetSpaceMap() const
+{
+	return m_spaces;
+}
+
+
+Finger::Finger(const Finger &i_basis,SpaceInfo &i_CurPoint)
+:  m_History(i_basis.m_History)
+{
+	m_History.push_back(&i_CurPoint);
+}
+
+Finger::Finger(SpaceInfo &i_CurPoint) 
+{
+	m_History.push_back(&i_CurPoint);
+}
+
+const std::vector<SpaceInfo *> &Finger::GetHistory() const
+{
+	return m_History;
+}
+
+SpaceInfo &Finger::GetCurSpace() const
+{
+	std::vector<SpaceInfo *>::const_iterator backit = m_History.end();
+	return *(*(--backit));
+}
+
+
+
+
+class LandsEndPathFilter : public PathFilter
+{
+public:
+	virtual bool operator()(const Finger &i_finger) const
+	{
+		return (i_finger.GetCurSpace().GetType() == LAND);
+	}
+};
+
+
+FingerSet::FingerSet(const SpaceMap &i_inputSet)
+{
+	SpaceMap::const_iterator spacit;
+	for (spacit = i_inputSet.begin() ; spacit != i_inputSet.end() ; ++spacit)
+	{
+		SpaceInfo *pSpace = spacit->second;
+
+		if (pSpace->GetType() != LAND) continue;
+
+		m_Fingers.push_back(new Finger(*pSpace));
+	}
+	static LandsEndPathFilter lepf;
+
+	RegisterFinalPathFilter(lepf);
+
+}
+
+FingerSet::~FingerSet()
+{
+	std::vector<Finger *>::iterator doomit;
+
+	for (doomit = m_Fingers.begin() ; doomit != m_Fingers.end() ; ++doomit)
+	{
+		delete *doomit;
+	}
+}
+
+void FingerSet::RegisterPathFilter(const PathFilter &i_pf)
+{
+	m_PathFilters.push_back(&i_pf);
+}
+
+void FingerSet::RegisterFinalPathFilter(const PathFilter &i_fpf)
+{
+	m_FinalPathFilters.push_back(&i_fpf);
+}
+
+
+void FingerSet::RegisterGrowFilter(const GrowFilter &i_gf)
+{
+	m_GrowFilters.push_back(&i_gf);
+}
+
+const std::vector<Finger *> &FingerSet::GetFingers() const
+{
+	return m_Fingers;
+}
+
+bool FingerSet::IsPathLegal(const Finger &i_Finger) const
+{
+	std::vector<const PathFilter *>::const_iterator pathit;
+	for (pathit = m_PathFilters.begin() ; pathit != m_PathFilters.end() ; ++pathit)
+	{
+		if (!(**pathit)(i_Finger)) return false;
+	}
+
+	return true;
+}
+
+bool FingerSet::IsSpaceLegal(const SpaceInfo &i_Space) const
+{
+	std::vector<const GrowFilter *>::const_iterator growit;
+	for (growit = m_GrowFilters.begin() ; growit != m_GrowFilters.end() ; ++growit)
+	{
+		if (!(**growit)(i_Space)) return false;
+	}
+
+	return true;
+}
+
+void FingerSet::Grow()
+{
+	std::map<std::string,Finger *> spacefingers;
+	std::vector<Finger *> nextround;
+
+	// 1. put all current fingers into spacefingers.
+	std::vector<Finger *>::iterator initit;
+
+	for (initit = m_Fingers.begin() ; initit != m_Fingers.end() ; ++initit)
+	{
+		Finger *pFinger = *initit;
+		if (!IsPathLegal(*pFinger)) continue;
+		spacefingers[pFinger->GetCurSpace().GetName()] = pFinger;
+	}
+
+	while(m_Fingers.size() != 0)
+	{
+		// 2. for each finger
+		for (initit = m_Fingers.begin() ; initit != m_Fingers.end() ; ++initit)
+		{
+			Finger *pFinger = *initit;
+
+			// for each neighboring space of the current space
+			const SpaceMap &neighbors = pFinger->GetCurSpace().GetLinks();
+			SpaceMap::const_iterator neighborit;
+
+			for (neighborit = neighbors.begin() ; neighborit != neighbors.end() ; ++neighborit)
+			{
+				SpaceInfo *pNeighborSpace = neighborit->second;
+
+				// if we've seen it before, we don't need to deal with it again.
+				std::map<std::string,Finger *>::iterator findit = spacefingers.find(pNeighborSpace->GetName());
+				if (findit != spacefingers.end())
+				{
+					continue;
+				}
+				
+				// if the space is not allowed by any Grow Filter, we don't use it.
+				if (!IsSpaceLegal(*pNeighborSpace)) 
+				{
+					continue;
+				}
+				// otherwise, we're growing to a new space.
+				Finger *pNewFinger = new Finger(*pFinger,*pNeighborSpace);
+
+				if (!IsPathLegal(*pNewFinger))
+				{
+					delete pNewFinger;
+					continue;
+				}
+
+				spacefingers[pNeighborSpace->GetName()] = pNewFinger;
+				nextround.push_back(pNewFinger);
+			}
+		}
+
+		m_Fingers = nextround;
+		nextround.clear();
+	}
+
+	// now, the result is the set of fingers in spacefingers that are still marked true, 
+	// and that fulfill all Final PathFilters (invariant: m_Fingers is empty if we get here.)
+
+
+	std::map<std::string,Finger *>::iterator finalit;
+
+	for (finalit = spacefingers.begin() ; finalit != spacefingers.end() ; ++finalit)
+	{
+		Finger *pFinalFinger = finalit->second;
+
+		// make sure the finger fulfills all final PathFilters
+		std::vector<const PathFilter *>::iterator fpathit;
+		for (fpathit = m_FinalPathFilters.begin() ; fpathit != m_FinalPathFilters.end() ; ++fpathit)
+		{
+			if (!(**fpathit)(*pFinalFinger)) break;
+		}
+
+		if (fpathit != m_FinalPathFilters.end())
+		{
+			delete pFinalFinger;
+			continue;
+		}
+
+		m_Fingers.push_back(pFinalFinger);
+	}
+}
+
+

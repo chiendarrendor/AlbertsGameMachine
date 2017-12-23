@@ -1,0 +1,1561 @@
+<game name="MerchantOfVenus" autorecursiondepth="100">
+
+  <state name="ValidateSetup" desc="Give all Players an Opportunity to ok Players and Options"/>
+  <state name="StartTurn" desc="Start of Turn"/>
+  <state name="TechSelect" desc="Select Which Tech to Turn On"/>
+  <state name="TechSelected" desc="Tech (if any) selected"/>
+  <state name="SelectMove" desc="Select which adjacent space to move to"/>
+  <state name="Mulligan" desc="Decide whether to Mulligan"/>
+  <state name="ProcessPilotNumber" desc="Auto-State for Pilot Number Selection"/>
+  <state name="SelectPilotNumber" desc="Select Which Pilot Number to use for a move"/>
+  <state name="FinalizeMove" desc="Auto-State for Move Finalization"/>
+  <state name="CompleteMove" desc="Auto-State for Move Completion"/>
+
+  <state name="TradePhase" desc="Engage in trading"/>
+  <state name="AutoTradePhaseSelect" desc="Auto-State for Post-Move Determination"/>
+  <state name="AsteroidPhase" desc="Special Trade Phase for Landing on an Asteroid"/>
+
+  <state name="TurnEnd" desc="Turn is Over"/>
+
+  <event name="MOVERROR">
+    <var name="i_Error" type="std::string"/>
+  </event>
+
+  <event name="IAM">
+    <var name="i_PId" type="size_t"/>
+  </event>
+
+  <event name="PLAYER" type="global">
+    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
+    <var name="i_PName" type="std::string" source="GetPlayers()[playerindex].GetName()"/>
+    <var name="i_PId" type="int" source="playerindex"/>
+  </event>
+
+  <event name="OPTIONS" type="global">
+    <var name="i_winmoney" type="int" source="m_winmoney"/>
+  </event>
+
+  <event name="PLAYEROKSTARTUP" type="global">
+    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
+    <var name="i_playerid" type="int" source="playerindex"/>
+    <var name="i_okstartup" type="bool" source="GetPlayers()[playerindex].OkStartup()"/>
+  </event>
+
+  <event name="TURNORDER" type="global">
+    <var name="i_turnorder" type="std::string" source="GetPlayers().GetTurnOrder()"/>
+  </event>
+
+  <event name="PLAYERMONEY" type="global">
+    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
+    <var name="i_playerid" type="size_t" source="playerindex"/>
+    <var name="i_money" type="int" source="GetPlayers()[playerindex].GetMoney()"/>
+    <var name="i_barter" type="int" source="GetPlayers()[playerindex].GetBarter()"/>
+    <var name="i_worth" type="int" source="GetPlayers()[playerindex].GetNetWorth()"/>
+  </event>
+
+  <event name="PLAYERRACE" type="global">
+    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
+    <var name="i_playerid" type="size_t" source="playerindex"/>
+    <var name="i_race" type="int" source="GetPlayers()[playerindex].GetRace()"/>
+  </event>
+
+  <event name="ADDTOPLAYER">
+    <var name="i_playerid" type="size_t"/>
+    <var name="i_token" type="std::string"/>
+  </event>
+
+  <event name="SUBTRACTFROMPLAYER">
+    <var name="i_playerid" type="size_t"/>
+    <var name="i_token" type="std::string"/>
+  </event>
+
+  <event name="ADDTOTRADEBASE">
+    <var name="i_raceid" type="std::string"/>
+    <var name="i_token" type="std::string"/>
+    <var name="i_fromcup" type="bool"/>
+  </event>
+
+  <event name="SUBTRACTFROMTRADEBASE">
+    <var name="i_raceid" type="std::string"/>
+    <var name="i_token" type="std::string"/>
+  </event>
+
+  <event name="SOLARSYSTEMPRIVACY">
+    <var name="i_solarsystem" type="std::string"/>
+    <var name="i_secrecy" type="std::string"/>
+  </event>
+
+  <event name="BASELOCATION">
+    <var name="i_solarsystem" type="std::string"/>
+    <var name="i_raceid" type="std::string"/>
+  </event>
+
+<!-- qbox events get used for putting spaceports on orbits, too -->
+  <event name="QBOXPRIVACY">
+    <var name="i_spacename" type="std::string"/>
+    <var name="i_secrecy" type="std::string"/>
+  </event>
+
+  <event name="QBOXCONTENTS">
+    <var name="i_spacename" type="std::string"/>
+    <var name="i_contents" type="std::string"/>
+  </event>
+<!-- secrecy is a string of no more than numplayers digits, 
+     either 1 or 0, where a 1 indicates that the corresponding 
+     player knows this location
+     if secrecy is shorter than the number of players, all missing
+     players will be at the end and not know the secret (i.e. getting
+     01 in a four player game means that players 2 and 3 (and 0) don't
+     know the secret
+     secrecy can also be the string 'public', with an obvious meaning 
+
+     Every time player knowledge about a base location changes, 
+     a SOLARSYSTEMPRIVACY/QBOXPRIVACY should be broadcast.  If it is private,
+     BASELOCATION/QBOXCONTENTS should be unicast to only those who know.
+     When it becomes public, BASELOCATION/QBOXCONTENTS should be broadcast.  -->
+    
+  <event name="PLAYERLOCATION" type="global">
+    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
+    <var name="i_playerid" type="size_t" source="playerindex"/>
+    <var name="i_spacename" type="std::string" source="GetPlayers()[playerindex].GetLocation()"/>
+  </event>
+
+  <event name="SWITCHABLES">
+    <var name="i_switchables" type="std::string"/>
+  </event>
+
+  <event name="SELECTEDSWITCHABLES">
+    <var name="i_playerid" type="size_t"/>
+    <var name="i_switchables" type="std::string"/>
+  </event>
+
+  <event name="DESTINATION">
+    <var name="i_curspacepenalty" type="int"/>
+    <var name="i_isfirst" type="bool"/>
+    <var name="i_destinations" type="std::string"/>
+  </event>
+
+  <event name="DICE">
+    <var name="i_dicestring" type="std::string"/>
+  </event>
+
+  <event name="MPLEFT">
+    <var name="i_mpleft" type="int"/>
+  </event>
+
+  <event name="PLAYERWINS">
+    <var name="i_playerid" type="size_t"/>
+  </event>
+
+  <event name="CURPLAYER" type="global">
+    <var name="i_playerid" type="size_t" source="GetPlayers().GetCurPlayer().GetId()"/>
+  </event>
+
+  <event name="PILOTNUMBERCHOICE">
+    <var name="i_pnumbers" type="std::string"/>
+  </event>
+
+  <event name="PILOTNUMBERCHOSEN">
+    <var name="i_playerid" type="size_t"/>
+    <var name="i_pilotnumber" type="size_t"/>
+    <var name="i_ispermanent" type="bool"/>
+  </event>
+
+  <event name="REMAININGTRANSCOUNT">
+    <var name="i_playerid" type="size_t"/>
+    <var name="numbuys" type="int"/>
+    <var name="numsells" type="int"/>
+  </event>
+
+  <event name="FACTORYOWNER">
+    <var name="i_raceid" type="std::string"/>
+    <var name="i_playerid" type="size_t"/>
+  </event>
+
+  <event name="AGEPLAYER">
+    <var name="i_playerid" type="size_t"/>
+  </event>
+
+  <preface>
+    <![CDATA[
+      #define ERROUT(D_EXPR,D_ERRMSG) { if (D_EXPR) { UnicastMOVERROR(i_PlayerName,D_ERRMSG); return false; } }
+      #include "Ship.hpp"
+      #include "MapOverlay.hpp"
+
+      // if i_playerid is empty, broadcast contents of trade bases to all players,
+      // as well as secrecy status.
+      // otherwise, unicast to that player id.
+      void CastAllTradeBases(const MerchantOfVenusGameInfo& i_ogi,
+                             const std::string& i_playername,const TradeBases& bases)
+      {
+        const std::map<std::string,std::string>& ssbyrace = bases.GetSolarSystemByRaceMap();
+        const std::map<std::string,TradeBase>& basemap = bases.GetBaseMap();
+
+        std::map<std::string,std::string>::const_iterator raceit;
+        for (raceit = ssbyrace.begin() ; raceit != ssbyrace.end() ; ++raceit)
+        {
+          std::map<std::string,TradeBase>::const_iterator baseit = basemap.find(raceit->second);
+          const TradeBase& base = baseit->second;
+
+          const std::vector<Token>& bsell = base.GetSellableTokens();
+          const std::vector<Token>& bdemand = base.GetDemandTokens();
+
+          std::vector<Token>::const_iterator tit;
+          for (tit = bsell.begin() ; tit != bsell.end() ; ++tit)
+          {
+            if (i_playername.size()==0) 
+              i_ogi.BroadcastADDTOTRADEBASE(base.GetId(),tit->Encoding(),false);
+            else 
+              i_ogi.UnicastADDTOTRADEBASE(i_playername,base.GetId(),tit->Encoding(),false);
+          }
+          for (tit = bdemand.begin() ; tit != bdemand.end() ; ++tit)
+          {
+            if (i_playername.size()==0) 
+              i_ogi.BroadcastADDTOTRADEBASE(base.GetId(),tit->Encoding(),false);
+            else 
+              i_ogi.UnicastADDTOTRADEBASE(i_playername,base.GetId(),tit->Encoding(),false);
+          }
+        }
+      }
+
+      // this method will inform the specified user about who knows what about all
+      // inhabited solar systems, and will in addition, inform the player if they know
+      // the race that inhabits.
+      void UnicastTradeBaseSecrecy(const MerchantOfVenusGameInfo& i_ogi,
+                                   const Players& i_players,
+                                   const std::string& i_playername,
+                                   const TradeBases& bases)
+      {
+        const std::map<std::string,TradeBase>& basemap = bases.GetBaseMap();
+        std::map<std::string,TradeBase>::const_iterator baseit;
+        for (baseit = basemap.begin() ; baseit != basemap.end() ; ++baseit)
+        {
+          const std::string& ssname = baseit->first;
+          const TradeBase& base = baseit->second;
+          const Secret& sec = base.GetSecret();
+          i_ogi.UnicastSOLARSYSTEMPRIVACY(i_playername,ssname,sec.GetSecretString());
+          if (sec.IsPublic() || (
+                                 i_players.IsPlayer(i_playername) &&
+                                 sec.PlayerKnowsSecret(i_players.GetPlayerId(i_playername))))
+          {
+            i_ogi.UnicastBASELOCATION(i_playername,ssname,base.GetId());
+          }
+        }
+      }
+
+      // this method will inform the given user about the secrecy of all
+      // spaces that override the base map, and the identity of all spaces
+      // they are privy to.
+      void UnicastSpaceOverrides(const MerchantOfVenusGameInfo& i_ogi,
+                                 const Players& i_players,
+                                 std::string i_PlayerName,
+                                 const MapOverlay& i_mo)
+      {
+        std::map<std::string,std::pair<MapSpace,Secret> >::const_iterator oit;
+        for (oit = i_mo.GetOverrideMap().begin() ; oit != i_mo.GetOverrideMap().end() ; ++oit)
+        {
+          i_ogi.UnicastQBOXPRIVACY(i_PlayerName,oit->first,oit->second.second.GetSecretString());
+          if (oit->second.second.IsPublic() ||
+              (i_players.IsPlayer(i_PlayerName) &&
+               oit->second.second.PlayerKnowsSecret(i_players.GetPlayerId(i_PlayerName))))
+          {
+            i_ogi.UnicastQBOXCONTENTS(i_PlayerName,oit->first,i_mo.GetSpaceString(oit->first));
+          }
+        }
+      }
+                         
+
+
+      void ApplyStationCommission(const MerchantOfVenusGameInfo& i_ogi,
+                                  Players& i_players,
+                                  MapOverlay& i_mo,
+                                  int amount)
+      {
+        const Player& curp = i_players.GetCurPlayer();
+        // first, find who owns the station the current player is on (if anyone)
+        std::map<std::string,size_t>::const_iterator fit = i_mo.GetStationOwners().find(curp.GetLocation());
+
+        if (fit == i_mo.GetStationOwners().end()) return;
+
+        // then give them the commission and tell everyone.
+        size_t stationowner = fit->second;
+
+        int commission = amount / 10;
+
+        i_players[stationowner].AddMoney(commission);
+        i_ogi.BroadcastUpdatePLAYERMONEYByplayerindex(stationowner);
+      }
+
+      void ApplyFactoryCommission(const MerchantOfVenusGameInfo& i_ogi,
+                                  Players& i_players,
+                                  MapOverlay& i_mo,
+                                  int amount)
+      {
+        const Player& curp = i_players.GetCurPlayer();
+        // first, find who owns the factory for the solar system the current player is in (if anyone)
+        std::pair<MapSpace,Secret> curpair = i_mo.GetMapSpace(curp.GetLocation());
+        const std::string& rname = curpair.first.m_regionname;
+       
+        // then see if anyone owns the factory (someone should, if the player just bought the factory good)
+        std::map<std::string,size_t>::const_iterator fit = i_mo.GetFactoryOwners().find(rname);
+        if (fit == i_mo.GetFactoryOwners().end()) return;
+
+        // then give them the commission and tell everyone.
+        size_t factoryowner = fit->second;
+        int commission = amount / 2;
+
+        i_players[factoryowner].AddMoney(commission);
+        i_ogi.BroadcastUpdatePLAYERMONEYByplayerindex(factoryowner);
+      }
+
+      void DisposeOfToken(const MerchantOfVenusGameInfo& i_ogi,
+                   TradeBases& i_bases,
+                   TradeBase& i_curtradebase,
+                   Cup& i_cup,
+                   Token i_doomed)
+      {
+        i_doomed.MakeOld();
+        switch(i_doomed.GetSellDestination())
+        {
+          case NOWHERE:
+            break;
+          case CULTURE:
+            i_curtradebase.AddToken(i_doomed);
+            i_ogi.BroadcastADDTOTRADEBASE(i_curtradebase.GetId(),i_doomed.Encoding(),false);
+            break;
+          case CUP:
+            Token newt = i_cup.Replace(i_doomed);
+            std::string ownerid = newt.GetSource();
+            std::string newss = i_bases.GetSolarSystemOfRace(ownerid);
+            TradeBase& newtb = i_bases.GetTradeBaseBySolarSystemName(newss);
+            newtb.AddToken(newt);
+            i_ogi.BroadcastADDTOTRADEBASE(newtb.GetId(),newt.Encoding(),true);
+            break;
+        }
+      }
+
+      int ProcessDemands(const MerchantOfVenusGameInfo& i_ogi,
+                         TradeBase& i_tb,
+                         TradeBases& i_bases,
+                         Cup& i_cup,
+                         Token sellitem)
+      {
+        // only non-factory goods have demands.
+        if (sellitem.GetSizeClass() != GOOD_SIZE || sellitem.IsFactoryGood())
+        {
+          return sellitem.GetSellPrice();
+        }
+        int bonus = 0;
+        size_t lastbonusidx = 0;
+        for (size_t i = 0 ; i < i_tb.GetDemandTokens().size() ; ++i)
+        {
+          if (i_tb.GetDemandTokens()[i].GetName() == sellitem.GetName())
+          {
+            lastbonusidx = i;
+            bonus += i_tb.GetDemandTokens()[i].GetSellPrice();
+          }
+        }
+        if (bonus > 0)
+        {
+          Token demtoken = i_tb.GetDemandTokens()[lastbonusidx];
+          i_ogi.BroadcastSUBTRACTFROMTRADEBASE(i_tb.GetId(),demtoken.Encoding());
+          i_tb.RemoveDemandToken(lastbonusidx);
+          DisposeOfToken(i_ogi,i_bases,i_tb,i_cup,demtoken);
+        }
+        return sellitem.GetSellPrice() - bonus;
+      }
+
+#define SENDTRANSCOUNT(PLN) SendTransCount(PLN,*this,GetMoveMediator(),GetMapOverlay(),GetPlayers())
+
+      void SendTransCount(const std::string& i_PlayerName,
+                          const MerchantOfVenusGameInfo& i_ogi,
+                          const MoveMediator& i_mm,
+                          const MapOverlay& i_mo,
+                          const Players& i_pl)
+      {
+        const Player& curp = i_pl.GetCurPlayer();
+        int numbuys;
+        int numsells;
+
+        if (i_mm.IsFirst() || i_mo.GetMapSpace(curp.GetLocation()).first.m_type == STATION) 
+        {
+          numbuys = -1;
+          numsells = -1;
+        }
+        else
+        {
+          numbuys = 1 - curp.GetBuyCount();
+          numsells = 1 - curp.GetSellCount();
+        }
+
+        if (i_PlayerName == "")
+        {
+          i_ogi.BroadcastREMAININGTRANSCOUNT(curp.GetId(),numbuys,numsells);
+        }
+        else
+        {
+          i_ogi.UnicastREMAININGTRANSCOUNT(i_PlayerName,curp.GetId(),numbuys,numsells);
+        } 
+      }
+
+        
+
+            
+
+    ]]>
+  </preface>
+
+  <transition name="JOIN">
+    <cyclic state="InitialState"/>
+    <allowed>
+      <![CDATA[
+        GetPlayers().size() < MAXNUMPLAYERS && !GetPlayers().IsPlayer(i_PlayerName)
+      ]]>
+    </allowed>
+    <body>
+      GetPlayers().add(i_PlayerName);
+      UnicastIAM(i_PlayerName,GetPlayers().size()-1);
+      BroadcastUpdatePLAYERByplayerindex(GetPlayers().size()-1);
+      return true;
+    </body>
+  </transition>
+
+  <transition name="UNJOIN">
+    <cyclic state="InitialState"/>
+    <allowed>
+      <![CDATA[
+        GetPlayers().IsPlayer(i_PlayerName)
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      GetPlayers().remove(i_PlayerName);
+
+      BroadcastRESET();
+      BroadcastPLAYER();
+      for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
+      {
+        UnicastIAM(GetPlayers()[i].GetName(),i);
+      }
+      BroadcastOPTIONS();
+
+
+      return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="OPTIONS">
+    <cyclic state="InitialState"/>
+    <allowed><![CDATA[ GetPlayers().IsPlayer(i_PlayerName) ]]> </allowed>
+    <action>
+      <var name="winmoney" type="int" min="1000"/>
+    </action>
+    <body>
+      m_winmoney = winmoney;
+      BroadcastOPTIONS();
+      return true;
+    </body>
+  </transition>
+      
+  <transition name="VALIDATESETUP">
+    <transit from="InitialState" to="ValidateSetup"/>
+    <allowed>
+      <![CDATA[ 
+        GetPlayers().IsPlayer(i_PlayerName) && GetPlayers().size() > 1 
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
+      {
+        GetPlayers()[i].SetOkStartup(false);
+      }
+      BroadcastPLAYEROKSTARTUP();
+      return true;
+      ]]>
+    </body>
+  </transition>
+  
+  <transition name="DONTLIKEOPTIONS">
+    <transit from="ValidateSetup" to="InitialState"/>
+    <allowed>
+      <![CDATA[
+        GetPlayers().IsPlayer(i_PlayerName) &&
+        !GetPlayers().GetPlayerByName(i_PlayerName).OkStartup()
+      ]]>
+    </allowed>
+  </transition>
+  
+  <transition name="LIKEOPTIONS">
+    <cyclic state="ValidateSetup"/>
+    <allowed>
+      <![CDATA[
+        GetPlayers().IsPlayer(i_PlayerName) &&
+        !GetPlayers().GetPlayerByName(i_PlayerName).OkStartup()
+      ]]>
+    </allowed>
+    <body>
+      GetPlayers().GetPlayerByName(i_PlayerName).SetOkStartup(true);
+      BroadcastUpdatePLAYEROKSTARTUPByplayerindex(GetPlayers().GetPlayerByName(i_PlayerName).GetId());
+      return true;
+    </body>
+  </transition>
+  
+  <transition name="STARTGAME">
+    <transit from="ValidateSetup" to="StartTurn"/>
+    <allowed>false</allowed>
+    <auto>GetPlayers().AllOk()</auto>
+    <body>
+      <![CDATA[
+        GetPlayers().RandomizeTurnOrder();
+        BroadcastTURNORDER();
+        BroadcastCURPLAYER();
+
+        std::vector<std::string> raceids;
+        raceids.push_back("3"); raceids.push_back("4a"); raceids.push_back("4b");
+        raceids.push_back("7b"); raceids.push_back("8"); raceids.push_back("10");
+        myshuffle(raceids.begin(),raceids.end());
+
+        Token firstship(Ship::GetShipOfClass(SCOUT));
+
+        for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
+        {
+          GetPlayers()[i].AddToken(firstship);
+          BroadcastADDTOPLAYER(i,firstship.Encoding());
+          GetPlayers()[i].SetMoney(20 * GetPlayers().size());
+          GetPlayers()[i].SetRace(raceids[i]);
+          // player pawns are all at Galactic Base (we don't have to set this, but we do have to report it)
+        }
+        BroadcastPLAYERMONEY();
+        BroadcastPLAYERRACE();
+        BroadcastPLAYERLOCATION();
+
+        // the following are all done via constructors
+        //   provide hidden random to each qbox
+        //   set up all race sets (off board to start with)
+        //   set up Galactic Base stuff set (on board)
+        //   provide hidden IOU to each inhabitable region
+        // (we do, however, have to communicate the following:
+        //   a) the contents of all trade bases (but not their location)
+        //   b) the location of the 'base' trade base is public.
+        CastAllTradeBases(*this,"",GetTradeBases());
+
+        // make the galactic base trade base public.
+        Secret& gbsecret = GetTradeBases().GetTradeBaseBySolarSystemName("Galactic Base").GetSecret();
+        gbsecret.MakePublic();
+        BroadcastSOLARSYSTEMPRIVACY("Galactic Base",gbsecret.GetSecretString());
+        BroadcastBASELOCATION("Galactic Base","base");
+
+
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="GOTOTECHSELECT">  
+    <transit from="StartTurn" to="TechSelect"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+        GetPlayers().GetCurPlayer().GetAdvances().GetSwitchables().size() > 0
+      ]]>
+    </auto>
+    <body>
+      UnicastSWITCHABLES(GetPlayers().GetCurPlayer().GetName(),
+              GetPlayers().GetCurPlayer().GetAdvances().GetSwitchables());
+      return true;
+    </body>
+  </transition>
+
+  <transition name="SELECTSWITCHABLES">
+    <transit from="TechSelect" to="TechSelected"/>
+    <allowed>i_PlayerName == GetPlayers().GetCurPlayer().GetName()</allowed>
+    <action>
+      <var name="i_switchables" type="std::string"/>
+    </action>
+    <body>
+      bool sresult = GetPlayers().GetCurPlayer().GetAdvances().SetSwitchables(i_switchables);
+      ERROUT(!sresult,"Invalid string for switchable equipment");
+      BroadcastSELECTEDSWITCHABLES(GetPlayers().GetCurPlayerId(),i_switchables);
+      return true;
+    </body>
+  </transition>
+
+  <transition name="SKIPTECHSELECT">  
+    <transit from="StartTurn" to="TechSelected"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+        GetPlayers().GetCurPlayer().GetAdvances().GetSwitchables().size() == 0
+      ]]>
+    </auto>
+    <body>
+      <![CDATA[
+      GetPlayers().GetCurPlayer().GetAdvances().SetSwitchables("");
+      return true;
+      ]]>
+    </body>
+  </transition>
+        
+  <transition name="GOTOCHOOSE">
+    <transit from="TechSelected" to="SelectMove"/>
+    <allowed>false</allowed>
+    <auto>true</auto>
+    <body>
+      <![CDATA[
+      MoveMediator& mm = GetMoveMediator();
+      Player& curp = GetPlayers().GetCurPlayer();
+      curp.ResetExchangeCounts();
+      mm.StartMove();
+      BroadcastDICE(mm.GetDiceString());
+      BroadcastPILOTNUMBERCHOSEN(curp.GetId(),0,false);
+
+      mm.PrepareForStep();
+
+      UnicastDESTINATION(curp.GetName(),
+                         mm.GetPenaltyCost(),
+                         mm.IsFirst(),
+                         mm.GetCurrentDests());
+
+      return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="ENDMOVE">
+    <transit from="SelectMove" to="AutoTradePhaseSelect"/>
+    <auto>GetMoveMediator().AutoStop()</auto>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName() && 
+        GetMoveMediator().ManualStop()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+        Player& curp = GetPlayers().GetCurPlayer();
+        if (GetMoveMediator().IsFirst() && GetMoveMediator().GetPenaltyCost() > 0)
+        {
+          curp.AddMoney(-GetMoveMediator().GetPenaltyCost());
+          BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+        }
+
+        std::pair<MapSpace,Secret> ms = GetMapOverlay().GetMapSpace(curp.GetLocation());
+        
+
+        // if player is standing on a CITY or STATION in a non-public Solar System,
+        // a) make the solar system public.
+        // b) find the IOU (if there is one) in the Solar System's Trade Base, remove it,
+        //      and give it to the acting player.
+
+        if (GetTradeBases().RegionHasTradeBase(ms.first.m_regionname) &&
+            (ms.first.m_type == CITY || ms.first.m_type == STATION))
+        {
+          TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(ms.first.m_regionname);
+          if (!tb.GetSecret().IsPublic())
+          {
+            tb.GetSecret().MakePublic();
+            BroadcastSOLARSYSTEMPRIVACY(ms.first.m_regionname,tb.GetSecret().GetSecretString());
+            BroadcastBASELOCATION(ms.first.m_regionname,tb.GetId());
+
+            for (size_t i = 0 ; i < tb.GetSpaceportDeeds().size() ; ++i)
+            {
+              BroadcastADDTOTRADEBASE(tb.GetId(),tb.GetSpaceportDeeds()[i].Encoding(),false);
+            }
+            tb.TransferDeeds();
+
+            for (size_t i = 0 ; i < tb.GetSellableTokens().size() ; ++i)
+            {
+              if (tb.GetSellableTokens()[i].GetSizeClass() == IOU_SIZE)
+              {
+                Token iou = tb.GetSellableTokens()[i];
+                curp.AddToken(iou);
+                tb.RemoveSellableToken(i);
+                BroadcastADDTOPLAYER(curp.GetId(),iou.Encoding());
+                BroadcastSUBTRACTFROMTRADEBASE(tb.GetId(),iou.Encoding());
+                break;
+              }
+            }
+          }
+        }
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+
+  <transition name="SELECTDESTINATION">
+    <transit from="SelectMove" to="Mulligan"/>
+    <allowed>i_PlayerName == GetPlayers().GetCurPlayer().GetName()</allowed>
+    <action>
+      <var name="i_destination" type="std::string"/>
+      <var name="i_destisjump" type="bool"/>
+    </action>
+    <body>
+      <![CDATA[
+        MoveMediator& mm = GetMoveMediator();
+
+        mm.SetDestination(i_destination,i_destisjump);
+
+        if (!mm.AreDiceVisible())
+        {
+          // if we get here, the player's dest list (and choice) was created in absence
+          // of pilot number.  Now that the player can see their dice, their choice
+          // may be invalid.
+          // however, if it isn't even theoretically valid, we shouldn't give them
+          // their dice.
+          ERROUT(!mm.ValidateDestination(),"Illegal First Move");
+
+          mm.MakeDiceVisible();
+          mm.PrepareForStep();
+
+          UnicastDESTINATION(GetPlayers().GetCurPlayer().GetName(),
+                             mm.GetPenaltyCost(),
+                             mm.IsFirst(),
+                             mm.GetCurrentDests());
+
+
+
+          BroadcastDICE(mm.GetDiceString());
+          BroadcastMPLEFT(mm.GetMP());
+        }
+
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="CANTMULLIGAN">
+    <transit from="Mulligan" to="ProcessPilotNumber"/>
+    <allowed>false</allowed>
+    <auto>!GetMoveMediator().CanMulligan()</auto>
+  </transition>
+
+  <transition name="MULLIGAN">
+    <transit from="Mulligan" to="ProcessPilotNumber"/>
+    <allowed>
+      <![CDATA[
+      i_PlayerName == GetPlayers().GetCurPlayer().GetName() && 
+      GetMoveMediator().CanMulligan()
+      ]]>
+    </allowed>
+    <action>
+      <var name="i_numtoreroll" type="int"/>
+    </action>
+    <body>
+      <![CDATA[
+        MoveMediator& mm = GetMoveMediator();
+        // the value given is the value on the die they wish to re-roll
+        bool mresult = GetMoveMediator().DoMulligan(i_numtoreroll);
+        ERROUT(!mresult,"That is not a valid die to reroll");
+        BroadcastDICE(mm.GetDiceString());
+        mm.PrepareForStep();
+        mm.ClearMulligan();
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="NOMULLIGAN">
+    <transit from="Mulligan" to="ProcessPilotNumber"/>
+    <allowed>
+      <![CDATA[
+      i_PlayerName == GetPlayers().GetCurPlayer().GetName() && 
+      GetMoveMediator().CanMulligan()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+        MoveMediator& mm = GetMoveMediator();
+        mm.ClearMulligan();
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+
+
+
+  <transition name="REJECTDESTINATION">
+    <transit from="ProcessPilotNumber" to="SelectMove"/>
+    <allowed>false</allowed>
+    <auto>!GetMoveMediator().ValidateDestination()</auto>
+    <body>
+      <![CDATA[
+        UnicastMOVERROR(GetPlayers().GetCurPlayer().GetName(),"That is not a legal destination");
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+        
+  <transition name="AUTOPILOT">
+    <transit from="ProcessPilotNumber" to="FinalizeMove"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+       GetMoveMediator().ValidateDestination() &&
+       GetMoveMediator().GetChosenDest().pnumbers.size() < 2
+      ]]>
+    </auto>
+    <body>
+      <![CDATA[
+        if (GetMoveMediator().GetChosenDest().pnumbers.size() == 1)
+        {
+          GetMoveMediator().SetPilotNumber(*(GetMoveMediator().GetChosenDest().pnumbers.begin()));
+        }
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="GOTOSELECTPILOTNUMBER">
+    <transit from="ProcessPilotNumber" to="SelectPilotNumber"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+       GetMoveMediator().ValidateDestination() &&
+       GetMoveMediator().GetChosenDest().pnumbers.size() >= 2
+      ]]>
+    </auto>
+    <body>
+      <![CDATA[
+        UnicastPILOTNUMBERCHOICE(GetPlayers().GetCurPlayer().GetName(),
+                                 GetMoveMediator().GetChosenDest().GetPilotNumberString());
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="SELECTPILOTNUMBER">
+    <transit from="SelectPilotNumber" to="FinalizeMove"/>
+    <allowed>i_PlayerName == GetPlayers().GetCurPlayer().GetName()</allowed>
+    <action>
+      <var name="i_pilotnumber" type="int"/>
+    </action>
+    <body>
+      <![CDATA[
+        ERROUT(GetMoveMediator().GetChosenDest().pnumbers.find(i_pilotnumber) == 
+            GetMoveMediator().GetChosenDest().pnumbers.end(),"Illegal Pilot Number Chosen");
+        GetMoveMediator().SetPilotNumber(i_pilotnumber);
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="EXECUTEMOVE">
+    <transit from="FinalizeMove" to="CompleteMove"/>
+    <allowed>false</allowed>
+    <auto>true</auto>
+    <body>
+      <![CDATA[
+        MoveMediator& mm = GetMoveMediator();
+        MapOverlay& mo = GetMapOverlay();
+        Player& cp = GetPlayers().GetCurPlayer();
+        // moving from a penalty space (except for the first move)
+        // costs money.
+        if (!mm.IsFirst() && mm.GetPenaltyCost() > 0)
+        {
+          cp.AddMoney(-mm.GetPenaltyCost());
+          BroadcastUpdatePLAYERMONEYByplayerindex(cp.GetId());
+        }
+        // we're no longer first.
+        mm.ClearFirst();
+ 
+        // any space a player lands on must become public if it isn't already.
+        // furthermore, if the player moved blind into an empty space, 
+        // the movement cost might change (drive move onto a colored penalty)
+        // so repreparation once dest is public will be helpful.
+        std::string dname = mm.GetChosenDest().sname;
+        std::pair<MapSpace,Secret> destpair = mo.GetMapSpace(dname);
+        if (!destpair.second.IsPublic())
+        {
+          mo.MakeSpacePublic(dname);
+          destpair = mo.GetMapSpace(dname);
+          BroadcastQBOXPRIVACY(dname,destpair.second.GetSecretString());
+          BroadcastQBOXCONTENTS(dname,mo.GetSpaceString(dname));
+          mm.PrepareForStep();
+        }
+
+        const Dest& dest = mm.GetChosenDest();
+
+        // prevent backtracking.
+        if (!dest.isjump)
+        {
+          mm.AddToBacks(cp.GetLocation(),dest.sname);
+        }
+        
+        // decrement movement points
+        mm.SpendMP(dest.mpused);
+        BroadcastMPLEFT(mm.GetMP());
+        BroadcastPILOTNUMBERCHOSEN(cp.GetId(),
+                                   mm.GetPilotNumber(),
+                                   mm.IsPilotNumberPermanent());
+
+        // finally, make the move!
+        cp.SetLocation(dest.sname);
+        BroadcastUpdatePLAYERLOCATIONByplayerindex(cp.GetId()); 
+
+        // now that we're in this new space, we need to take a look around.
+        // if we are in an inhabited solar system that is not already known,
+        // and we are in an observation spot (an orbit, or any spot if we have Spy Eye)
+        // then we get to know who the solar system contains.
+        if (GetTradeBases().GetBaseMap().find(destpair.first.m_regionname) != 
+            GetTradeBases().GetBaseMap().end())
+        {
+          TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(destpair.first.m_regionname);
+          Secret& tbs = tb.GetSecret();
+          if (!tbs.IsPublic()) 
+          {
+            if (destpair.first.m_orbit != "" ||
+                cp.GetAdvances().HasSpyEye())
+            {
+              tbs.PlayerLearnsSecret(cp.GetId());
+              BroadcastSOLARSYSTEMPRIVACY(destpair.first.m_regionname,tbs.GetSecretString());
+              UnicastBASELOCATION(cp.GetName(),destpair.first.m_regionname,tb.GetId());
+            }
+          }
+        }
+        // further looking around.  if we have spy eye, then we get to know
+        // about all adjacent qboxes we don't already know about.
+        if (cp.GetAdvances().HasSpyEye())
+        {
+          std::vector<std::pair<std::string,bool> >::const_iterator adjit;
+          for (adjit = destpair.first.m_adjacentnames.begin() ; 
+               adjit != destpair.first.m_adjacentnames.end() ; ++adjit)
+          {
+            std::pair<MapSpace,Secret> adjpair = mo.GetMapSpace(adjit->first);
+            if (adjpair.second.IsPublic()) continue;
+            mo.AddPlayerToSecret(adjit->first,cp.GetId());
+            adjpair = mo.GetMapSpace(adjit->first);
+            BroadcastQBOXPRIVACY(adjit->first,adjpair.second.GetSecretString());
+            UnicastQBOXCONTENTS(cp.GetName(),adjit->first,mo.GetSpaceString(adjit->first));
+          }
+        }
+
+        mm.PrepareForStep();
+        UnicastDESTINATION(cp.GetName(),
+                           mm.GetPenaltyCost(),
+                           mm.IsFirst(),
+                           mm.GetCurrentDests());
+
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="AUTOCHOOSEDEST">
+    <transit from="CompleteMove" to="ProcessPilotNumber"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+        !GetMoveMediator().AutoStop() &&
+        !GetMoveMediator().ManualStop() &&
+        GetMoveMediator().GetDests().size() == 1
+      ]]>
+    </auto>
+    <body>
+      <![CDATA[
+        const Dest& theDest = GetMoveMediator().GetDests()[0];
+        GetMoveMediator().SetDestination(theDest.sname,theDest.isjump);
+        return true;      
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="MANUALCHOOSEDEST">
+    <transit from="CompleteMove" to="SelectMove"/>
+    <allowed>false</allowed>
+    <auto>
+      <![CDATA[
+        GetMoveMediator().AutoStop() ||
+        GetMoveMediator().ManualStop() ||
+        GetMoveMediator().GetDests().size() != 1
+      ]]>
+    </auto>
+  </transition>
+
+  <transition name="ISTRADEBASE">
+    <transit from="AutoTradePhaseSelect" to="TradePhase"/>
+    <auto>
+      <![CDATA[
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == CITY ||
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION
+      ]]>
+    </auto>
+    <body>
+      SENDTRANSCOUNT("");
+      return true;
+    </body>
+  </transition>
+
+  <transition name="ISRELIC">
+    <transit from="AutoTradePhaseSelect" to="AsteroidPhase"/>
+    <auto>
+      <![CDATA[
+        GetMapOverlay().HasRelic(GetPlayers().GetCurPlayer().GetLocation())
+      ]]>
+    </auto>
+  </transition>
+      
+  <transition name="INSPACE">
+    <transit from="AutoTradePhaseSelect" to="TurnEnd"/>
+    <auto>
+      <![CDATA[
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != CITY &&
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != STATION &&
+      !GetMapOverlay().HasRelic(GetPlayers().GetCurPlayer().GetLocation())
+      ]]>
+    </auto>
+  </transition>
+
+  <transition name="GETRELIC">
+    <transit from="AsteroidPhase" to="TurnEnd"/>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+        Player& curp = GetPlayers().GetCurPlayer();
+        MapOverlay& mo = GetMapOverlay();
+        Token relic = mo.TakeRelic(curp.GetLocation());
+        curp.AddToken(relic);
+        BroadcastADDTOPLAYER(curp.GetId(),relic.Encoding());
+        BroadcastQBOXCONTENTS(curp.GetLocation(),mo.GetSpaceString(curp.GetLocation()));
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="LEAVERELIC">
+    <transit from="AsteroidPhase" to="TurnEnd"/>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+      ]]>
+    </allowed>
+  </transition>
+
+  <transition name="REDEEMIOU">
+    <cyclic state="TradePhase"/>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName() &&
+        GetIndexOfAppropriateIOU() != -1
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+        Player& curp = GetPlayers().GetCurPlayer();
+        int idx = GetIndexOfAppropriateIOU();
+        Token t = curp.GetTokens()[(size_t)idx];
+        curp.AddBarter(t.GetSellPrice());
+        curp.RemoveToken((size_t)idx);
+        BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+        BroadcastSUBTRACTFROMPLAYER(curp.GetId(),t.Encoding());
+
+        ApplyStationCommission(*this,GetPlayers(),GetMapOverlay(),t.GetSellPrice());
+        return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="TRADEINSHIP">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_newshipencoding" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // make sure that the requested encoding is something the trade base sells
+      std::vector<Token>::const_iterator tit;
+      for (tit = tb.GetSellableTokens().begin() ; tit != tb.GetSellableTokens().end() ; ++tit)
+      {
+        if (i_newshipencoding == tit->Encoding()) break;
+      }
+      ERROUT(tit == tb.GetSellableTokens().end(),"That item is not sold by this race");
+
+      Token oldship = curp.GetShip();
+      Token newship = *tit;
+      ERROUT(newship.GetSizeClass() != SHIP_SIZE,"That item is not a SHIP!");
+
+      int netcost = newship.GetBuyPrice() - oldship.GetSellPrice();
+      ERROUT(netcost > curp.GetTotal(),"You can't afford that!");
+      ERROUT(!HasRemainingBuy(),"You've already used your buy for this turn");
+      ERROUT(!HasRemainingSell(),"You've already used your sell for this turn");
+
+      ERROUT(newship.GetNumHolds() < curp.GetStuffSize(),"That new ship can't hold all your stuff!");
+
+      BroadcastSUBTRACTFROMPLAYER(curp.GetId(),oldship.Encoding());
+      BroadcastADDTOPLAYER(curp.GetId(),newship.Encoding());
+      
+      curp.AddBarter(oldship.GetSellPrice());
+      curp.Spend(newship.GetBuyPrice());
+      curp.ExchangeShip(newship);
+      BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+
+      ApplyStationCommission(*this,GetPlayers(),GetMapOverlay(),newship.GetBuyPrice());
+      ApplyStationCommission(*this,GetPlayers(),GetMapOverlay(),oldship.GetSellPrice());
+
+      curp.IncrementBuyCount();
+      curp.IncrementSellCount();
+      SENDTRANSCOUNT("");
+ 
+      return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="BUY">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_item" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // make sure that the requested encoding is something the trade base sells
+      std::vector<Token>::const_iterator tit;
+      size_t tbidx = 0;
+      for (tit = tb.GetSellableTokens().begin() ; tit != tb.GetSellableTokens().end() ; ++tit,++tbidx)
+      {
+        if (i_item == tit->Encoding()) break;
+      }
+      ERROUT(tit == tb.GetSellableTokens().end(),"That item is not sold by this race");
+  
+      Token buyitem = *tit;
+
+      ERROUT(!HasRemainingBuy(),"You've already used your buy for this turn");
+
+      ERROUT(buyitem.GetSizeClass() == SHIP_SIZE,"you must trade in ships, not buy them");
+      ERROUT(buyitem.GetSizeClass() == FARE_SIZE,"you must pick up fares, not buy them");
+      ERROUT(buyitem.GetSizeClass() == IOU_SIZE ||
+             buyitem.GetSizeClass() == DEMAND_SIZE,"you shouldn't be able to see one of these!?!");
+
+      std::cout << "in Buy: num holds = " << curp.GetShip().GetNumHolds() <<
+        " old stuffsize = " << curp.GetStuffSize() << 
+        " new stuffsize = " << curp.GetStuffSize(buyitem) << std::endl;
+
+      ERROUT(curp.GetShip().GetNumHolds() < curp.GetStuffSize(buyitem),"You can't fit that on your ship!");
+
+      int buycost = buyitem.GetBuyPrice();
+      if (buyitem.GetSizeClass() == DEED_SIZE &&
+          curp.GetRace() == tb.GetId())
+      {
+        buycost -= buycost/5;
+      }
+
+      ERROUT(curp.GetTotal() < buycost,"You can't afford that!");
+
+      if (!buyitem.IsUnlimited())
+      {
+        tb.RemoveSellableToken(tbidx);
+        BroadcastSUBTRACTFROMTRADEBASE(tb.GetId(),buyitem.Encoding());
+      }
+
+      buyitem.MakeNew();
+
+      curp.AddToken(buyitem);
+      BroadcastADDTOPLAYER(curp.GetId(),buyitem.Encoding());
+        
+      curp.Spend(buycost);
+      BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+
+      ApplyStationCommission(*this,GetPlayers(),GetMapOverlay(),buycost);
+
+      if (buyitem.GetSizeClass() == DEED_SIZE)
+      {
+        switch(buyitem.GetDeedType())
+        {
+          case FACTORY_DEED:
+            {
+            GetMapOverlay().PlaceFactory(curpair.first.m_regionname,curp.GetId());
+            BroadcastFACTORYOWNER(tb.GetId(),curp.GetId());
+            Token facgood = tb.GetFactoryGood();
+            tb.AddToken(facgood);
+            BroadcastADDTOTRADEBASE(tb.GetId(),facgood.Encoding(),false);
+            break;
+            }
+          case SPACEPORT_DEED:
+            {
+            std::string spacename = GetMapOverlay().PlaceStation(buyitem.GetName(),curp.GetId());
+            BroadcastQBOXCONTENTS(spacename,GetMapOverlay().GetSpaceString(spacename));
+            BroadcastQBOXPRIVACY(spacename,"public");
+            break;
+            }
+          default:
+            break;
+        }
+      }
+
+      if (buyitem.GetSizeClass() == GOOD_SIZE && buyitem.IsFactoryGood())
+      {
+        ApplyFactoryCommission(*this,GetPlayers(),GetMapOverlay(),buyitem.GetBuyPrice());
+      }
+
+      curp.IncrementBuyCount();
+      SENDTRANSCOUNT("");
+ 
+      return true;
+      ]]>      
+    </body>
+  </transition>
+
+  <transition name="PICKUP">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_item" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // make sure that the requested fare is something the trade base sells
+      std::vector<Token>::const_iterator tit;
+      size_t tbidx = 0;
+      for (tit = tb.GetSellableTokens().begin() ; tit != tb.GetSellableTokens().end() ; ++tit,++tbidx)
+      {
+        if (i_item == tit->Encoding()) break;
+      }
+      ERROUT(tit == tb.GetSellableTokens().end(),"That item is not sold by this race");
+
+      Token buyitem = *tit;
+      ERROUT(buyitem.GetSizeClass() != FARE_SIZE,"Only Fares can be picked up");
+      ERROUT(curp.GetShip().GetNumHolds() < curp.GetStuffSize(buyitem),"You can't fit that on your ship!");
+
+      tb.RemoveSellableToken(tbidx);
+      BroadcastSUBTRACTFROMTRADEBASE(tb.GetId(),buyitem.Encoding());
+
+      buyitem.MakeNew();
+      curp.AddToken(buyitem);
+      BroadcastADDTOPLAYER(curp.GetId(),buyitem.Encoding());
+
+      return true;
+      ]]>      
+    </body>
+  </transition>
+
+  <transition name="DROPOFF">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_item" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName() 
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // validate the requested fare.
+      std::vector<Token>::const_iterator tit;
+      size_t tbidx = 0;
+      for (tit = curp.GetTokens().begin() ; tit != curp.GetTokens().end() ; ++tit,++tbidx)
+      {
+        if (i_item == tit->Encoding()) break;
+      }
+      ERROUT(tit == curp.GetTokens().end(),"You don't own that item!");
+
+      Token sellitem = *tit;
+      ERROUT(sellitem.GetSizeClass() != FARE_SIZE,"Only Fares can be dropped off");
+
+      ERROUT(sellitem.GetBuyers()[0] != tb.GetId(),"This solar system is not this fare's destination!");
+
+      curp.RemoveToken(tbidx);
+      BroadcastSUBTRACTFROMPLAYER(curp.GetId(),sellitem.Encoding());
+
+      curp.AddMoney(sellitem.GetSellPrice());
+      BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+
+      DisposeOfToken(*this,GetTradeBases(),tb,GetCup(),sellitem);
+
+      return true;
+      ]]>      
+    </body>
+  </transition>
+
+
+  <transition name="JETTISON">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_item" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName()
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // validate the requested item
+      std::vector<Token>::const_iterator tit;
+      size_t tbidx = 0;
+      for (tit = curp.GetTokens().begin() ; tit != curp.GetTokens().end() ; ++tit,++tbidx)
+      {
+        if (i_item == tit->Encoding())
+        {
+          break;
+        }
+      }
+      ERROUT(tit != curp.GetTokens().end() && tit->IsNew(),"You can't jettison newly-bought items");
+      ERROUT(tit == curp.GetTokens().end(),"You don't own that item!");
+
+      Token sellitem = *tit;
+
+      ERROUT(sellitem.GetSizeClass() == SHIP_SIZE,"Ships cannot be jettisoned");
+      ERROUT(sellitem.GetSizeClass() == RELIC_SIZE,"You don't want to jettison a relic!");
+      ERROUT(sellitem.GetSizeClass() == DEED_SIZE ||
+             sellitem.GetSizeClass() == IOU_SIZE, "You can't jettison paperwork");
+
+      curp.RemoveToken(tbidx);
+      BroadcastSUBTRACTFROMPLAYER(curp.GetId(),sellitem.Encoding());
+
+      DisposeOfToken(*this,GetTradeBases(),tb,GetCup(),sellitem);
+
+      return true;
+      ]]>      
+    </body>
+  </transition>
+
+
+  <transition name="SELL">
+    <cyclic state="TradePhase"/>
+    <action>
+      <var name="i_item" type="std::string"/>
+    </action>
+    <allowed>
+      <![CDATA[
+        i_PlayerName == GetPlayers().GetCurPlayer().GetName() 
+      ]]>
+    </allowed>
+    <body>
+      <![CDATA[
+      Player& curp = GetPlayers().GetCurPlayer();
+      const std::pair<MapSpace,Secret> curpair = GetMapOverlay().GetMapSpace(curp.GetLocation());
+      TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(curpair.first.m_regionname);
+
+      // validate the requested item
+      std::vector<Token>::const_iterator tit;
+      size_t tbidx = 0;
+      for (tit = curp.GetTokens().begin() ; tit != curp.GetTokens().end() ; ++tit,++tbidx)
+      {
+        if (i_item == tit->Encoding()) break;
+      }
+      ERROUT(tit == curp.GetTokens().end(),"You don't own that item!");
+
+      Token sellitem = *tit;
+
+      ERROUT(!HasRemainingSell(),"You've already used your sell for this turn");
+      ERROUT(sellitem.GetSizeClass() == SHIP_SIZE,"Ships cannot be sold");
+      ERROUT(sellitem.GetSizeClass() == DEED_SIZE ||
+             sellitem.GetSizeClass() == IOU_SIZE, "You can't sell paperwork");
+
+      std::vector<std::string>::const_iterator bit;
+      for (bit = sellitem.GetBuyers().begin() ; bit != sellitem.GetBuyers().end() ; ++bit)
+      {
+        if (tb.GetId() == *bit) break;
+      }
+  
+      ERROUT(bit == sellitem.GetBuyers().end(),"The race here will not buy this item!");
+
+      curp.RemoveToken(tbidx);
+      BroadcastSUBTRACTFROMPLAYER(curp.GetId(),sellitem.Encoding());
+
+      int finalsaleprice = ProcessDemands(*this,tb,GetTradeBases(),GetCup(),sellitem);
+
+      switch(sellitem.GetSellType())
+      {
+        case CASH:
+          curp.AddMoney(finalsaleprice);
+          break;
+        case BARTER:
+          curp.AddBarter(finalsaleprice);
+          break;
+        default:
+          break;
+      }
+      BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+      ApplyStationCommission(*this,GetPlayers(),GetMapOverlay(),finalsaleprice);
+      DisposeOfToken(*this,GetTradeBases(),tb,GetCup(),sellitem);
+
+      curp.IncrementSellCount();
+      SENDTRANSCOUNT("");
+
+      return true;
+      ]]>      
+    </body>
+  </transition>
+
+
+  <transition name="ENDTURN">
+    <transit from="TradePhase" to="TurnEnd"/>
+    <allowed>i_PlayerName == GetPlayers().GetCurPlayer().GetName()</allowed>
+    <body>
+      <![CDATA[
+        Player& curp = GetPlayers().GetCurPlayer();
+        curp.AgeTokens();
+        curp.SetBarter(0);
+        BroadcastUpdatePLAYERMONEYByplayerindex(curp.GetId());
+        BroadcastAGEPLAYER(curp.GetId());
+        return true;
+      ]]>
+    </body>
+  </transition>
+    
+  <transition name="GAMENOTOVER">
+    <transit from="TurnEnd" to="StartTurn"/>
+    <auto>
+      <![CDATA[
+        GetPlayers().GetCurPlayer().GetNetWorth() < m_winmoney
+      ]]>
+    </auto>
+    <body>
+      GetPlayers().NextPlayer();
+      BroadcastCURPLAYER();
+      return true;
+    </body>
+  </transition>
+
+  <transition name="GAMEOVER">
+    <transit from="TurnEnd" to="TerminalState"/>
+    <auto>
+      <![CDATA[
+        GetPlayers().GetCurPlayer().GetNetWorth() >= m_winmoney
+      ]]>
+    </auto>
+    <body>
+      BroadcastPLAYERWINS(GetPlayers().GetCurPlayer().GetId());
+      return true;
+    </body>
+  </transition>
+
+  <refresh>
+    <![CDATA[
+      UnicastRESET(i_PlayerName);
+      UnicastOPTIONS(i_PlayerName);
+      UnicastPLAYER(i_PlayerName);
+
+      if (GetPlayers().IsPlayer(i_PlayerName)) UnicastIAM(i_PlayerName,GetPlayers().GetPlayerId(i_PlayerName));
+
+      if (i_StateName == InitialState) return;
+
+      if (i_StateName == ValidateSetup)
+      {
+        UnicastPLAYEROKSTARTUP(i_PlayerName);
+        return;
+      }
+
+      UnicastTURNORDER(i_PlayerName);
+      UnicastCURPLAYER(i_PlayerName);
+
+      UnicastPLAYERMONEY(i_PlayerName);
+      UnicastPLAYERRACE(i_PlayerName);
+      UnicastPLAYERLOCATION(i_PlayerName);
+      SENDTRANSCOUNT(i_PlayerName);
+
+      CastAllTradeBases(*this,i_PlayerName,GetTradeBases());
+      UnicastTradeBaseSecrecy(*this,GetPlayers(),i_PlayerName,GetTradeBases());
+      UnicastSpaceOverrides(*this,GetPlayers(),i_PlayerName,GetMapOverlay());
+
+      for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
+      {
+        const Player& pl = GetPlayers()[i];
+        const std::vector<Token>& pltok = pl.GetTokens();
+        for (size_t j = 0 ; j < pltok.size() ; ++j)
+        {
+          UnicastADDTOPLAYER(i_PlayerName,i,pltok[j].Encoding());
+          if (pltok[j].GetSizeClass() == DEED_SIZE &&
+              pltok[j].GetDeedType() == FACTORY_DEED)
+          {
+            UnicastFACTORYOWNER(i_PlayerName,pltok[j].GetSource(),pl.GetId());
+          }
+        }
+      }
+
+      if (i_StateName == TechSelect && i_PlayerName == GetPlayers().GetCurPlayer().GetName())
+      {
+        UnicastSWITCHABLES(i_PlayerName,
+                GetPlayers().GetCurPlayer().GetAdvances().GetSwitchables());
+      }
+      else
+      {
+        UnicastSELECTEDSWITCHABLES(i_PlayerName,
+                                   GetPlayers().GetCurPlayerId(),
+                                   GetPlayers().GetCurPlayer().GetAdvances().GetActiveSwitchables());
+      }
+
+     
+      if (i_StateName == SelectMove || i_StateName == ProcessPilotNumber || 
+          i_StateName == SelectPilotNumber || i_StateName == Mulligan)
+      {
+        UnicastPILOTNUMBERCHOSEN(i_PlayerName,
+                                 GetPlayers().GetCurPlayerId(),
+                                 GetMoveMediator().GetPilotNumber(),
+                                 GetMoveMediator().IsPilotNumberPermanent());
+
+        if (i_PlayerName == GetPlayers().GetCurPlayer().GetName())
+        {
+          UnicastDESTINATION(i_PlayerName,
+                             GetMoveMediator().GetPenaltyCost(),
+                             GetMoveMediator().IsFirst(),
+                             GetMoveMediator().GetCurrentDests());
+
+          if (i_StateName == SelectPilotNumber)
+          {
+            UnicastPILOTNUMBERCHOICE(i_PlayerName,GetMoveMediator().GetChosenDest().GetPilotNumberString());
+          }
+        }
+
+
+        UnicastDICE(i_PlayerName,GetMoveMediator().GetDiceString());
+
+        if (GetMoveMediator().AreDiceVisible())
+        {
+          UnicastMPLEFT(i_PlayerName,GetMoveMediator().GetMP());
+        }
+      }
+
+        
+      if (i_StateName == TerminalState) 
+        UnicastPLAYERWINS(i_PlayerName,GetPlayers().GetCurPlayer().GetId());
+
+
+    ]]>
+  </refresh>
+</game>

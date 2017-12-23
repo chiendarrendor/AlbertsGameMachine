@@ -1,0 +1,17 @@
+Name:
+A River Runs Through It
+.end.
+NumPlayers:
+1
+.end.
+Comment:
+In 'A River Runs Through It,' there are many different ways
+to reach scores as high as 260 points.  But Can you get to the
+record of 300 points?
+.end.
+Board:
+m3 f36 s46 m
+ d34 f36 p16 w
+. d13 p36 w
+.end.
+

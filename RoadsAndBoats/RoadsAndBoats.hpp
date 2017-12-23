@@ -1,0 +1,71 @@
+#ifndef ROADSANDBOATSHPP
+#define ROADSANDBOATSHPP
+
+enum TileType
+{
+  EMPTY,
+  WOODS,
+  PASTURE,
+  ROCK,
+  MOUNTAINS,
+  DESERT,
+  SEA
+};
+
+enum GoodType
+{
+  TRUNKS,
+  BOARDS,
+  PAPER,
+  GOOSE,
+  CLAY,
+  STONE,
+  FUEL,
+  IRON,
+  GOLD,
+  COINS,
+  STOCK
+};
+
+enum BuildingType
+{
+  PLAYER4 = -4,
+  PLAYER3 = -3,
+  PLAYER2 = -2,
+  PLAYER1 = -1,
+  NOBUILDING = 0,
+  WOODCUTTER,
+  SAWMILL,
+  PAPERMILL,
+  CLAYPIT,
+  STONEFACTORY,
+  QUARRY,
+  OILRIG,
+  COALBURNER,
+  MINE,
+  MINT,
+  STOCKEXCHANGE,
+  WAGONFACTORY,
+  TRUCKFACTORY,
+  RAFTFACTORY,
+  ROWBOATFACTORY,
+  STEAMERFACTORY
+};
+
+enum ResearchType
+{
+  ROWING,
+  TRUCKING,
+  SHIPPING,
+  DRILLING,
+  SPECIALIZATION,
+  ENLARGEMENT,
+  NEWSHAFTS,
+  BRIGHTIDEA
+};
+
+int HexDirX(int i_x,int i_y,int i_dir);
+int HexDirY(int i_x,int i_y,int i_dir);
+int BackDir(int i_dir);
+
+#endif

@@ -1,0 +1,431 @@
+<game name="AOR" autorecursiondepth="1">
+  <state name="PlaceBidsState" desc="Game Begins. Place Secret Bids for Capital Choice Order"/>
+  <state name="ChooseCapitalState" desc="Choose Capital"/>
+  <state name="OrderOfPlayStartState" desc="Initialize Order of Play"/>
+  <state name="OrderOfPlayState" desc="Secretly Allocate Cash for Tokens/Turn Order"/>
+
+  <event name="PLAYER">
+    <var name="i_PName" type="std::string"/>
+    <var name="i_PlayerNum" type="int"/>
+  </event>
+  <event name="EPOCHSTATUS">
+    <var name="i_TurnNum" type="int"/>
+    <var name="i_CurEpoch" type="int"/>
+    <var name="i_CardsInDeck" type="int"/>
+    <var name="i_NumEpochs" type="int"/>
+  </event>
+  <event name="NUMCARDS">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_NumCards" type="int"/>
+  </event>
+  <event name="HANDCARD">
+    <var name="i_CardName" type="std::string"/>
+    <var name="i_Num" type="int"/>
+  </event>
+  <event name="CASH">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_CurCash" type="int"/>
+  </event>
+  <event name="CAPITALBID">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_Bid" type="int"/>
+  </event>
+  <event name="CAPITALBIDS">
+    <var name="i_CapitalBids" type="std::string"/>
+  </event>
+  <event name="CAPITALS">
+    <var name="i_Capitals" type="std::string"/>
+  </event>
+  <event name="PLAYERCAPITAL">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_CapitalName" type="std::string"/>
+  </event>
+  <event name="SHIP">
+    <var name="i_Capital" type="std::string"/>
+    <var name="i_ShipType" type="int"/>
+    <var name="i_ShipNum" type="int"/>
+  </event>
+  <event name="MISERY">
+    <var name="i_Capital" type="std::string"/>
+    <var name="i_MiseryIndex" type="int"/>
+  </event>
+  <event name="NUMSTOCK">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_DominationsInStock" type="int"/>
+    <var name="i_DominationsOnBoard" type="int"/>
+    <var name="i_TokensInStock" type="int"/>
+    <var name="i_TokensOnBoard" type="int"/>
+    <var name="i_ExpansionTokens" type="int"/>
+  </event>
+  <event name="DOMINANCE">
+    <var name="i_SpaceName" type="std::string"/>
+    <var name="i_OwnerCapital" type="std::string"/>
+    <var name="i_Age" type="std::string"/>
+  </event>
+  <event name="TOKEN">
+    <var name="i_SpaceName" type="std::string"/>
+    <var name="i_TokenNum" type="int"/>
+    <var name="i_OwnerCapital" type="std::string"/>
+    <var name="i_Age" type="std::string"/>
+  </event>
+  <event name="SPACEEMPTY">
+    <var name="i_SpaceName" type="std::string"/>
+  </event>
+  <event name="COMMODITYNUM">
+    <var name="i_Commodity" type="std::string"/>
+    <var name="i_OwnerCapital" type="std::string"/>
+    <var name="i_NumSpaces" type="int"/>
+    <var name="i_NumNewSpaces" type="int"/>
+  </event>
+  <event name="SURPLUSSHORTAGE">
+    <var name="i_Commodity" type="std::string"/>
+    <var name="i_State" type="std::string"/>
+  </event>
+  <event name="ADVANCESTATUS">
+    <var name="i_Capital" type="std::string"/>
+    <var name="i_Advance" type="char"/>
+    <var name="i_Status" type="std::string"/>
+    <var name="i_Cost" type="int"/>
+  </event>
+  <event name="TURNLOG">
+    <var name="i_PlayerNum" type="int"/>
+    <var name="i_Total" type="int"/>
+    <var name="i_Turn" type="int"/>
+    <var name="i_Tokens" type="int"/>
+    <var name="i_Cash" type="int"/>
+  </event>
+
+  <transition name="JOIN">
+    <cyclic state="InitialState"/>
+    <allowed> 
+      <![CDATA[
+      GetPlayers().size() < 6 && !GetPlayers().IsPlayer(i_PlayerName)
+      ]]>
+    </allowed>
+    <body>
+      GetPlayers().add(i_PlayerName);
+      BroadcastPLAYER(i_PlayerName,GetPlayers().GetPlayerId(i_PlayerName));
+      return true;
+    </body>
+  </transition>
+
+  <transition name="STARTGAME">
+    <transit from="InitialState" to="PlaceBidsState"/>
+    <allowed>
+      <![CDATA[
+        GetPlayers().size() >= 3 && GetPlayers().IsPlayer(i_PlayerName)
+      ]]>
+    </allowed>
+    <action>
+      <var name="numepochs" min="1" max="3"/>
+    </action>
+    <body>
+      <![CDATA[
+      GetCardManager().SetNumEpochs(numepochs);
+
+      size_t i;
+      for (i = 0 ; i < GetPlayers().size() ; ++ i)
+      {  
+         Player &curPlayer=GetPlayers()[i];   
+         std::string cardName = GetCardManager().DrawCard();
+	 curPlayer.AddCard(cardName);
+	 BroadcastNUMCARDS(i,1);
+	 UnicastHANDCARD(curPlayer.GetName(),cardName,0);
+	 curPlayer.SetCash(INITIALSTAKE);
+	 UnicastCASH(curPlayer.GetName(),i,INITIALSTAKE);
+	 curPlayer.SetCapitalBid(NO_BID);
+	 BroadcastCAPITALBID(i,NO_BID);
+      }      
+
+      BroadcastEPOCHSTATUS(0,1,GetCardManager().GetNumCards(),numepochs);
+      BroadcastCAPITALBIDS(GetLegalBidString(0,INITIALSTAKE));
+      return true;
+      ]]>
+     </body>
+  </transition>
+
+  <transition name="MAKECAPITALBID">
+    <cyclic state="PlaceBidsState"/>
+    <allowed>
+      GetPlayers().IsPlayer(i_PlayerName)
+    </allowed>
+    <action>
+      <var name="capitalbid" min="0" max="INITIALSTAKE"/>
+    </action>
+    <body>
+      <![CDATA[
+      size_t playerId = GetPlayers().GetPlayerId(i_PlayerName);
+      Player &curPlayer=GetPlayers()[playerId];
+      curPlayer.SetCapitalBid(capitalbid);
+      curPlayer.SetCash(INITIALSTAKE - capitalbid);
+      
+      BroadcastCAPITALBID(playerId,SECRET_BID);
+      UnicastCAPITALBID(i_PlayerName,playerId,capitalbid);
+      UnicastCASH(i_PlayerName,playerId,curPlayer.GetCash());
+
+      return true;
+      ]]>
+    </body>
+  </transition>	    
+
+  <transition name="BIDSDONE">
+    <transit from="PlaceBidsState" to="ChooseCapitalState"/>
+    <auto>
+      GetPlayers().AllBid()
+    </auto>
+    <body> 
+      <![CDATA[
+      GetPlayers().ExecuteCapitalBid();
+      PrepareCapitalChoices();
+      BroadcastCAPITALS(GetCapitalChoiceList());      
+
+
+      for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
+      {     
+        Player &curPlayer = GetPlayers()[i];
+	SendFullState(curPlayer.GetName(),i_StateName);
+      }        
+
+      return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="CHOOSECAPITAL">
+    <cyclic state="ChooseCapitalState"/>
+    <allowed> GetCapitalChooser() == GetPlayers().GetPlayerId(i_PlayerName) </allowed>
+    <action>
+      <var name="capital" type="std::string" list="GetCapitalChoiceSet()"/>
+    </action>
+    <body>
+    <![CDATA[
+      // well, if we're here, we're all legal.
+      size_t playerId = GetCapitalChooser();
+      Player &rPlayer = GetPlayers()[playerId];
+      rPlayer.SetCapital(capital);
+      BroadcastPLAYERCAPITAL(playerId,capital);
+
+      // this changes the capital choice list and CapitalChooser
+      ClearCapitalChoice(capital);
+      BroadcastCAPITALS(GetCapitalChoiceList());
+
+      BroadcastSHIP(capital,rPlayer.GetShipType(),rPlayer.GetShipGrade());
+      BroadcastMISERY(capital,rPlayer.GetMiseryIndex());
+
+      // place their home Dom Marker on the board.
+      rPlayer.DecrementDominations();
+      BroadcastNUMSTOCK(playerId,
+		        rPlayer.GetNumDominations(),
+			rPlayer.GetNumBoardDominations(),
+			rPlayer.GetNumStockTokens(),
+			rPlayer.GetNumBoardTokens(),
+			rPlayer.GetNumExpansionTokens());
+
+      GetBoardState().SetDominance(capital,capital,true);
+      GetBoardState().BroadcastSpaceInfo(*this,capital);
+      GetBoardState().BroadcastCommodityLogInfo(*this,capital,GetPlayers(),GetCapitalChooser());
+
+      return true;
+    ]]>
+    </body>
+  </transition>
+
+  <transition name="LASTCAPITAL">
+    <transit from="ChooseCapitalState" to="OrderOfPlayStartState"/>
+    <auto> 
+      GetCapitalChooser() == GetPlayers().size() - 1
+    </auto>
+    <body>
+    <![CDATA[
+      // well, if we're here, we're all legal.
+      size_t playerId = GetCapitalChooser();
+      Player &rPlayer = GetPlayers()[playerId];
+      std::string capital = *(GetCapitalChoiceSet().begin());
+
+      rPlayer.SetCapital(capital);
+      BroadcastPLAYERCAPITAL(playerId,capital);
+
+      // this changes the capital choice list and CapitalChooser
+      ClearCapitalChoice(capital);
+      BroadcastCAPITALS(GetCapitalChoiceList());
+
+      BroadcastSHIP(capital,rPlayer.GetShipType(),rPlayer.GetShipGrade());
+      BroadcastMISERY(capital,rPlayer.GetMiseryIndex());
+
+      // place their home Dom Marker on the board.
+      rPlayer.DecrementDominations();
+      BroadcastNUMSTOCK(playerId,
+		        rPlayer.GetNumDominations(),
+			rPlayer.GetNumBoardDominations(),
+			rPlayer.GetNumStockTokens(),
+			rPlayer.GetNumBoardTokens(),
+			rPlayer.GetNumExpansionTokens());
+
+      GetBoardState().SetDominance(capital,capital,true);
+      GetBoardState().BroadcastSpaceInfo(*this,capital);
+      GetBoardState().BroadcastCommodityLogInfo(*this,capital,GetPlayers(),GetCapitalChooser());
+      
+      return true;
+    ]]>
+    </body>    
+  </transition>
+
+  <transition name="INITORDEROFPLAY">
+    <transit from="OrderOfPlayStartState" to="OrderOfPlayState"/>
+    <auto>true</auto>
+    <body>
+      <![CDATA[
+      GetPlayers().ExtendTurnLog(GetCurTurn() + 1);
+      
+      size_t i;
+      for (i = 0 ; i < GetPlayers().size() ; ++i)
+      {
+        GetPlayers()[i].ClearExpansionTokens();
+	BroadcastTURNLOG(i,SECRET_BID,GetCurTurn()+1,NO_BID,NO_BID);
+	UnicastTURNLOG(GetPlayers()[i].GetName(),
+	               i,
+		       GetPlayers()[i].GetCash(),
+		       GetCurTurn()+1,
+		       NO_BID,
+		       NO_BID);
+      }	
+
+      return true;
+      ]]>
+    </body>
+  </transition>
+
+  <transition name="MAKEORDEROFPLAYBID">
+    <cyclic state="OrderOfPlayState"/>
+    <allowed>
+      GetPlayers().IsPlayer(i_PlayerName)
+    </allowed>
+    <action>
+      <var name="oopbid" 
+           min="-GetPlayers()[GetPlayers().GetPlayerId(i_PlayerName)].GetCash()" 
+           max="GetPlayers()[GetPlayers().GetPlayerId(i_PlayerName)].GetCash()"/>
+    </action>
+    <body>
+      <![CDATA[
+      size_t playerId = GetPlayers().GetPlayerId(i_PlayerName);
+      Player &curPlayer=GetPlayers()[playerId];
+      TurnLogEntry &curentry = curPlayer.GetLastTurnLogEntry();
+      curentry.SetTokens(oopbid);
+
+      BroadcastTURNLOG(playerId,SECRET_BID,GetCurTurn()+1,SECRET_BID,SECRET_BID);
+      UnicastTURNLOG(i_PlayerName,
+                     playerId,
+		     curentry.GetTotal(),
+		     GetCurTurn() + 1,
+		     curentry.GetTokens(),
+		     curentry.GetCash());
+          
+
+
+
+      return true;
+      ]]>
+    </body>
+  </transition>      
+
+  <refresh>
+    <![CDATA[
+    UnicastRESET(i_PlayerName);
+    UnicastCAPITALBIDS(i_PlayerName,GetLegalBidString(0,INITIALSTAKE));
+    size_t i;
+    for (i = 0 ; i < GetPlayers().size() ; ++i)
+    {
+        UnicastPLAYER(i_PlayerName,GetPlayers()[i].GetName(),i);
+    }
+
+    // --------- INITIAL state only gets names.
+    if (i_StateName == InitialState) return;
+
+    UnicastEPOCHSTATUS(i_PlayerName,
+                       GetCurTurn(),
+                       GetCardManager().GetCurEpoch(),
+		       GetCardManager().GetNumCards(),
+	               GetCardManager().GetNumEpochs());
+
+    for (i = 0 ; i < GetPlayers().size() ; ++i)
+    {
+        UnicastNUMCARDS(i_PlayerName,i,GetPlayers()[i].GetNumCards());
+    }
+
+    size_t playerId = GetPlayers().GetPlayerId(i_PlayerName);
+    if (playerId != NO_PLAYER)
+    {
+       const Player &curPlayer = GetPlayers()[playerId];
+       const std::vector<std::string> &cvec = curPlayer.GetHand();
+       for (i = 0 ; i < cvec.size() ; ++i)
+       {
+         UnicastHANDCARD(i_PlayerName,cvec[i],i);
+       }
+       UnicastCASH(i_PlayerName,playerId,curPlayer.GetCash());
+    }
+
+    for (i = 0 ; i < GetPlayers().size() ; ++i)
+    {
+      int cb = GetPlayers()[i].GetCapitalBid();
+      if (cb == -1)
+      {
+        UnicastCAPITALBID(i_PlayerName,i,NO_BID);
+      }
+      else if (i_StateName == PlaceBidsState && i != playerId)
+      {
+        UnicastCAPITALBID(i_PlayerName,i,SECRET_BID);
+      }
+      else
+      {
+        UnicastCAPITALBID(i_PlayerName,i,cb);
+      }
+    }
+    
+    // this is all we do if not all players have made bid yet.
+    if (i_StateName == PlaceBidsState) return;
+
+    UnicastCAPITALS(i_PlayerName,GetCapitalChoiceList());
+    for (i = 0 ; i < GetCapitalChooser() ; ++i )
+    {
+      const Player &rPlayer = GetPlayers()[i];
+      UnicastPLAYERCAPITAL(i_PlayerName,i,rPlayer.GetCapital());
+      UnicastSHIP(i_PlayerName,rPlayer.GetCapital(),
+                  rPlayer.GetShipType(),rPlayer.GetShipGrade());
+      UnicastMISERY(i_PlayerName,rPlayer.GetCapital(),rPlayer.GetMiseryIndex());
+
+      UnicastNUMSTOCK(i_PlayerName,i,
+		      rPlayer.GetNumDominations(),
+		      rPlayer.GetNumBoardDominations(),
+		      rPlayer.GetNumStockTokens(),
+		      rPlayer.GetNumBoardTokens(),
+		      rPlayer.GetNumExpansionTokens());
+
+      const std::vector<TurnLogEntry> &turnlog = rPlayer.GetTurnLog();
+      for (size_t j = 0 ; j < turnlog.size() ; ++j)
+      {
+        int total;
+	int tokens;
+	int cash;
+
+	turnlog[j].GetObservedInfo(i==playerId,total,tokens,cash);
+        UnicastTURNLOG(i_PlayerName,
+	               i,
+	               total,
+		       turnlog[j].GetTurn(),
+		       tokens,
+		       cash);
+      }
+
+    }
+
+    // board
+    GetBoardState().SendAllSpaceInfo(*this,i_PlayerName);
+    GetBoardState().SendAllCommodityLogInfo(*this,i_PlayerName,GetPlayers(),
+                                            GetCapitalChooser(),
+                                            GetAORSet().GetCommodityInfo());
+
+    
+
+    ]]>
+  </refresh>
+</game>

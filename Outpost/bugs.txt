@@ -1,0 +1,173 @@
+bugs/needed features:
+
+* player tabs aren't full window size at start.
+* reduce width of player displays
+   -- shrink identical factories to a single column?
+   -- card partial overlaps?
+   -- look into JLayeredPane (seems to work)
+   -- partial work done in PlayerWindow -- how to convince layout managers
+      to prefer current window size in scrollable window?
+* option of # of turns of production first turn
+* optional rule on highly limited mannables 
+   -- n-2
+   -- n/2
+* purchase actions show total cost and actual amount checked
+* Select all becomes unselect all when all are selected
+* Easier Mega Interface
+* auto-pass-out if purchase price is above maximum possible
+* early commit for final manning.
+* option: each Data Library zeros one research card's weight.
+   -- second DL -- unlimited research card zero weight
+   -- each Research Factory one research card zero weight
+   -- alternative form:
+      -- one DL -- one research card zero weight
+      -- two DL -- one research card per manned research factory zero weight
+      -- three DL -- all research cards zero weight
+* overbidding detection
+* move hand info text up next to items so that hand can be further left
+* bring-to-front of useful windows
+* Error Footer not in new window?
+* document protocol
+
+
++!* altermanning not generating numpurchasable event (due to manning mannable)
++!* exception thrown on applet shutdown
++!* use insets to determine actual window sizes needed.
++!* item stacks not getting updated during Supply Ship phase
++!* Default Game HTML page shouldn't have name and password
++!* Window title for Action Panels should include GUI name
++!* optional border for panels (use on Player) (LineBorder,setBorder)
++!* make sure srand is called (before starting each game)
++!* alter LEGALACTION to include human-readable text 
++!* get rid of SELF
++!* display of number of men/robots actually owned
++!* PURCHASEBID should display actual purchase price.
++!* select button highlights card being chosen.
++!* highlight how much needs to be discarded.
++!* discard size needs to be aware of zero size research and zero size micro
++!* tool for exporting correct IP address to all needed files
++!* BIDITEM causes all buttons to appear
++!* DONEMANNING below ALTERMANNING
++!* html page says Chien and not Albert
++!* label for action not necessary (is duplicate of button label)
++!* PURCHASEBID does not send SUPPLYSHIP change
++!* PURCHASEBID does not send PLAYERPURCHASEINFO
++!* ALTERMANNING does not alter VP (PlayerState)
++!* Turn order is 1-based, not 0-based, at least for display.
+
+Beta Day 1:
++!* private messages don't local echo
++!* players, in turn order
+    * vp info
+    * purchase state, colored
+    * bid state, colored
+    * high bid
+    * has purchased
+    * win state and playerok, too
++!* alter player display:
+    * move name up and put all other items below
+    * remove VP,PSTATE,BSTATE,Purchased,HighBid
+    * move Hand Limit to resource display
+    * move win display to turn order display
++!* add estimated value calculation to IAM player resource display
++!* one-pixel scroll with scrollwheel
++!* purchase price for all factories
++!* only active player can get bid buttons
++!* no spare men/robots -- grey icon
++!* new empty rooms have save games appearing.
+  -- specifically, empty SAVEGAMES event not sent when player
+     moves to empty room
++!* All players in room display should list current room.
++!* add word 'Apply' to basic and expert game options
++!* mechanism to un-join a game.
++!* window placement 
+    -- windows now take x and y, if prefixed with "-" will use right/bottom relative to
+       screen width and height, instead of left/top relative to screen origin.
++!* no changes -- alter manning greyed
++!* new state resets non-changing actions 
++!* tabbed window instead of small windows.
++! option:all new draws displayed only at end of draw phase. (blind mega)
+   -- backs/megas are visible to drawer and other players, but
+      not fronts
++!* Debug Window <- tabs
++!* pass out can be done by any active player not high bid.
++!* make most recent action tab autoselected
++!* display last purchase price
++!* default robot behaviour  (1 gives you unlimited)
++!* loose item stocks (4-10 stacks have +1 item to start, needed for 2player)
++!* display bidding history
++!* IAM Players' Estimated Value is too visually drawing to be helpful
++!* fix Robot Card verbiage
++!* add buffer width to Player Purchase in Supply ship
++|* closing window behaviour
+    -- windows now are unclosable.
++!* leaving room didn't cause Action tab to be removed.
++!* message causes menubar icon to flash
+    -- tabbed window tabs flash
++!* make action tab flash for certain actions.
++!* has purchased item clears at end of turn.
+
+
+Beta Day 2:
++!* explore compiling client to Java 1.4 for greater compatability.
+    -- works except for access to tab Components in Tabbed Pane
++!* Paying bid state -- purple
++!* Item being bid on in bid and raise bid action
++!* select all for resources
++!* center of board -- estimated resources
++!* expected production -- also center of board
++!* turn order for win?
++!* what resources did players spend?
++!* really would like to be able to unman mannable.
++!* Make workable Room Gui
+
+Beta Day Mel:
++!* state at bottom of action display
++!* Message Window Select Player not working
++!* Max # of cards -> Hand Size/Limit
++!* Bid History -> Last Bid
++!* Bid 1, Bid 0 to just 'Bid'
++!* Server Errors to some more visible place (modal dialog)
++!* Drag Man/Robot move hot-spot to center
++!* End of Game: VP(Item) -> VP
++!* more visible notification of server drop
++!* individual error messages still say 'Server Error'
++!* purchase history has spurious red outline
++!* have room display indicate where player is.
++!* Action resets IM text box
++!* now completing message does _not_ reset IM text box
++!* deck reference (resource deck info in tab)
++!* turn order display in own window -- player window, actually
++!* change Player Display to a tabbed display. 
++!* move remaining center of table items to player window
++!* found case with 4 players where server gave player 0 2x initial 
+    resources, and none to player 3. (due to unjoin?) -- yup..forgot to 
+    shrink turn order
++!* add test for unjoin bugfix
++!* water mulligan isn't allowed during bid phase
++!* 'you need more to buy that' and 'not a legal move' both come up
++!* auto-utilize men/robots
++!* bug in detecting mulligan water -- doesn't exclude initial factories.
++!* click on money, not on check box
++!* Turn Order tab -- display for phase and allowed draws 
++!* auto-send manning changes
++!* default tab for player display is players own tab if there is one.
++!* IM text panel doesn't word wrap
++!* use HTML to lay out Turn Order display
++!* rip-off tabs for tabs
++!* ability to log out other instance of player
++!* # of strikes until no ship fill
+
+
+
+!* water mulligan doesn't report a SPEND
+
+
+
+
+-* duplicate events showing up? (not a bug...each GUI gets each event)
+-* why is altermanning greyed out when not full load? (not reproduced)
+-* Server Error -> errors (obsoleted by making errors dialogs)
+-* configurable: draws/discards in display (not configurable, but hidden in tab)
+
+

@@ -1,0 +1,4 @@
+FileUtilities.o: FileUtilities.cpp FileUtilities.hpp
+StringUtilities.o: StringUtilities.cpp StringUtilities.hpp
+SystemSpecificDynamicLoading.o: SystemSpecificDynamicLoading.cpp \
+ SystemSpecificDynamicLoading.hpp

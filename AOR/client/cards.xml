@@ -1,0 +1,91 @@
+
+<define name="onecard">
+  <image image="AoR/Cards/CARDNAME.jpg" hidden="y">
+    <eventhandler>
+      <showhide cardname="CARDNAME"/>
+    </eventhandler>
+  </image>
+</define>
+
+<define name="anyonecard">
+  <panel>
+    <named name="onecard" CARDNAME="Stone_1" />
+    <named name="onecard" CARDNAME="Wool_1" />
+    <named name="onecard" CARDNAME="Timber_1" />
+    <named name="onecard" CARDNAME="ClothWine_1" />
+    <named name="onecard" CARDNAME="Metal_1" />
+    <named name="onecard" CARDNAME="Fur_1" />
+    <named name="onecard" CARDNAME="Silk_1" />
+    <named name="onecard" CARDNAME="Spice_1" />
+    <named name="onecard" CARDNAME="IvoryGold_1" />
+    <named name="onecard" CARDNAME="Timber_2" />
+    <named name="onecard" CARDNAME="Grain_2" />
+    <named name="onecard" CARDNAME="Cloth_2" />
+    <named name="onecard" CARDNAME="Wine_2" />
+    <named name="onecard" CARDNAME="Metal_2" />
+    <named name="onecard" CARDNAME="Silk_2" />
+    <named name="onecard" CARDNAME="Spice_2" />
+    <named name="onecard" CARDNAME="Cloth_3" />
+    <named name="onecard" CARDNAME="Wine_3" />
+    <named name="onecard" CARDNAME="Metal_3" />
+    <named name="onecard" CARDNAME="Fur_3" />
+    <named name="onecard" CARDNAME="Silk_3" />
+    <named name="onecard" CARDNAME="Spice_3" />
+    <named name="onecard" CARDNAME="Gold_3" />
+    <named name="onecard" CARDNAME="StBenedict" />
+    <named name="onecard" CARDNAME="DionysusExiguus" />
+    <named name="onecard" CARDNAME="Charlemagne" />
+    <named name="onecard" CARDNAME="WalterthePenniless" />
+    <named name="onecard" CARDNAME="RashidadDin" />
+    <named name="onecard" CARDNAME="MarcoPolo" />
+    <named name="onecard" CARDNAME="PrinceHenry" />
+    <named name="onecard" CARDNAME="JohannGutenberg" />
+    <named name="onecard" CARDNAME="WilliamCaxton" />
+    <named name="onecard" CARDNAME="IbnMajid" />
+    <named name="onecard" CARDNAME="ChristopherColumbus" />
+    <named name="onecard" CARDNAME="DesideriusErasmus" />
+    <named name="onecard" CARDNAME="NicolausCopernicus" />
+    <named name="onecard" CARDNAME="LeonardoDaVinci" />
+    <named name="onecard" CARDNAME="BartolomedeLasCasas" />
+    <named name="onecard" CARDNAME="AndreasVesalius" />
+    <named name="onecard" CARDNAME="GalileoGalilei" />
+    <named name="onecard" CARDNAME="HenryOldenburg" />
+    <named name="onecard" CARDNAME="SirIsaacNewton" />
+    <named name="onecard" CARDNAME="AlchemistsGold" />
+    <named name="onecard" CARDNAME="MysticismAbounds" />
+    <named name="onecard" CARDNAME="TheCrusades" />
+    <named name="onecard" CARDNAME="EnlightenedRuler" />
+    <named name="onecard" CARDNAME="War" />
+    <named name="onecard" CARDNAME="PapalDecree" />
+    <named name="onecard" CARDNAME="RevolutionaryUprisings" />
+    <named name="onecard" CARDNAME="Famine" />
+    <named name="onecard" CARDNAME="Rebellion" />
+    <named name="onecard" CARDNAME="PiratesVikings" />
+    <named name="onecard" CARDNAME="CivilWar" />
+    <named name="onecard" CARDNAME="Armor" />
+    <named name="onecard" CARDNAME="Stirrups" />
+    <named name="onecard" CARDNAME="ReligiousStrife" />
+    <named name="onecard" CARDNAME="BlackDeath" />
+    <named name="onecard" CARDNAME="Gunpowder" />
+    <named name="onecard" CARDNAME="LongBow" />
+    <named name="onecard" CARDNAME="MongolArmies" />
+  </panel>
+</define>
+
+<window title="Player Hand" width="1080" height="420">
+  <panel layout="hbox">
+    <eventhandler>
+      <passif eventname="HANDCARD"/>
+    </eventhandler>
+    <forupto varname="INDEX" low="0" high="63">
+      <panel hidden="y">
+        <eventhandler>
+          <passif cardnum="INDEX"/>
+	  <showif cardnum="INDEX"/>
+	  <hideif cardnum="-"/>
+        </eventhandler>
+        <named name="anyonecard"/>
+      </panel>
+    </forupto>
+  </panel>
+</window>

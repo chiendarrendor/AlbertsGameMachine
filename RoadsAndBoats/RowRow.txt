@@ -1,0 +1,17 @@
+Name:
+RowRowRow Your Boat
+.end.
+NumPlayers:
+4
+.end.
+Board:
+. w w w d w w w
+ f p f p14 p25 f p f
+. p s m w m s p
+ p f m f25 f14 m f p
+. p m f24 p f15 m p
+ p f m f14 f25 m f p
+. p s m w m s p
+ f p f p25 p14 f p f
+. w w w d w w w
+.end.

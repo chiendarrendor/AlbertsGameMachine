@@ -1,0 +1,51 @@
+<define name="Item">
+  <panel>
+    <eventhandler>
+      <passif eventname="ITEMSTOCK" ItemNumber="dNUMd"/>
+      <passif eventname="OPTIONS"/>
+    </eventhandler>
+    <javaclass classname="ItemCard" x="0" y="0" cardnum="dNUMd"/>
+    <text x="38" y="88">
+      <replace from="rNUMr" eventvar="ItemCount" initial="0"/>
+      rNUMr
+    </text>
+  </panel>
+</define>
+
+<window title="Players" height="930" x="-0">
+  <text>
+    <replace from="rNUMr" eventvar="TurnNumber" initial="0"/>
+    Turn Number: rNUMr
+  </text>
+
+  <panel layout="hbox" y="15">
+    <forupto varname="vNUMv" low="1" high="7">
+      <named name="Item" dNUMd="vNUMv"/>
+    </forupto>
+  </panel>
+
+  <panel layout="hbox" y="115">
+    <forupto varname="vNUMv" low="8" high="13">
+      <named name="Item" dNUMd="vNUMv"/>
+    </forupto>
+  </panel>
+
+  <panel layout="hbox" y="230">
+    <text>
+      Supply Ship:
+    </text>
+    <javaclass classname="ShipList"/>
+  </panel>
+
+  <javaclass classname="TurnOrder" y="365"/>
+
+  <javaclass classname="PlayerDisplay" y="560"/>
+
+</window>
+
+<!--
+<window title="New Players" height="1000" x="-0" layout="border">
+  <javaclass classname="PlayerWindow"/>
+</window>
+-->
+

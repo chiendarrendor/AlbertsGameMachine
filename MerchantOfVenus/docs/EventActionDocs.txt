@@ -1,0 +1,238 @@
+Merchant of Venus Events:
+
+PLAYER -- sent when a player joins the game
+	name -- user name
+	id -- numeric player id (_not_ turn order)
+
+OPTIONS -- sent when a player alters the game play options
+	winmoney -- how much money does it take for a player to win?
+
+PLAYEROKSTARTUP -- set when a player says he likes the options and is ok to start
+	id -- numeric player id
+	bool -- 1 or 0 (should always be 1)
+
+TURNORDER -- sent when the game starts and determines player turn order
+	turnorder -- string contining player ids in turn order (i.e. "352410" means
+                     player 3 goes first, then 5, etc.)
+
+PLAYERMONEY -- sent whenever a player's worth changes
+	id -- numeric player id
+	money -- amount of money they have
+	barter -- amount of barter they have
+	worth -- net worth (money + deeds)
+
+PLAYERRACE -- sent when the game starts and each player is given a race
+	id -- numeric player id
+	race -- string race id (starred races are the only race ids allowed for players)
+		"1a" Nillis
+                "1b" Volois
+		"2" Graw
+		"3"   Nik *
+		"4a" Dell *
+		"4b" Human *
+		"5" Shenna
+		"6" Yxklyx
+		"7a" Zum
+		"7b" EeepEeep *
+		"8"  Whynom *
+		"9a" Cholos
+		"9b" Wollow
+		"10" Qossuth *
+
+ADDTOPLAYER -- sent whenever a player gets a new item
+	id -- numeric player id
+	token -- string containing info about token:
+		contents are items separated by '|' characters:
+		* name
+		* size class: ship,good,equip,drive,fare,relic,deed,iou,demand
+		* buy price
+		* sell price (trade-in for a ship, dropoff for a fare, bonus for a demand)
+		* sell type: cash,barter, none (what profit does player get when they sell)
+		* selldestination: cup,culture,nowhere (where does token go when it is sold)
+		* isfactorygood: fg,notfg (how to determine if a good is a factory good)
+		* isunlimited: unlimited,limited (does buying it make it disappear)
+		* buyers: c1?c2?c3 (identifiers of races that will buy this item)
+		* source (singular race id for where this token goes when drawn from the cup)
+		* deedtype: notdeed,factory,spaceport
+		* defensevalue (for shields)
+		* attackvalue (for lasers and nova balls)
+		* isdisposable: disposable, resuable (disposable weapons are discarded on use)
+		* skipcolors: Y and/or R (i.e YR is a combo drive)
+		* speed -- number of dice to roll for a ship
+		* holdcount -- size of a ship's holds (doubled from original rules)
+
+SUBTRACTFROMPLAYER -- sent whenever a player gives up an item
+	id
+	token
+
+ADDTOTRADEBASE -- sent whenever an item is added to a trade base
+	race id -- identifier of trade base
+	token
+
+SUBTRACTFROMTRADEBASE -- sent whenever an item is removed from a trade base
+	race id
+	token
+
+SOLARSYSTEMPRIVACY -- sent whenever anyone discovers something about a solar system's race
+	solar system name
+	secrecy -- 'secret string':
+		if 'public' everyone knows about the solar system
+		otherwise, is a string containing no more than # of players '0' and '1',
+		where a '1' in the nth position means that player knows the race of this
+		solar system, and a 0 means they do not.  if the string is shorter than
+		the number of players, all missing charaters are '0'
+
+BASELOCATION -- sent to those individuals who know the race of a solar system
+	solar system name
+	race id
+
+QBOXPRIVACY -- sent whenever anyone discovers something about a qbox
+	space name
+	secrecy (identical to solar system secret string)
+
+QBOXCONTENTS -- sent to those players who know the identity of a qbox space
+	(QBOXCONTENTS is also sent when a player buys a spaceport deed to report the
+		fact that there is now a port where an empty space was)
+	space name
+	contents -- qbox contents string: one of the following:
+		Telegate gate-number
+		Station		    -- for "Open Port"
+		Station player-id   -- for deeded spaceports
+		Penalty B/Y/R cost
+		Asteroid	    -- when the relic is removed, this contents will be reported
+		Asteroid relic name
+
+PLAYERLOCATION -- sent whenever a player's location changes
+	player-id
+	space-name
+
+SWITCHABLES -- sent only to the player who is starting their turn, if they have a choice about
+		any of the items they own being on or off
+	switchablestring -- a dash-separated list of items the player can choose from:
+		YD -- yellow drive
+		RD -- red drive
+		CD -- combined drive
+		AP -- auto pilot
+		JS -- Jump Start
+		GL -- Gate Lock
+		(i.e "RD-AP" means a player owns a red drive and Auto Pilot, and needs to
+			specify whether each one is on or off)
+
+SELECTEDSWITCHABLES -- sent to all players when a player makes their choice of switchables
+	player-id
+	switchablestring -- same format as above
+
+DESTINATION -- sent to a player when a player has a choice about the next move step
+	cur space penalty (applied if player moves, or is first and player does _not_ move)
+	is first (1 or 0, depending on whether this is the player's first step of the move)
+	destinations -- a string representing the next steps the player can make, each
+			separated by a '/'.
+			each destination is a block of three or four items, separated by '!':
+			* space name
+			* 'jump' (telegate) or 'walk'
+			* movement points used
+			* pilot numbers, if any, that can be chosen to go this direction
+
+		-- some special cases:
+			if it is the first step and the player has not yet seen their dice roll,
+			the destinations list will report all possible destinations even if they
+			are ultimately infeasible; an error will be generated if the dice roll
+			does not allow that first step.
+		
+			if the player enters an unknown QBOX, movement points used will be
+			reported as '1' even if the space ends up being free to enter.
+ 			movement will be correctly processsed in this case once the 
+			QBOX is made public.
+
+DICE -- sent to all players once the current player has made their first step.
+	dice string -- a string of n characters 1-6, where n is the number of dice
+			their ship lets them roll
+
+MPLEFT -- sent to all players every time the player moves a step to inform them of how
+		many movement points the player has left
+	mpleft -- integer
+
+PLAYERWINS -- sent at the end of the game when a player wins
+	player id
+
+--------------------------------------------------------
+
+JOIN sent to allow the given person to become a player in the game
+
+UNJOIN sent to allow the given person to leave the game (at the beginning)
+
+OPTIONS sent to change the win condition of the game
+	var:win money 
+
+VALDIATESETUP any player may send this to cause the addition of players and alteration of
+		options to cease 
+
+DONTLIKEOPTIONS any player may send this in response to VALIDATESETUP to allow further
+		changes of player set and options
+
+LIKEOPTIONS any player may send this to ok the current set of players and options:
+		the game will start when all players send this after a VALIDATESETUP
+
+SELECTSWITCHABLES --sent in response to a 'SWITCHABLES' event
+	switchablestring -- a string in switchable format, of the subset of switchables						in the SWITCHABLES event that the player wants on this turn
+
+ENDMOVE during movement, if a player may stop his movement on a current space, this
+	action becomes legal.  This action will occur automatically if the player runs
+	out of movement points or out of legal destinations
+
+SELECTDESTINATION sent in response to a DESTINATION event, this allows the player to choose
+		their next space and whether it is a jump or not (this will be part of the
+		data sent by the DESTINATION event)
+	dest
+	is jump
+
+MULLIGAN -- if a player has the Mulligan Gear, then right after they have selected
+		their first destination for the move and their dice are revealed,
+		they may send this message for their mulligan that turn. 
+	numtoreroll -- the value of one of the dice they rolled so that it can be rerolled
+
+SELECTPILOTNUMBER -- this action will be made legal if the next destination they chose
+		has more than one available pilot number.
+	pilotnumber
+
+------------ trade phase actions
+
+GETRELIC -- will be legal if the player ends their turn on an asteroid with a relic
+		send this action to pick up the relic
+
+REDEEMIOU -- will be legal if the player ends their turn on a city or station
+		send this action to redeem the IOU for this solar system's race
+
+TRADEINSHIP -- will be legal if the player ends their turn on a city or station,
+		and has both a Buy and Sell remaining to them
+	ship-encoding -- description of ship token as per above
+
+BUY -- will be legal if the player ends their turn on a city or station and has
+		a buy remaining
+	item -- decription of token as per above
+
+PICKUP -- will be legal if the player ends their turn on a city or station
+		(pickups are only for fares)
+	fare -- description of fare token as per above
+
+
+DROPOFF -- will be legal if the player ends their turn on a city or station
+		(dropoff is only for redeeming a fare for their value)
+	fare -- description of fare token as per above
+
+
+JETTISON -- will be legal if the player ends their turn on a city or station
+		(jettison allows a player to remove an item from their ship
+		even if they do not get paid for it)
+	item -- description of token as per above
+
+SELL -- will be legal if the player ends their turn on a city or station and has
+		a sell remaining to them
+	item -- description of item to sell
+
+ENDTURN -- will be legal if the player ends their turn on a city, station, or asteroid
+		will occur automatically if the player is in space
+
+
+
+ 

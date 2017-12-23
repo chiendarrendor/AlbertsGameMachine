@@ -1,0 +1,40 @@
+attributes of spaces:
+	name: <something useful>
+
+	if name is of the form <stuff>_loop_<n>  where <n> is a number, i.e. WTS_loop_7,
+	adjacency is implied to <stuff>_loop_<n-1> and <stuff>_loop_<n+1> (and between <stuff>_loop_1 and 
+	<stuff>_loop_<max> ... is an error if counting does not start from 1, and go incrementally upward
+	from there, skipping no numbers
+	
+	
+	solarsystem: <name> 
+		ishabitable="y" (if it has a culture box)
+		inhabited="y" (will only be true for galactic base)
+	line name= <something useful>
+		<begin name="">
+		<space ...> 
+		<end name="">
+	
+
+
+	type: dot,asteroid,navcircle,qbox,penalty,city,station
+
+	DOT, PENALTY: color="yellow", color="red" (defaults to 'blue')
+	NAVCIRCLE,DOT: optional orbit="<name>" (makes it an 'orbit box')
+	PENALTY: cost="20"
+
+	<adjacent dest="other space name" 
+		flyable="y" -- use only between cities on the same planet (Air Foil relic)
+		pnumbers="3,4" -- use only for nav circles
+
+
+
+<board>
+	<solarsystem name="Jungle World" ishabitable="y">
+		<space name="jw_city1" type="city">
+			<adjacent dest="jw_city2" flyable="y"/>
+			<adjacent dest="jw_o1"/>
+		</space>
+	</solarsystem>
+</board>
+

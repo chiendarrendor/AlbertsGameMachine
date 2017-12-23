@@ -1,0 +1,279 @@
+OpenZorz!  Client Documentation
+
+The OpenZorz! client is a Java applet that is designed to allow
+a user to connect to the OpenZorz! server and play any of the games
+installed there.   When a user enters a room that contains a game,
+the server will send a URL to two entities: the first is a location
+of the Configuration XML document for that particular game, and the other
+is a directory.   Any image, sound, or java class referred to in the
+Configuration XML document should be placed in the specified directory.
+The name of the file and the location of the game directory are configured
+in the server.
+
+The communication between the client and server is implemented in terms of 
+messages, always prefixed by the message's name, and containing a fixed
+number of fields, or variables, for example
+
+PLAYERMOVE fromspace tospace
+
+A message from the server to the client is called an 'Event', and a message
+from the client to the server, generally caused by the player making some
+kind of move in the game, is called an 'Action.'
+
+The game XML document specifies three primary entities:  events, actions,
+and windows.  Event entities define by name the events we expect
+to get from the server, and name the fields in each event.  Action entities
+define the actions we expect to return to the server, and (by default) 
+provide an item in the '<game> Action' tab in the tabbed window allowing
+a user to execute that action.  The third item is a GUI pane, in two varieties;
+stand-alone windows, and additional tear-awayable tabs in the tabbed window.
+
+The language provides a rich variety of gui objects that can be
+placed inside the GUI panes, as well as a mechanism to alter an
+object's visibility/presence, and contents by responding to incoming
+events.   If this facility is not enough, an interface is available
+to place arbitrary Java code within the GUI panes and have that code
+both respond to events and to send actions, as well as to create
+synthetic events that can be used to communicate between GUI objects.
+
+Language:
+
+All XML tags described below must be placed within the 'gameboard'
+root tag, thus:
+
+<? xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+.
+.
+.
+</gameboard>
+
+The set of tags that are allowed within 'gameboard' are as follows:
+
+Event definition: <event>
+GUI pane definition: <tab> and <window>
+Action definition: <actions>
+GUI 'subroutines' and 'loops': <define>
+
+Event definition:
+
+<event name="CURTURN">
+	<var name="TurnNumber"/>
+</event>
+
+One event tag must appear in the XML for every event the server-side
+game code will send, with the correct number of arguments.  The client
+will produce errors for unrecognized events.
+
+The primary use of these is to provide names for the data so that
+event handlers (see below) can refer to them.  Note:  two
+different events can contain the same name for a var, and event handlers
+will not distinguish them automatically;  if such distinction is required,
+the programmer should either take care to uniquely name all their vars,
+or to put into their event handlers additional constructs to limit
+triggering to a particular event name, as well as to the event's var.
+
+The following events are predefined:
+	NEWSTATE statename 
+		-- is sent whenever a state transition of the game is executed
+		   and the game enters a user-actionable state 
+		   (even if the state transition is cyclic)
+
+	LEGALACTION actionname
+		-- is sent right after NEWSTATE, for every action this
+		   user can do from the current state
+	RESET
+		-- if this action is recieved, the gui should return to
+		   its initial state. By and large, the GUI items
+		   handle this automatically.
+	MESSAGE messagetext
+		-- another user sent this user a message.  One of
+		   the tabbed windows displays incoming messages, but
+		   the game's GUI objects could respond to them as well.
+	ERROR errortext
+		-- sent by the server on an error condition; this causes
+		   the gui to pop up a dialog box with the error text in it,
+		   but the game's GUI objects could respond to this as well.
+
+In addition, whenever an event comes in, the eventless variable 'eventname' 
+is automatically set to the name of the event, allowing the progammer to
+trigger event handling on particular events as well as their vars.
+
+GUI Pane definition: <window> and <tab>
+
+These two tags create new GUI 'Panes' (top level locations for other GUI objects).
+The only difference between the two is that 'window' creates a free-standing
+new window, while 'tab' creates a new tab in the tabbed window. (However,
+this distinction is further blurred by the fact that any tab in the tabbed
+window can be 'torn off' by the user and made into a separate window)
+
+Both window and tab require the attribute 'title=' which gives the tab/window 
+its name.   Both window and tab allow the attribute 'layout=' which
+will specify the layout manager, defaulting to 'lock' layout.
+
+The Layout Manager is a Java GUI entity that is responsible for how the 
+GUI components in the panel are laid out relative to each other and to
+the edges of the panel.  The allowed values are 
+
+	'lock' -- a proprietary Layout Manager that fixes the x and y position of 		each of its children (useful for placing components on a fixed background
+	image, for example).  
+	'hbox' a BoxLayout, horizontal orientation.  Will put all the sub-
+		components in a row.
+	'vbox' a BoxLayout, vertical orientation.
+	'flow' similar to hbox, but if it runs out of space, it will make 
+		a new row.
+	'border' -- for internal use only, since there is no interface
+		to allow specification of the border positions.
+
+Window has an additional set of optional attributes:
+	hidden -- if set to 'y', the window will start out not visible
+		(but can be made so later)
+	backimage -- the name of an image file (in the directory URL above)
+		that will always be drawn first when the window is redrawn
+	width -- the inital width of the window, in pixels
+	height -- the initial height of the window, in pixels
+	x -- the x location of the window on the screen
+	  (can be negative, representing an offset from the right side of the
+	  screen)
+	y -- y location of the window (may also be negative, with analogous 
+	  effects
+
+Both windows and tabs may contain any or all of the following items, which 
+by and large represent GUI elements that will be laid out in the container
+according to the specified layout manager:
+Display Nodes:
+	image 
+	text
+	panel
+Action Nodes:
+	textbox
+	checkbox
+	fixedselection
+	varselection
+	minmaxvarselection
+	fixedspinner
+	varspinner	
+	button
+Intelligent Nodes:
+	javaclass
+
+In addition, both windows and tabs may have an event handler, described
+below in 'Event Handling'.
+
+Furthermore, both windows and tabs may include the subroutine/loop constructs
+'named', 'forupto' and 'foreach', described below in 'Subroutines and loops'.
+
+GUI Components:
+All GUI components have three optional attributes:
+	hidden=  -- if set to 'y', the component starts invisible 
+			(and returns to invisible on reset)
+	x,y -- x and y coordinates of upper left of component, if parent
+		panel is a Lock Layout.
+Furthermore, all GUI components may have an Event Handler object that
+will affect their behavior.
+
+image
+	required: image=<file name>
+	renders the given image file as a GUI component
+
+text
+	The text in the body of this tag will be rendered.  This can
+include arbitrary HTML code, including tables and font alterations.
+If you put HTML code inside, you must protect it with a CDATA block
+to prevent erroneous parsing as XML.
+
+the text tag, as well as containing a possible event handler, may also
+contain one or more 'replace' tags of the form:
+<replace from="oldText" eventvar="EvVar" initial="A"/>
+The behavior of this will be to, initially and upon reset, to search for
+all strings 'oldText' in the body of the text node and replace them with
+'A' (the initial string). Then, whenever an event with a var 'EvVar' 
+triggers here at text (see below for event handling), 'oldText' will be
+replaced with the value of the event variable.
+
+panel
+	optional: 
+		layout= (like tab/window layout)
+		border= -- the name or 24-bit code for a color of the border
+
+Putting panels inside of windows or other panels allows for a greater
+degree of control into where components are rendered, and also represent
+logical containers into which only certain events may flow (see
+Event Handling)
+
+
+Action Nodes:
+	All Action Nodes, regardless of their location, are associated
+with a given Action Var Name (in the list of actions).  If more than
+one Action shares the same Var Name, an action node associated with
+that var name will affect all Actions with that var name.
+
+textbox
+	required: varname
+	optional size
+makes a text box.  typing into the text box sets the given var.
+
+checkbox
+	required: varname
+makes a check box.  sets the var to '0' if unchecked, '1' if checkedb
+
+fixedselection
+	required: varname
+	required: list="x,y,z"
+makes a pull-down selector with the items in the list. sets the var
+to the list item (i.e. 'x')
+
+varselection
+	required: varname
+	required: listvar -- an event variable containing a comma-separated list
+makes a pull-down selector with the items in the list in the most recent
+event containing listvar.  sets the var to the selected list item
+
+minmaxvarselection
+	required: varname
+	required: min
+	required: max
+makes a pull-down selector with all integer values between min and max inclusive.
+sets the var to the selected integer.
+
+fixedspinner
+	required: varname
+	required: list
+identical to fixedselection, except it uses a spinner (up and down buttons
+to select a value instead of popping down a menu)
+
+varspinner (analogous to varselection and fixedspinner)
+
+button
+	required: varname
+	required: varvalue
+	optional: image
+makes a button, with text of the body of the button tag (including use
+of 'replace' sub-tags like in 'text'), or, if image is present,
+pasting the given image on the button.  When button in pressed, gives
+the given var the given value.
+	
+	
+
+
+The javaclass node is a mechanism for creating an arbitrary GUI component
+and having it work with the rest of this system. like the other tags,
+the javaclass tag has optional 'x','y', and 'hidden' attributes, and
+may optionally contain a 'eventhandler' tag.  In addition, it
+requires a 'classname' attribute.  Any other attributes are passed
+to the java class.
+
+The java class declared in the tag must be present in the URL directory
+described above, must implement 'UserDefinedInterface', 
+and must have a constructor that takes the following
+arguments:
+
+HashMap<String,String> -- contains all the other attributes in the javaclass tag
+String		       -- URL of the URL directory (for loading images,etc)
+JPanel		       -- a new JPanel is created, correctly placed, and handed
+			  in.  the Java code may change its Layout Manager
+			  or use it as is (Border Layout Manager by default)
+ActionTransferManager  -- 
+
+
+

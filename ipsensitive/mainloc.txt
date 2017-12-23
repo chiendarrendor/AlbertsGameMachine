@@ -1,0 +1,2 @@
+http://#IPADDRESS#/client/ROOMGUI
+rooms.xml

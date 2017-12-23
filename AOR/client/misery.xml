@@ -1,0 +1,27 @@
+
+<define name="miseryunit">
+  <panel>
+    <eventhandler>
+      <passif capital="CAPITAL"/>
+    </eventhandler>
+    <image image="AoR/Icons/CAPITAL_Old_Token.jpg" x="XPOS" hidden="y">
+      <eventhandler>
+        <showhide miserynum="NUM"/>
+      </eventhandler>
+    </image>
+  </panel>
+</define> 
+
+<define name="misery">
+  <panel>
+    <eventhandler>
+      <passif eventname="MISERY"/>
+    </eventhandler>
+    <named name="miseryunit" CAPITAL="Paris"      XPOS="0"  />
+    <named name="miseryunit" CAPITAL="London"     XPOS="8"  />
+    <named name="miseryunit" CAPITAL="Hamburg"    XPOS="16" />
+    <named name="miseryunit" CAPITAL="Barcelona"  XPOS="24" />
+    <named name="miseryunit" CAPITAL="Venice"     XPOS="32" />
+    <named name="miseryunit" CAPITAL="Genoa"      XPOS="40" />
+  </panel>
+</define>

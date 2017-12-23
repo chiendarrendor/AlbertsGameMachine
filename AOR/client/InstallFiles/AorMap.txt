@@ -1,0 +1,244 @@
+# Area n:
+# Name,Type,<slash-separated Adjacent List>
+# types are Land,Sat,Coast,Sea,Ocean
+# Land types will have two additional arguments:
+# <Market Size> <slash-separated Commodity List>
+# Coast spaces will be named <prefix>[:<optional specifier>]
+# a Coast Space with the same name prefix as a Land or Sat
+# Space will be considered adjacent.
+# Multiple Coast Spaces can exist for a given Land or Sat space,
+# described with different specifiers.
+Area 0
+North Sea,Sea,Shetland Islands/Bergen/Kongsberg/Copenhagen/Hamburg/Amsterdam/Bruges/London/York/Edinburg
+Norwegian Sea,Sea,Atlantic Ocean/Bergen/Shetland Islands/Greenland Sea
+Atlantic Ocean,Ocean,Norwegian Sea/Greenland Sea/Bay of Biscay/Canary Basin/Cape of Good Hope/North America/South America
+Bay of Biscay,Sea,Greenland Sea/Edinburg/Armagh/Waterford/Wales/Cornwall/Portsmouth:South/St. Malo/Bordeaux/Toulouse/Basque/Leon/Lisbon/Seville/Canary Basin/Atlantic Ocean
+Cape of Good Hope,Sea,Canary Basin/Atlantic Ocean/Pacific Ocean
+Pacific Ocean,Ocean,India/China/East Indies/Cape of Good Hope
+North America,Land,,6,Fur/Cloth/Grain
+North America,Coast,Atlantic Ocean
+South America,Land,,6,Gold/Metal/Spice
+South America,Coast,Atlantic Ocean
+East Indies,Land,,5,Silk/Spice
+East Indies,Coast,Pacific Ocean
+India,Land,,5,Gold/Spice
+India,Coast,Pacific Ocean
+China,Land,,5,Silk/Spice
+China,Coast,Pacific Ocean
+Western Mediterranean Sea,Sea,Cagliari/Genoa/Rome:West/Naples:West/Bari/Sicily/Tunis/Algiers/Oran/Fez/Granada/Valencia/Palma/Barcelona/Montpelier/Marseilles
+
+Area 1
+Smolensk,Sat,Kiev/Navgorod
+Navgorod,Land,Smolensk/Riga,2,Fur
+Navgorod,Coast,Riga
+Riga,Land,Navgorod/Mitau,2,Timber
+Riga,Coast,Navgorod/Mitau/Baltic Sea
+Mitau,Sat,Riga/Danzig
+Mitau,Coast,Danzig/Riga/Baltic Sea
+Danzig,Land,Stettin/Breslau/Mitau,5,Grain
+Danzig,Coast,Stettin/Mitau/Baltic Sea
+Stettin,Sat,Breslau/Danzig/Prague/Lubeck
+Stettin,Coast,Danzig/Baltic Sea/Malmo/Copenhagen/Lubeck
+Whisby,Sat,
+Whisby,Coast,Baltic Sea/Stockholm
+Stockholm,Land,Malmo,3,Metal
+Stockholm,Coast,Whisby/Baltic Sea/Malmo
+Baltic Sea,Sea,Riga/Mitau/Danzig/Stettin/Malmo/Stockholm/Whisby
+Malmo,Sat,Stockholm/Kongsberg
+Malmo,Coast,Kongsberg/Copenhagen/Stettin/Baltic Sea/Stockholm
+Lubeck,Land,Hamburg/Cologne/Copenhagen/Nuremberg/Prague/Stettin,3,Stone
+Lubeck,Coast,Copenhagen/Stettin
+Copenhagen,Sat,Hamburg/Lubeck
+Copenhagen,Coast,Hamburg/Kongsberg/Malmo/Stettin/Lubeck/North Sea
+Hamburg,Land,Copenhagen/Lubeck/Cologne/Amsterdam,4,Timber
+Hamburg,Coast,Amsterdam/Copenhagen/North Sea
+
+Area 2
+Kongsberg,Sat,Malmo/Bergen
+Kongsberg,Coast,Malmo/Copenhagen/North Sea/Bergen
+Bergen,Land,Kongsberg,3,Timber
+Bergen,Coast,Kongsberg/North Sea/Shetland Islands/Norwegian Sea
+Shetland Islands,Sat,
+Shetland Islands,Coast,Bergen/North Sea/Edinburg/Greenland Sea/Norwegian Sea
+Greenland Sea,Sea,Atlantic Ocean/Norwegian Sea/Shetland Islands/Iceland/Edinburg/Bay of Biscay
+Iceland,Land,,2,Ivory
+Iceland,Coast,Greenland Sea
+Edinburg,Land,Chester/York,2,Wool
+Edinburg,Coast,York/North Sea/Shetland Islands/Greenland Sea/Bay of Biscay/Armagh/Chester:North
+York,Land,London/Portsmouth/Chester/Edinburg,3,Wool
+York,Coast,Edinburg/North Sea/London
+London,Land,York/Portsmouth,5,Wool
+London,Coast,York/North Sea/Bruges/Paris/Portsmouth:South
+Portsmouth,Land,Cornwall/Chester/York/London,5,Grain
+Portsmouth:South,Coast,London/Paris/St. Malo/Bay of Biscay/Cornwall
+Portsmouth:North,Coast,Cornwall/Chester:South
+Cornwall,Sat,Portsmouth
+Cornwall,Coast,Bay of Biscay/Portsmouth:North/Portsmouth:South/Chester:South/Wales
+Chester,Land,Edinburg/York/Portsmouth/Wales,3,Metal
+Chester:South,Coast,Wales/Portsmouth:North/Cornwall
+Chester:North,Coast,Edinburg/Armagh/Wales
+Wales,Sat,Chester
+Wales,Coast,Chester:North/Armagh/Waterford/Chester:South/Cornwall/Bay of Biscay
+Armagh,Sat,Waterford
+Armagh,Coast,Bay of Biscay/Edinburg/Chester:North/Wales/Waterford
+Waterford,Land,Armagh,2,Wool
+Waterford,Coast,Armagh/Wales/Bay of Biscay
+
+Area 3
+Amsterdam,Sat,Hamburg/Cologne/Bruges
+Amsterdam,Coast,Hamburg/Bruges/North Sea
+Bruges,Land,Amsterdam/Cologne/Strassburg/Paris,4,Cloth
+Bruges,Coast,Amsterdam/Paris/London/North Sea
+Paris,Land,Bruges/Strassburg/Dijon/St. Malo/Bordeaux,4,Stone
+Paris,Coast,Bruges/London/Portsmouth:South/St. Malo
+St. Malo,Land,Paris/Bordeaux,2,Stone
+St. Malo,Coast,Portsmouth:South/Paris/Bordeaux/Bay of Biscay
+Dijon,Land,Paris/Strassburg/Basel/Lyons/Bordeaux,3,Grain
+Strassburg,Land,Dijon/Paris/Bruges/Cologne/Nuremberg/St. Gali/Basel,3,Wine
+Cologne,Land,Amsterdam/Bruges/Strassburg/Nuremberg/Lubeck/Hamburg,4,Cloth
+Nuremberg,Land,Lubeck/Prague/Salzburg/St. Gali/Strassburg/Cologne,3,Metal
+Basel,Land,Strassburg/St. Gali/Milan/Lyons/Dijon,3,Fur
+St. Gali,Sat,Strassburg/Nuremberg/Salzburg/Venice/Milan/Basel
+Salzburg,Sat,Prague/Breslau/Vienna/Venice/St. Gali/Nuremberg
+Prague,Land,Lubeck/Stettin/Breslau/Salzburg/Nuremberg,2,Gold
+Breslau,Sat,Danzig/Stettin/Prague/Salzburg/Vienna
+Vienna,Land,Breslau/Salzburg/Venice/Dubrovnik/Esseg/Budapest,4,Stone
+Budapest,Land,Belgrade/Esseg/Vienna,3,Cloth
+Esseg,Sat,Budapest/Belgrade/Dubrovnik/Vienna
+
+Area 4
+Basque,Land,Toulouse/Barcelona/Toledo/Leon,2,Wool
+Basque,Coast,Toulouse/Leon/Bay of Biscay
+Leon,Sat,Basque/Toledo/Lisbon
+Leon,Coast,Basque/Lisbon/Bay of Biscay
+Lisbon,Land,Leon/Toledo/Seville,3,Wine
+Lisbon,Coast,Seville/Leon/Bay of Biscay
+Toledo,Land,Leon/Basque/Barcelona/Valencia/Granada/Seville/Lisbon,3,Wool
+Barcelona,Land,Montpelier/Toulouse/Basque/Toledo/Valencia,3,Wine
+Barcelona,Coast,Montpelier/Western Mediterranean Sea/Palma/Valencia
+Valencia,Land,Barcelona/Toledo/Granada,2,Silk
+Valencia,Coast,Palma/Barcelona/Granada/Western Mediterranean Sea
+Palma,Sat,
+Palma,Coast,Western Mediterranean Sea/Barcelona/Valencia
+
+Area 5
+Kiev,Land,Smolensk/Kaffa,2,Grain
+Sarai,Land,Kamishin,2,Gold
+Kamishin,Sat,Sarai/Tana
+Tana,Land,Kamishin/Abasgia/Kaffa,2,Fur
+Tana,Coast,Abasgia/Kaffa/Black Sea
+Kaffa,Sat,Varna/Tana/Kiev
+Kaffa,Coast,Varna/Tana/Black Sea
+Varna,Land,Kaffa/Gallipoli,2,Fur
+Varna,Coast,Kaffa/Gallipoli/Black Sea
+Abasgia,Sat,Poti/Tana
+Abasgia,Coast,Poti/Tana/Black Sea
+Poti,Land,Abasgia/Erzerum,2,Timber
+Poti,Coast,Abasgia/Erzerum/Black Sea
+Erzerum,Land,Poti/Trebizond,3,Silk
+Erzerum,Coast,Poti/Trebizond/Black Sea
+Trebizond,Land,Erzerum/Angora,4,Spice
+Trebizond,Coast,Erzerum/Angora/Black Sea
+Angora,Land,Constantinople/Trebizond,2,Wool
+Angora,Coast,Constantinople/Trebizond/Black Sea
+Black Sea,Sea,Varna/Kaffa/Tana/Abasgia/Poti/Erzerum/Trebizond/Angora/Gallipoli/Constantinople
+
+Area 6
+Adalia,Sat,Smyrna/Tarsus
+Adalia,Coast,Smyrna/Tarsus/Cyprus/Eastern Mediterranean Sea
+Tarsus,Sat,Aleppo/Adalia
+Tarsus,Coast,Aleppo/Cyprus/Adalia
+Aleppo,Land,Tarsus/Levant,4,Silk
+Aleppo,Coast,Tarsus/Cyprus/Levant
+Levant,Sat,Aleppo/Acre
+Levant,Coast,Aleppo/Cyprus/Acre/Eastern Mediterranean Sea
+Cyprus,Land,,3,Wine
+Cyprus,Coast,Adalia/Tarsus/Aleppo/Levant/Eastern Mediterranean Sea
+Acre,Land,Levant/Jerusalem,5,Spice
+Acre,Coast,Levant/Jerusalem/Eastern Mediterranean Sea
+Jerusalem,Sat,Acre/Suez
+Jerusalem,Coast,Acre/Eastern Mediterranean Sea/Suez
+Suez,Land,Jerusalem/Cairo,3,Gold
+Suez,Coast,Jerusalem/Cairo/Eastern Mediterranean Sea
+Cairo,Land,Suez/Alexandria,4,Ivory
+Cairo,Coast,Suez/Alexandria/Eastern Mediterranean Sea
+Alexandria,Land,Libya/Cairo,5,Spice
+Alexandria,Coast,Libya/Cairo/Eastern Mediterranean Sea
+Libya,Sat,Alexandria/Barca
+Libya,Coast,Alexandria/Barca/Eastern Mediterranean Sea
+Eastern Mediterranean Sea,Sea,Barca/Central Mediterranean Sea/Crete/Agean Sea/Smyrna/Adalia/Cyprus/Levant/Acre/Jerusalem/Suez/Cairo/Alexandria/Libya
+
+Area 7
+Bordeaux,Land,St. Malo/Paris/Dijon/Lyons/Montpelier/Toulouse,4,Timber
+Bordeaux,Coast,St. Malo/Bay of Biscay/Toulouse
+Toulouse,Sat,Bordeaux/Montpelier/Barcelona/Basque
+Toulouse,Coast,Basque/Bordeaux/Bay of Biscay
+Lyons,Land,Bordeaux/Dijon/Basel/Milan/Genoa/Marseilles/Montpelier,4,Metal
+Milan,Land,Basel/St. Gali/Venice/Florence/Genoa/Lyons,3,Stone
+Venice,Land,Dubrovnik/Vienna/Salzburg/St. Gali/Milan/Florence,5,Cloth
+Venice,Coast,Dubrovnik/Florence/Adriatic Sea
+Dubrovnik,Land,Venice/Vienna/Esseg/Belgrade,3,Timber
+Dubrovnik,Coast,Venice/Adriatic Sea/Belgrade
+Belgrade,Land,Budapest/Esseg/Dubrovnik/Durazzo,2,Grain
+Belgrade,Coast,Dubrovnik/Adriatic Sea/Bari/Durazzo
+Adriatic Sea,Sea,Venice/Dubrovnik/Belgrade/Bari/Naples:East/Rome:East/Florence
+Florence,Land,Venice/Rome/Genoa/Milan,4,Cloth
+Florence,Coast,Venice/Adriatic Sea/Rome:East
+Rome,Land,Florence/Genoa/Naples,4,Stone
+Rome:East,Coast,Florence/Naples:East/Adriatic Sea
+Rome:West,Coast,Genoa/Naples:West/Western Mediterranean Sea
+Naples,Land,Rome/Bari,5,Stone
+Naples:East,Coast,Bari/Rome:East/Adriatic Sea
+Naples:West,Coast,Bari/Rome:West/Western Mediterranean Sea
+Bari,Sat,Naples
+Bari,Coast,Naples:East/Adriatic Sea/Belgrade/Durazzo/Corfu/Central Mediterranean Sea/Sicily/Western Mediterranean Sea/Naples:West
+Sicily,Land,,2,Grain
+Sicily,Coast,Western Mediterranean Sea/Bari/Central Mediterranean Sea/Tunis
+Cagliari,Sat,
+Cagliari,Coast,Marseilles/Genoa/Western Mediterranean Sea
+Genoa,Land,Marseilles/Lyons/Milan/Florence/Rome,5,Cloth
+Genoa,Coast,Marseilles/Rome:West/Cagliari/Western Mediterranean Sea
+Marseilles,Land,Montpelier/Lyons/Genoa,5,Wine
+Marseilles,Coast,Montpelier/Cagliari/Genoa/Western Mediterranean Sea
+Montpelier,Land,Barcelona/Toulouse/Bordeaux/Lyons/Marseilles,2,Stone
+Montpelier,Coast,Barcelona/Marseilles/Western Mediterranean Sea
+
+Area 8
+Canary Basin,Sea,Fez/Seville/West Africa/Bay of Biscay/Cape of Good Hope/Atlantic Ocean
+West Africa,Land,,2,Ivory
+West Africa,Coast,Canary Basin
+Seville,Land,Lisbon/Toledo/Granada,3,Grain
+Seville,Coast,Lisbon/Granada/Fez/Canary Basin/Bay of Biscay
+Granada,Land,Seville/Toledo/Valencia,2,Metal
+Granada,Coast,Valencia/Seville/Fez/Western Mediterranean Sea
+Fez,Land,Oran,2,Timber
+Fez,Coast,Canary Basin/Seville/Granada/Oran/Western Mediterranean Sea
+Oran,Sat,Algiers/Fez
+Oran,Coast,Algiers/Fez/Western Mediterranean Sea
+Algiers,Land,Tunis/Oran,2,Wool
+Algiers,Coast,Tunis/Oran/Western Mediterranean Sea
+Tunis,Land,Algiers/Tripoli,4,Cloth
+Tunis,Coast,Algiers/Tripoli/Sicily/Western Mediterranean Sea/Central Mediterranean Sea
+Tripoli,Land,Tunis/Barca,2,Ivory
+Tripoli,Coast,Tunis/Barca/Central Mediterranean Sea
+Barca,Sat,Tripoli/Libya
+Barca,Coast,Tripoli/Libya/Central Mediterranean Sea/Eastern Mediterranean Sea
+Central Mediterranean Sea,Sea,Corfu/Athens/Crete/Eastern Mediterranean Sea/Barca/Tripoli/Tunis/Sicily/Bari
+Crete,Land,,3,Wine
+Crete,Coast,Agean Sea/Eastern Mediterranean Sea/Central Mediterranean Sea/Athens
+Athens,Sat,Salonika/Corfu
+Athens,Coast,Salonika/Agean Sea/Crete/Central Mediterranean Sea/Corfu
+Corfu,Sat,Durazzo/Salonika/Athens
+Corfu,Coast,Durazzo/Athens/Bari/Central Mediterranean Sea
+Durazzo,Sat,Belgrade/Salonika/Corfu
+Durazzo,Coast,Belgrade/Bari/Corfu
+Salonika,Land,Gallipoli/Athens/Corfu/Durazzo,2,Silk
+Salonika,Coast,Gallipoli/Agean Sea/Athens
+Gallipoli,Sat,Varna/Salonika
+Gallipoli,Coast,Varna/Black Sea/Constantinople/Agean Sea/Salonika
+Constantinople,Land,Angora/Smyrna,4,Metal
+Constantinople,Coast,Angora/Black Sea/Gallipoli/Agean Sea/Smyrna
+Smyrna,Land,Constantinople/Adalia,2,Wool
+Smyrna,Coast,Constantinople/Agean Sea/Adalia/Eastern Mediterranean Sea
+Agean Sea,Sea,Crete/Athens/Salonika/Gallipoli/Constantinople/Smyrna/Eastern Mediterranean Sea
+

@@ -1,0 +1,18 @@
+MerchantOfVenusState.o: ../MerchantOfVenusState.cpp ../MerchantOfVenusState.hpp ../../common/Serialize.hpp ../Players.hpp ../Player.hpp ../Advances.hpp ../Token.hpp ../MerchantOfVenus.hpp ../../gamecommon/Utilities.hpp ../Cup.hpp ../MapOverlay.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../MapSpace.hpp ../Secret.hpp ../TradeBases.hpp ../TradeBase.hpp ../MoveMediator.hpp ../Dest.hpp ../MerchantOfVenusSet.hpp
+MerchantOfVenusSet.o: ../MerchantOfVenusSet.cpp ../MerchantOfVenusSet.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp
+Players.o: ../Players.cpp ../Players.hpp ../../common/Serialize.hpp ../Player.hpp ../Advances.hpp ../Token.hpp ../MerchantOfVenus.hpp ../../gamecommon/Utilities.hpp
+Player.o: ../Player.cpp ../Player.hpp ../../common/Serialize.hpp ../Advances.hpp ../Token.hpp
+MapData.o: ../MapData.cpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../MapSpace.hpp ../../common/Serialize.hpp ../MerchantOfVenus.hpp
+pugixml.o: ../pugixml.cpp ../pugixml.hpp ../pugiconfig.hpp
+MapSpace.o: ../MapSpace.cpp ../MapSpace.hpp ../../common/Serialize.hpp ../MerchantOfVenus.hpp
+Token.o: ../Token.cpp ../Token.hpp ../../common/Serialize.hpp ../MerchantOfVenus.hpp
+Ship.o: ../Ship.cpp ../Ship.hpp ../Token.hpp ../../common/Serialize.hpp ../MerchantOfVenus.hpp
+MapOverlay.o: ../MapOverlay.cpp ../MapOverlay.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../../common/Serialize.hpp ../MapSpace.hpp ../Token.hpp ../Secret.hpp ../../gamecommon/Utilities.hpp ../MerchantOfVenus.hpp
+Cup.o: ../Cup.cpp ../Cup.hpp ../Token.hpp ../../common/Serialize.hpp ../../gamecommon/Utilities.hpp
+TradeBases.o: ../TradeBases.cpp ../TradeBases.hpp ../TradeBase.hpp ../../common/Serialize.hpp ../Token.hpp ../Secret.hpp ../MerchantOfVenus.hpp ../../gamecommon/Utilities.hpp ../Ship.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../MapSpace.hpp
+TradeBase.o: ../TradeBase.cpp ../TradeBase.hpp ../../common/Serialize.hpp ../Token.hpp ../Secret.hpp
+Advances.o: ../Advances.cpp ../Advances.hpp ../Token.hpp ../../common/Serialize.hpp ../../common/StringUtilities.hpp
+Secret.o: ../Secret.cpp ../Secret.hpp ../../common/Serialize.hpp
+MoveMediator.o: ../MoveMediator.cpp ../MoveMediator.hpp ../../common/Serialize.hpp ../Dest.hpp ../Players.hpp ../Player.hpp ../Advances.hpp ../Token.hpp ../MerchantOfVenus.hpp ../MapOverlay.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../MapSpace.hpp ../Secret.hpp ../../gamecommon/Utilities.hpp
+MerchantOfVenusDLL.o: MerchantOfVenusDLL.cpp ../../common/StringUtilities.hpp ../../gamecommon/GameBoxDLL.hpp MerchantOfVenusGameInfo.hpp ../../stateengine/GameInfo.hpp ../MerchantOfVenusSet.hpp ../MerchantOfVenusState.hpp ../../common/Serialize.hpp ../Players.hpp ../Player.hpp ../Advances.hpp ../Token.hpp ../MerchantOfVenus.hpp ../../gamecommon/Utilities.hpp ../Cup.hpp ../MapOverlay.hpp ../MapData.hpp ../pugixml.hpp ../pugiconfig.hpp ../MapSpace.hpp ../Secret.hpp ../TradeBases.hpp ../TradeBase.hpp ../MoveMediator.hpp ../Dest.hpp ../../stateengine/StateMachine.hpp ../../stateengine/Transition.hpp ../../stateengine/GameInfo.hpp ../../stateengine/State.hpp ../../gamecommon/DLLGame.hpp ../../gamecommon/Game.hpp ../../stateengine/StateWalker.hpp ../../stateengine/StateMachine.hpp ../../gamecommon/ActionParser.hpp ../../gamecommon/ServerGameInfo.hpp ../../gamecommon/OutputPort.hpp ../../gamecommon/ActionParser.hpp ../Ship.hpp ../MapOverlay.hpp
+MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml

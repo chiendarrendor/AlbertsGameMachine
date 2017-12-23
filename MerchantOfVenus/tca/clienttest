@@ -1,0 +1,4 @@
+#! /bin/sh
+
+cd /c/apache/htdocs/client
+java -classpath 'client.jar;.' OpenZorz/GUITester MerchantOfVenus MerchantOfVenus MerchantOfVenusClient.xml

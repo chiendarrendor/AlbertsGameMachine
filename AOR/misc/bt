@@ -1,0 +1,533 @@
+SpacePather:
+   Bruges
+Bruges goes into spacefingers.
+Non-zero m_Fingers.
+Operating on: Bruges
+Neighbor of Bruges: Amsterdam
+Neighbor of Bruges: Bruges:DEFAULT
+Neighbor of Bruges: Cologne
+Neighbor of Bruges: Paris
+Neighbor of Bruges: Strassburg
+Non-zero m_Fingers.
+Operating on: Amsterdam
+Neighbor of Amsterdam: Amsterdam:DEFAULT
+Neighbor of Amsterdam: Bruges
+Neighbor of Amsterdam: Cologne
+Neighbor of Amsterdam: Hamburg
+Operating on: Cologne
+Neighbor of Cologne: Amsterdam
+Neighbor of Cologne: Bruges
+Neighbor of Cologne: Hamburg
+Neighbor of Cologne: Lubeck
+Neighbor of Cologne: Nuremberg
+Neighbor of Cologne: Strassburg
+Operating on: Paris
+Neighbor of Paris: Bordeaux
+Neighbor of Paris: Bruges
+Neighbor of Paris: Dijon
+Neighbor of Paris: Paris:DEFAULT
+Neighbor of Paris: St. Malo
+Neighbor of Paris: Strassburg
+Operating on: Strassburg
+Neighbor of Strassburg: Basel
+Neighbor of Strassburg: Bruges
+Neighbor of Strassburg: Cologne
+Neighbor of Strassburg: Dijon
+Neighbor of Strassburg: Nuremberg
+Neighbor of Strassburg: Paris
+Neighbor of Strassburg: St. Gali
+Non-zero m_Fingers.
+Operating on: Hamburg
+Neighbor of Hamburg: Amsterdam
+Neighbor of Hamburg: Cologne
+Neighbor of Hamburg: Copenhagen
+Neighbor of Hamburg: Hamburg:DEFAULT
+Neighbor of Hamburg: Lubeck
+Operating on: Lubeck
+Neighbor of Lubeck: Cologne
+Neighbor of Lubeck: Copenhagen
+Neighbor of Lubeck: Hamburg
+Neighbor of Lubeck: Lubeck:DEFAULT
+Neighbor of Lubeck: Nuremberg
+Neighbor of Lubeck: Prague
+Neighbor of Lubeck: Stettin
+Operating on: Nuremberg
+Neighbor of Nuremberg: Cologne
+Neighbor of Nuremberg: Lubeck
+Neighbor of Nuremberg: Prague
+Neighbor of Nuremberg: Salzburg
+Neighbor of Nuremberg: St. Gali
+Neighbor of Nuremberg: Strassburg
+Operating on: Bordeaux
+Neighbor of Bordeaux: Bordeaux:DEFAULT
+Neighbor of Bordeaux: Dijon
+Neighbor of Bordeaux: Lyons
+Neighbor of Bordeaux: Montpelier
+Neighbor of Bordeaux: Paris
+Neighbor of Bordeaux: St. Malo
+Neighbor of Bordeaux: Toulouse
+Operating on: Dijon
+Neighbor of Dijon: Basel
+Neighbor of Dijon: Bordeaux
+Neighbor of Dijon: Lyons
+Neighbor of Dijon: Paris
+Neighbor of Dijon: Strassburg
+Operating on: St. Malo
+Neighbor of St. Malo: Bordeaux
+Neighbor of St. Malo: Paris
+Neighbor of St. Malo: St. Malo:DEFAULT
+Operating on: Basel
+Neighbor of Basel: Dijon
+Neighbor of Basel: Lyons
+Neighbor of Basel: Milan
+Neighbor of Basel: St. Gali
+Neighbor of Basel: Strassburg
+Operating on: St. Gali
+Neighbor of St. Gali: Basel
+Neighbor of St. Gali: Milan
+Neighbor of St. Gali: Nuremberg
+Neighbor of St. Gali: Salzburg
+Neighbor of St. Gali: Strassburg
+Neighbor of St. Gali: Venice
+Non-zero m_Fingers.
+Operating on: Copenhagen
+Neighbor of Copenhagen: Copenhagen:DEFAULT
+Neighbor of Copenhagen: Hamburg
+Neighbor of Copenhagen: Lubeck
+Operating on: Prague
+Neighbor of Prague: Breslau
+Neighbor of Prague: Lubeck
+Neighbor of Prague: Nuremberg
+Neighbor of Prague: Salzburg
+Neighbor of Prague: Stettin
+Operating on: Stettin
+Neighbor of Stettin: Breslau
+Neighbor of Stettin: Danzig
+Neighbor of Stettin: Lubeck
+Neighbor of Stettin: Prague
+Neighbor of Stettin: Stettin:DEFAULT
+Operating on: Salzburg
+Neighbor of Salzburg: Breslau
+Neighbor of Salzburg: Nuremberg
+Neighbor of Salzburg: Prague
+Neighbor of Salzburg: St. Gali
+Neighbor of Salzburg: Venice
+Neighbor of Salzburg: Vienna
+Operating on: Lyons
+Neighbor of Lyons: Basel
+Neighbor of Lyons: Bordeaux
+Neighbor of Lyons: Dijon
+Neighbor of Lyons: Genoa
+Neighbor of Lyons: Marseilles
+Neighbor of Lyons: Milan
+Neighbor of Lyons: Montpelier
+Operating on: Montpelier
+Neighbor of Montpelier: Barcelona
+Neighbor of Montpelier: Bordeaux
+Neighbor of Montpelier: Lyons
+Neighbor of Montpelier: Marseilles
+Neighbor of Montpelier: Montpelier:DEFAULT
+Neighbor of Montpelier: Toulouse
+Operating on: Toulouse
+Neighbor of Toulouse: Barcelona
+Neighbor of Toulouse: Basque
+Neighbor of Toulouse: Bordeaux
+Neighbor of Toulouse: Montpelier
+Neighbor of Toulouse: Toulouse:DEFAULT
+Operating on: Milan
+Neighbor of Milan: Basel
+Neighbor of Milan: Florence
+Neighbor of Milan: Genoa
+Neighbor of Milan: Lyons
+Neighbor of Milan: St. Gali
+Neighbor of Milan: Venice
+Operating on: Venice
+Neighbor of Venice: Dubrovnik
+Neighbor of Venice: Florence
+Neighbor of Venice: Milan
+Neighbor of Venice: Salzburg
+Neighbor of Venice: St. Gali
+Neighbor of Venice: Venice:DEFAULT
+Neighbor of Venice: Vienna
+Non-zero m_Fingers.
+Operating on: Breslau
+Neighbor of Breslau: Danzig
+Neighbor of Breslau: Prague
+Neighbor of Breslau: Salzburg
+Neighbor of Breslau: Stettin
+Neighbor of Breslau: Vienna
+Operating on: Danzig
+Neighbor of Danzig: Breslau
+Neighbor of Danzig: Danzig:DEFAULT
+Neighbor of Danzig: Mitau
+Neighbor of Danzig: Stettin
+Operating on: Vienna
+Neighbor of Vienna: Breslau
+Neighbor of Vienna: Budapest
+Neighbor of Vienna: Dubrovnik
+Neighbor of Vienna: Esseg
+Neighbor of Vienna: Salzburg
+Neighbor of Vienna: Venice
+Operating on: Genoa
+Neighbor of Genoa: Florence
+Neighbor of Genoa: Genoa:DEFAULT
+Neighbor of Genoa: Lyons
+Neighbor of Genoa: Marseilles
+Neighbor of Genoa: Milan
+Neighbor of Genoa: Rome
+Operating on: Marseilles
+Neighbor of Marseilles: Genoa
+Neighbor of Marseilles: Lyons
+Neighbor of Marseilles: Marseilles:DEFAULT
+Neighbor of Marseilles: Montpelier
+Operating on: Barcelona
+Neighbor of Barcelona: Barcelona:DEFAULT
+Neighbor of Barcelona: Basque
+Neighbor of Barcelona: Montpelier
+Neighbor of Barcelona: Toledo
+Neighbor of Barcelona: Toulouse
+Neighbor of Barcelona: Valencia
+Operating on: Basque
+Neighbor of Basque: Barcelona
+Neighbor of Basque: Basque:DEFAULT
+Neighbor of Basque: Leon
+Neighbor of Basque: Toledo
+Neighbor of Basque: Toulouse
+Operating on: Florence
+Neighbor of Florence: Florence:DEFAULT
+Neighbor of Florence: Genoa
+Neighbor of Florence: Milan
+Neighbor of Florence: Rome
+Neighbor of Florence: Venice
+Operating on: Dubrovnik
+Neighbor of Dubrovnik: Belgrade
+Neighbor of Dubrovnik: Dubrovnik:DEFAULT
+Neighbor of Dubrovnik: Esseg
+Neighbor of Dubrovnik: Venice
+Neighbor of Dubrovnik: Vienna
+Non-zero m_Fingers.
+Operating on: Mitau
+Neighbor of Mitau: Danzig
+Neighbor of Mitau: Mitau:DEFAULT
+Neighbor of Mitau: Riga
+Operating on: Budapest
+Neighbor of Budapest: Belgrade
+Neighbor of Budapest: Esseg
+Neighbor of Budapest: Vienna
+Operating on: Esseg
+Neighbor of Esseg: Belgrade
+Neighbor of Esseg: Budapest
+Neighbor of Esseg: Dubrovnik
+Neighbor of Esseg: Vienna
+Operating on: Rome
+Neighbor of Rome: Florence
+Neighbor of Rome: Genoa
+Neighbor of Rome: Naples
+Neighbor of Rome: Rome:East
+Neighbor of Rome: Rome:West
+Operating on: Toledo
+Neighbor of Toledo: Barcelona
+Neighbor of Toledo: Basque
+Neighbor of Toledo: Granada
+Neighbor of Toledo: Leon
+Neighbor of Toledo: Lisbon
+Neighbor of Toledo: Seville
+Neighbor of Toledo: Valencia
+Operating on: Valencia
+Neighbor of Valencia: Barcelona
+Neighbor of Valencia: Granada
+Neighbor of Valencia: Toledo
+Neighbor of Valencia: Valencia:DEFAULT
+Operating on: Leon
+Neighbor of Leon: Basque
+Neighbor of Leon: Leon:DEFAULT
+Neighbor of Leon: Lisbon
+Neighbor of Leon: Toledo
+Operating on: Belgrade
+Neighbor of Belgrade: Belgrade:DEFAULT
+Neighbor of Belgrade: Budapest
+Neighbor of Belgrade: Dubrovnik
+Neighbor of Belgrade: Durazzo
+Neighbor of Belgrade: Esseg
+Non-zero m_Fingers.
+Operating on: Riga
+Neighbor of Riga: Mitau
+Neighbor of Riga: Navgorod
+Neighbor of Riga: Riga:DEFAULT
+Operating on: Naples
+Neighbor of Naples: Bari
+Neighbor of Naples: Naples:East
+Neighbor of Naples: Naples:West
+Neighbor of Naples: Rome
+Operating on: Granada
+Neighbor of Granada: Granada:DEFAULT
+Neighbor of Granada: Seville
+Neighbor of Granada: Toledo
+Neighbor of Granada: Valencia
+Operating on: Lisbon
+Neighbor of Lisbon: Leon
+Neighbor of Lisbon: Lisbon:DEFAULT
+Neighbor of Lisbon: Seville
+Neighbor of Lisbon: Toledo
+Operating on: Seville
+Neighbor of Seville: Granada
+Neighbor of Seville: Lisbon
+Neighbor of Seville: Seville:DEFAULT
+Neighbor of Seville: Toledo
+Operating on: Durazzo
+Neighbor of Durazzo: Belgrade
+Neighbor of Durazzo: Corfu
+Neighbor of Durazzo: Durazzo:DEFAULT
+Neighbor of Durazzo: Salonika
+Non-zero m_Fingers.
+Operating on: Navgorod
+Neighbor of Navgorod: Navgorod:DEFAULT
+Neighbor of Navgorod: Riga
+Neighbor of Navgorod: Smolensk
+Operating on: Bari
+Neighbor of Bari: Bari:DEFAULT
+Neighbor of Bari: Naples
+Operating on: Corfu
+Neighbor of Corfu: Athens
+Neighbor of Corfu: Corfu:DEFAULT
+Neighbor of Corfu: Durazzo
+Neighbor of Corfu: Salonika
+Operating on: Salonika
+Neighbor of Salonika: Athens
+Neighbor of Salonika: Corfu
+Neighbor of Salonika: Durazzo
+Neighbor of Salonika: Gallipoli
+Neighbor of Salonika: Salonika:DEFAULT
+Non-zero m_Fingers.
+Operating on: Smolensk
+Neighbor of Smolensk: Kiev
+Neighbor of Smolensk: Navgorod
+Operating on: Athens
+Neighbor of Athens: Athens:DEFAULT
+Neighbor of Athens: Corfu
+Neighbor of Athens: Salonika
+Operating on: Gallipoli
+Neighbor of Gallipoli: Gallipoli:DEFAULT
+Neighbor of Gallipoli: Salonika
+Neighbor of Gallipoli: Varna
+Non-zero m_Fingers.
+Operating on: Kiev
+Neighbor of Kiev: Kaffa
+Neighbor of Kiev: Smolensk
+Operating on: Varna
+Neighbor of Varna: Gallipoli
+Neighbor of Varna: Kaffa
+Neighbor of Varna: Varna:DEFAULT
+Non-zero m_Fingers.
+Operating on: Kaffa
+Neighbor of Kaffa: Kaffa:DEFAULT
+Neighbor of Kaffa: Kiev
+Neighbor of Kaffa: Tana
+Neighbor of Kaffa: Varna
+Non-zero m_Fingers.
+Operating on: Tana
+Neighbor of Tana: Abasgia
+Neighbor of Tana: Kaffa
+Neighbor of Tana: Kamishin
+Neighbor of Tana: Tana:DEFAULT
+Non-zero m_Fingers.
+Operating on: Abasgia
+Neighbor of Abasgia: Abasgia:DEFAULT
+Neighbor of Abasgia: Poti
+Neighbor of Abasgia: Tana
+Operating on: Kamishin
+Neighbor of Kamishin: Sarai
+Neighbor of Kamishin: Tana
+Non-zero m_Fingers.
+Operating on: Poti
+Neighbor of Poti: Abasgia
+Neighbor of Poti: Erzerum
+Neighbor of Poti: Poti:DEFAULT
+Operating on: Sarai
+Neighbor of Sarai: Kamishin
+Non-zero m_Fingers.
+Operating on: Erzerum
+Neighbor of Erzerum: Erzerum:DEFAULT
+Neighbor of Erzerum: Poti
+Neighbor of Erzerum: Trebizond
+Non-zero m_Fingers.
+Operating on: Trebizond
+Neighbor of Trebizond: Angora
+Neighbor of Trebizond: Erzerum
+Neighbor of Trebizond: Trebizond:DEFAULT
+Non-zero m_Fingers.
+Operating on: Angora
+Neighbor of Angora: Angora:DEFAULT
+Neighbor of Angora: Constantinople
+Neighbor of Angora: Trebizond
+Non-zero m_Fingers.
+Operating on: Constantinople
+Neighbor of Constantinople: Angora
+Neighbor of Constantinople: Constantinople:DEFAULT
+Neighbor of Constantinople: Smyrna
+Non-zero m_Fingers.
+Operating on: Smyrna
+Neighbor of Smyrna: Adalia
+Neighbor of Smyrna: Constantinople
+Neighbor of Smyrna: Smyrna:DEFAULT
+Non-zero m_Fingers.
+Operating on: Adalia
+Neighbor of Adalia: Adalia:DEFAULT
+Neighbor of Adalia: Smyrna
+Neighbor of Adalia: Tarsus
+Non-zero m_Fingers.
+Operating on: Tarsus
+Neighbor of Tarsus: Adalia
+Neighbor of Tarsus: Aleppo
+Neighbor of Tarsus: Tarsus:DEFAULT
+Non-zero m_Fingers.
+Operating on: Aleppo
+Neighbor of Aleppo: Aleppo:DEFAULT
+Neighbor of Aleppo: Levant
+Neighbor of Aleppo: Tarsus
+Non-zero m_Fingers.
+Operating on: Levant
+Neighbor of Levant: Acre
+Neighbor of Levant: Aleppo
+Neighbor of Levant: Levant:DEFAULT
+Non-zero m_Fingers.
+Operating on: Acre
+Neighbor of Acre: Acre:DEFAULT
+Neighbor of Acre: Jerusalem
+Neighbor of Acre: Levant
+Non-zero m_Fingers.
+Operating on: Jerusalem
+Neighbor of Jerusalem: Acre
+Neighbor of Jerusalem: Jerusalem:DEFAULT
+Neighbor of Jerusalem: Suez
+Non-zero m_Fingers.
+Operating on: Suez
+Neighbor of Suez: Cairo
+Neighbor of Suez: Jerusalem
+Neighbor of Suez: Suez:DEFAULT
+Non-zero m_Fingers.
+Operating on: Cairo
+Neighbor of Cairo: Alexandria
+Neighbor of Cairo: Cairo:DEFAULT
+Neighbor of Cairo: Suez
+Non-zero m_Fingers.
+Operating on: Alexandria
+Neighbor of Alexandria: Alexandria:DEFAULT
+Neighbor of Alexandria: Cairo
+Neighbor of Alexandria: Libya
+Non-zero m_Fingers.
+Operating on: Libya
+Neighbor of Libya: Alexandria
+Neighbor of Libya: Barca
+Neighbor of Libya: Libya:DEFAULT
+Non-zero m_Fingers.
+Operating on: Barca
+Neighbor of Barca: Barca:DEFAULT
+Neighbor of Barca: Libya
+Neighbor of Barca: Tripoli
+Non-zero m_Fingers.
+Operating on: Tripoli
+Neighbor of Tripoli: Barca
+Neighbor of Tripoli: Tripoli:DEFAULT
+Neighbor of Tripoli: Tunis
+Non-zero m_Fingers.
+Operating on: Tunis
+Neighbor of Tunis: Algiers
+Neighbor of Tunis: Tripoli
+Neighbor of Tunis: Tunis:DEFAULT
+Non-zero m_Fingers.
+Operating on: Algiers
+Neighbor of Algiers: Algiers:DEFAULT
+Neighbor of Algiers: Oran
+Neighbor of Algiers: Tunis
+Non-zero m_Fingers.
+Operating on: Oran
+Neighbor of Oran: Algiers
+Neighbor of Oran: Fez
+Neighbor of Oran: Oran:DEFAULT
+Non-zero m_Fingers.
+Operating on: Fez
+Neighbor of Fez: Fez:DEFAULT
+Neighbor of Fez: Oran
+SpacePather:
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca -> Tripoli -> Tunis -> Algiers
+   Bruges -> Amsterdam
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo -> Corfu -> Athens
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona
+   Bruges -> Paris -> Bordeaux -> Lyons -> Genoa -> Rome -> Naples -> Bari
+   Bruges -> Strassburg -> Basel
+   Bruges -> Paris -> Bordeaux -> Toulouse -> Basque
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade
+   Bruges -> Paris -> Bordeaux
+   Bruges -> Cologne -> Lubeck -> Prague -> Breslau
+   Bruges
+   Bruges -> Cologne -> Nuremberg -> Salzburg -> Vienna -> Budapest
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo
+   Bruges -> Cologne
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople
+   Bruges -> Amsterdam -> Hamburg -> Copenhagen
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo -> Corfu
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig
+   Bruges -> Paris -> Dijon
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum
+   Bruges -> Cologne -> Nuremberg -> Salzburg -> Vienna -> Esseg
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca -> Tripoli -> Tunis -> Algiers -> Oran -> Fez
+   Bruges -> Strassburg -> Basel -> Milan -> Florence
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo -> Salonika -> Gallipoli
+   Bruges -> Paris -> Bordeaux -> Lyons -> Genoa
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona -> Toledo -> Granada
+   Bruges -> Amsterdam -> Hamburg
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Kamishin
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev
+   Bruges -> Paris -> Bordeaux -> Toulouse -> Basque -> Leon
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona -> Toledo -> Lisbon
+   Bruges -> Cologne -> Lubeck
+   Bruges -> Paris -> Bordeaux -> Lyons
+   Bruges -> Paris -> Bordeaux -> Lyons -> Marseilles
+   Bruges -> Strassburg -> Basel -> Milan
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau
+   Bruges -> Paris -> Bordeaux -> Montpelier
+   Bruges -> Paris -> Bordeaux -> Lyons -> Genoa -> Rome -> Naples
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod
+   Bruges -> Cologne -> Nuremberg
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca -> Tripoli -> Tunis -> Algiers -> Oran
+   Bruges -> Paris
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti
+   Bruges -> Cologne -> Lubeck -> Prague
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga
+   Bruges -> Paris -> Bordeaux -> Lyons -> Genoa -> Rome
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo -> Salonika
+   Bruges -> Cologne -> Nuremberg -> Salzburg
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Kamishin -> Sarai
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona -> Toledo -> Seville
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna
+   Bruges -> Strassburg -> St. Gali
+   Bruges -> Paris -> St. Malo
+   Bruges -> Cologne -> Lubeck -> Stettin
+   Bruges -> Strassburg
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona -> Toledo
+   Bruges -> Paris -> Bordeaux -> Toulouse
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca -> Tripoli
+   Bruges -> Cologne -> Lubeck -> Stettin -> Danzig -> Mitau -> Riga -> Navgorod -> Smolensk -> Kiev -> Kaffa -> Tana -> Abasgia -> Poti -> Erzerum -> Trebizond -> Angora -> Constantinople -> Smyrna -> Adalia -> Tarsus -> Aleppo -> Levant -> Acre -> Jerusalem -> Suez -> Cairo -> Alexandria -> Libya -> Barca -> Tripoli -> Tunis
+   Bruges -> Paris -> Bordeaux -> Montpelier -> Barcelona -> Valencia
+   Bruges -> Strassburg -> St. Gali -> Venice -> Dubrovnik -> Belgrade -> Durazzo -> Salonika -> Gallipoli -> Varna
+   Bruges -> Strassburg -> St. Gali -> Venice
+   Bruges -> Cologne -> Nuremberg -> Salzburg -> Vienna

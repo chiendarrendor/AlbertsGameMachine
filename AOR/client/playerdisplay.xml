@@ -1,0 +1,200 @@
+<define name="playercapital">
+  <foreach varname="CAPITAL" value="Barcelona,Genoa,Hamburg,London,Paris,Venice">
+    <panel hidden="y">
+      <eventhandler>
+        <showif capitalname="CAPITAL"/>
+      </eventhandler>
+      <image x="6"  y="6"  image="Aor/Icons/CAPITAL_Old_Token.jpg"/>
+      <image x="0"  y="43" image="Aor/Icons/CAPITAL_Old_Dom.png"/>
+      <image x="43" y="0"  image="Aor/Icons/CAPITAL_New_Dom.png"/>
+      <image x="49" y="49" image="Aor/Icons/CAPITAL_New_Token.jpg"/>
+    </panel>
+  </foreach>
+</define>
+
+<define name="turnlogunit">
+  <panel hidden="y">
+    <eventhandler>
+      <passif eventname="TURNLOG" playernum="PLNUM" logturn="$LOGTURN$"/>
+      <showif eventname="TURNLOG" playernum="PLNUM" logturn="$LOGTURN$"/>
+    </eventhandler>
+    <text>
+      <replace from="rLOGTOTALr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logtotal="-1"/>
+      </replace>
+      <replace from="rLOGTOKENSr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logtokens="-1"/>
+      </replace>
+      <replace from="rLOGCASHr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logcash="-1"/>
+      </replace>
+
+      <replace from="rLOGTOTALr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logtotal="-2"/>
+      </replace>
+      <replace from="rLOGTOKENSr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logtokens="-2"/>
+      </replace>
+      <replace from="rLOGCASHr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logcash="-2"/>
+      </replace>
+
+      <replace from="rLOGTOTALr" eventvar="logtotal">
+        <ifnot logtotal="-1|-2"/>
+      </replace>
+      <replace from="rLOGTOKENSr" eventvar="logtokens">
+        <ifnot logtokens="-1|-2"/>
+      </replace>
+      <replace from="rLOGCASHr" eventvar="logcash">
+        <ifnot logcash="-1|-2"/>
+      </replace>
+
+      <![CDATA[
+        <html>
+          <table border=1>
+            <tr>
+              <td><font color=rTOTALCOLORr>rLOGTOTALr</font></td>
+            </tr>
+            <tr>
+              <td>$LOGTURN$</td>
+            </tr>
+            <tr>
+              <td><font color=rTOKENCOLORr>rLOGTOKENSr</font></td>
+            </tr>
+            <tr>
+              <td><font color=rCASHCOLORr>rLOGCASHr</font></td>
+            </tr>
+          </table>
+        </html>
+      ]]>
+    </text>
+  </panel>
+</define>
+
+<define name="turnlog">
+  <panel layout="hbox" x="XPOS">
+    <text hidden="y">
+      <eventhandler><showif eventname="TURNLOG"/></eventhandler>
+      <![CDATA[
+        <html>
+          <table border=1>
+            <tr>
+              <td>Total:</td>
+            </tr>
+            <tr>
+              <td>Turn:</td>
+            </tr>
+            <tr>
+              <td>Tokens:</td>
+            </tr>
+            <tr>
+              <td>Cash:</td>
+            </tr>
+          </table>
+        </html>
+      ]]>
+    </text>
+    <forupto varname="$LOGTURN$" low="1" high="30">
+      <named name="turnlogunit"/>
+    </forupto>
+  </panel>
+</define>
+
+
+    
+
+
+
+
+
+
+<define name="Player">
+  <panel hidden="y">
+    <eventhandler> 
+      <showif playernum="PLNUM"/>
+      <passif playernum="PLNUM"/>
+    </eventhandler>
+    <named name="playercapital"/>
+    <text x="90" y="0">
+      <replace from="PLAYER" eventvar="playername"/>
+      Name: PLAYER
+    </text>
+    <text x="90" y="15" hidden="y">
+      <eventhandler>
+        <showif eventname="NUMCARDS"/>
+      </eventhandler>
+      <replace from="NUMCARDS" eventvar="numcards"/>
+      number of cards: NUMCARDS
+    </text>
+    <text x="90" y="30" hidden="y"> 
+      <eventhandler> 
+        <showif eventname="CAPITALBID"/> 
+	<hideif capitalbid="-1"/>
+	<hideif capitalbid="-2"/>
+      </eventhandler>
+      <replace from="BID" eventvar="capitalbid"/> 
+      Capital Bid: BID
+    </text>
+    <text x="90" y="30" hidden="y"> 
+      <eventhandler> 
+        <showif eventname="CAPITALBID"/> 
+	<hideifnot capitalbid="-1"/>
+      </eventhandler>
+      <![CDATA[
+      <html>
+        Capital Bid:
+        <font color=red>
+          &#60;no bid made&#62;
+        </font>
+      </html>
+      ]]>
+    </text>
+    <text x="90" y="30" hidden="y"> 
+      <eventhandler> 
+        <showif eventname="CAPITALBID"/> 
+	<hideifnot capitalbid="-2"/>
+      </eventhandler>
+      <![CDATA[
+      <html>
+        Capital Bid: 
+        <font color=green>
+          &#60;BID MADE&#62;
+        </font> 
+      </html>
+      ]]>
+    </text>
+
+    <text x="90" y="45" hidden="y">
+      <eventhandler> <showif eventname="CASH"/> </eventhandler>
+      <replace from="CASH" eventvar="curcash"/>
+      Current Cash: CASH
+    </text>
+    <text x="200" y="15" hidden="y">
+      <eventhandler> <showif eventname="NUMSTOCK"/> </eventhandler>
+      <replace from="INSTOCK" eventvar="dominstock"/>
+      <replace from="ONBOARD" eventvar="domonboard"/>
+      Dominance Markers: ONBOARD on board, INSTOCK in stock.      
+    </text>
+    <text x="200" y="40" hidden="y">
+      <eventhandler> <showif eventname="NUMSTOCK"/> </eventhandler>
+      <replace from="INSTOCK" eventvar="tokeninstock"/>
+      <replace from="ONBOARD" eventvar="tokenonboard"/>
+      <replace from="TOPLAY" eventvar="expansiontokens"/>
+      Tokens: ONBOARD on board, INSTOCK in stock, TOPLAY available to play.
+    </text>
+    <text x="90" y="60">
+      <![CDATA[<html>&nbsp;</html>]]>
+   </text>
+
+   <named name="turnlog" XPOS="500"/>
+  </panel>
+</define>
+
+
+<window title="Players">
+  <panel layout="vbox">
+    <forupto varname="INDEX" low="0" high="5">
+      <named name="Player" PLNUM="INDEX"/>
+    </forupto>
+  </panel>
+</window>

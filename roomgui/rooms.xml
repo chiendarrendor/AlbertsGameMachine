@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+
+<actions>
+  <action name="NEWROOM" onstate="alwayson" text="Make New Room">
+    <var name="RoomName" text="Name of New Room" hastextbox="y">
+    </var>
+  </action>
+  <action name="CHANGEROOM" onstate="alwayshidden" text="Move To Selected Room">
+    <var name="TargetRoom" text="Name of Target Room"/>
+  </action>
+  <action name="ROOMTALK" onstate="alwayshidden" text="Send Message to Room">
+    <var name="RoomMessage" text="Message Body"  noreset="y"/>
+  </action>
+  <action name="PLAYERTALK" onstate="alwayshidden" text="Send Message to Player">
+    <var name="TalkPlayer" text="Target Player"/>
+    <var name="PlayerMessage" text="Message Body"  noreset="y"/>
+  </action>
+  <action name="NEWGAME" onstate="alwayson" text="Start New Game">
+    <var name="NewGame" text="Name of New Game">
+      <varselection varname="NewGame" listvar="gamenames"/>
+    </var>
+  </action>
+  <action name="LOADGAME" onstate="alwayson" text="Load Game">
+    <var name="NameToLoad" text="Name of File to Load">
+      <varselection varname="NameToLoad" listvar="savenames"/>
+    </var>
+  </action>
+  <action name="SAVEGAME" onstate="alwayson" text="Save Game">
+    <var name="NameToSave" text="Name of File to Save"  hastextbox="y"/>
+  </action>
+</actions>
+
+
+<event name="SAVEGAMES">
+  <var name="savenames"/>
+</event>
+
+<event name="GAMES">
+  <var name="gamenames"/>
+</event>
+
+<event name="GUIROOM">
+  <var name="roomname"/>
+  <var name="gamename"/>
+  <var name="gamestate"/>
+</event>
+
+<event name="INHABITANT">
+  <var name="inhabitantname"/>
+  <var name="roomname"/>
+</event>
+
+<event name="DROPINHABITANT">
+  <var name="inhabitantname"/>
+</event>
+
+<event name="GUIIAM">
+  <var name="myname"/>
+</event>
+
+<tab title="Room Info">
+  <javaclass classname="RoomPage"/>
+</tab>
+
+<tab title="Player Messaging" layout="border">
+  <javaclass classname="MainPage"/>
+</tab>
+
+</gameboard>

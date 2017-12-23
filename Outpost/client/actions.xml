@@ -1,0 +1,179 @@
+
+<define name="MegaCard">
+  <javaclass classname="CommodityCard" commtype="nCIDn" value="nMVn" ismega="true" isavg="false" issel="false" hidden="y">
+    <eventhandler>
+      <showhide CommodityNumber="nCIDn"/>
+    </eventhandler>
+  </javaclass>
+</define>
+
+<define name="BuyMen">
+  <panel>
+    <image image="iIMAGEi" x="5"/>
+    <minmaxvarselection varname="iOUTVARi" min="1" max="iINVARi" x="50"/>
+    <panel x="100">
+      <forupto varname="vPNUMv" low="0" high="9">
+        <panel hidden="y">
+	  <eventhandler>
+	    <showif eventname="IAM" PlayerNumber="vPNUMv"/>
+	    <passif PlayerNumber="vPNUMv"/>
+          </eventhandler>
+          <text>
+	    <replace from="rCOSTr" eventvar="PeopleCost" initial="0"/>
+	    @ rCOSTr each.
+          </text>
+        </panel>
+      </forupto>
+    </panel>
+  </panel>
+</define>
+
+
+
+<define name="BuyThing">
+  <panel>
+    <image image="iIMAGEi" x="5"/>
+    <minmaxvarselection varname="iOUTVARi" min="1" max="iINVARi" x="50"/>
+    <text x="100">@ iCOSTi each.</text>
+  </panel>
+</define>
+  
+
+
+
+<actions>
+  <action name="OPTIONS" text="Apply Option Changes">
+    <var name="Discard"       hidden="y" noreset="y" text="Discard Before Buy"/>
+    <var name="Refinery"      hidden="y" noreset="y" text="Refinery"/>
+    <var name="OneUpgrade"    hidden="y" noreset="y" text="One Upgrade Purchase Per Player Per Turn"/>
+    <var name="ActiveBid"     hidden="y" noreset="y" text="Only Active Players May Bid"/>
+    <var name="SupplyShipFilling" hidden="y" noreset="y" text="Ship Supply Loading Mechanism"/>
+    <var name="Robots"        hidden="y" noreset="y" text="Robot Mechanism"/>
+    <var name="ResearchMega"  hidden="y" noreset="y" text="Research has Mega"/>
+    <var name="SmallResearch" hidden="y" noreset="y" text="Research resources are zero size"/>
+    <var name="SmallMicro"    hidden="y" noreset="y" text="Microbiotics resources are zero size"/>
+    <var name="BlindDraws"    hidden="y" noreset="y" text="Draws only visible at end of draw phase"/>
+    <var name="Stocking"      hidden="y" noreset="y" text="Initial Item Stocking Mechanism"/>
+  </action>
+  <action name="JOIN" text="Join Game"/>
+  <action name="STANDARDBASIC" text="Select Basic Game Options"/>
+  <action name="STANDARDEXPERT" text="Select Expert Game Options"/>
+  <action name="UNJOIN" text="Leave Game"/>
+  <action name="VALIDATESETUP" text="Start Game"/>
+  <action name="DONTLIKEOPTIONS" text="I don't like the Selected Options" alerts="true"/>
+  <action name="LIKEOPTIONS" text="I like the Selected Options" alerts="true"/>
+  <action name="WATERMULLIGAN" text="Mulligan Water Factory" alerts="true"/>
+
+  <action name="BUYMEN" text="Buy Men" alerts="true">
+    <var name="NumMen" text="Number of Men to Buy" noreset="y">
+      <named name="BuyMen" iOUTVARi="NumMen" iINVARi="NumPurMen" iIMAGEi="Man.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYROBOTS" text="Buy Robots" alerts="true">
+    <var name="NumRobots" text="Number of Robots to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumRobots" iINVARi="NumPurRobots" iCOSTi="10" iIMAGEi="Robot.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYOREFACTORIES" text="Buy Ore Factories" alerts="true">
+    <var name="NumOre" text="Number of Ore Factories to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumOre" iINVARi="NumPurOre" iCOSTi="10" iIMAGEi="Ore.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYWATERFACTORIES" text="Buy Water Factories" alerts="true">
+    <var name="NumWater" text="Number of Water Factories to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumWater" iINVARi="NumPurWater" iCOSTi="20" iIMAGEi="Water.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYTITANIUMFACTORIES" text="Buy Titanium Factories" alerts="true">
+    <var name="NumTite" text="Number of Titanium Factories to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumTite" iINVARi="NumPurTite" iCOSTi="30" iIMAGEi="Titanium.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYRESEARCHFACTORIES" text="Buy Research Centers" alerts="true">
+    <var name="NumResearch" text="Number of Research Factories to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumResearch" iINVARi="NumPurResearch" iCOSTi="40" iIMAGEi="Research.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="BUYNEWCHEMFACTORIES" text="Buy New Chemical Factories" alerts="true">
+    <var name="NumNewChem" text="Number of NewChem Factories to Buy" noreset="y">
+      <named name="BuyThing" iOUTVARi="NumNewChem" iINVARi="NumPurNewChem" 
+             iCOSTi="60, incl. 1 Research," iIMAGEi="NewChemicals.PNG"/>
+    </var>
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="OPENBID" text="Open Bidding" alerts="true">
+    <var name="ShipSlot" text="Which Supply Ship Slot to bid on" noreset="y"/>
+    <var name="OpeningBid" text="Opening Bid" noreset="y">
+      <panel layout="hbox">
+        <text>Opening Bid:</text>
+	<javaclass classname="StateSensitiveTextBox" varname="OpeningBid"/>
+	<javaclass classname="BidItemWatcher" ConsumeVariable="true"/>
+      </panel>
+    </var>
+  </action>
+
+  <action name="BID" text="Raise Bid" alerts="true">
+    <var name="Bid" text="New Bid" noreset="y">
+      <panel layout="hbox">
+        <text>Raise Bid To:</text>
+	<javaclass classname="StateSensitiveTextBox" varname="Bid"/>
+	<javaclass classname="BidItemWatcher"/>
+      </panel>
+    </var>
+  </action>
+
+  <action name="PASS" text="Pass" alerts="true"/>
+  <action name="PASSOUT" text="Pass Out"/>
+
+  <action name="NUMMEGAS" text="Select # of Megas" alerts="true">
+    <var name="MegaCount" text="Number of Megas to Draw" noreset="y">
+      <panel>
+        <eventhandler>
+          <passif eventname="MEGAREQUEST"/>
+        </eventhandler>
+	<named name="MegaCard" nCIDn="2" nMVn="30"/>
+	<named name="MegaCard" nCIDn="3" nMVn="44"/>
+	<named name="MegaCard" nCIDn="4" nMVn="56"/>
+	<named name="MegaCard" nCIDn="6" nMVn="88"/>
+
+        <minmaxvarselection varname="MegaCount" min="0" max="MaxMegas" x="90" y="30"/>
+      </panel>
+    </var>
+  </action>
+
+  <action name="DISCARD" text="Discard to Hand Limit" alerts="true">
+    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+  </action>
+
+  <action name="PURCHASEBID" text="Purchase Item" alerts="true">
+    <var name="DiscardString" noreset="y" text="Discard String">
+      <text>
+        <replace from="rCOSTr" eventvar="PurchasePrice" initial="0"/>
+	  Winning Bid will cost: rCOSTr
+      </text>
+    </var>
+  </action>
+
+  <action name="ALTERMANNING" text="Apply Manning Changes" onstate="statedalwayshidden">
+    <var name="ManString" hidden="y" noreset="y" text="Alter Manning String"/>
+  </action>
+
+  <action name="INTERNALIZE" text="Internalize"/>
+  <action name="DONE" text="End Turn" alerts="true"/>
+  <action name="FINALDONE" text="End Turn and Manning" alerts="true"/>
+  <action name="DONEMANNING" text="End Manning Phase" alerts="true"/>
+
+</actions>

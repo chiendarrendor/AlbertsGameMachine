@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+  <event name="PLAYER">
+    <var name="PLAYER.Name"/>
+    <var name="PLAYER.PlayerId"/>
+  </event>
+
+  <event name="MOVERROR">
+    <var name="MOVERROR.Error"/>
+  </event>
+ 
+  <event name="IAM">
+    <var name="IAM.PlayerId"/>
+  </event>
+
+  <event name="OPTIONS">
+    <var name="OPTIONS.WinMoney"/>
+  </event>
+
+  <event name="PLAYEROKSTARTUP">
+    <var name="PLAYEROKSTARTUP.PlayerId"/>
+    <var name="PLAYEROKSTARTUP.IsOk"/>
+  </event>
+
+  <event name="TURNORDER">
+    <var name="TURNORDER.order"/>
+  </event>
+
+  <event name="PLAYERMONEY">
+    <var name="PLAYERMONEY.PlayerId"/>
+    <var name="PLAYERMONEY.Money"/>
+    <var name="PLAYERMONEY.Barter"/>
+    <var name="PLAYERMONEY.Worth"/>
+  </event>
+
+  <event name= "PLAYERRACE">
+    <var name= "PLAYERRACE.PlayerId"/>
+    <var name= "PLAYERRACE.RaceId"/>
+  </event>
+
+  <event name= "ADDTOPLAYER">
+    <var name= "ADDTOPLAYER.PlayerId"/>
+    <var name= "ADDTOPLAYER.TokenEncoding"/>
+  </event>
+
+  <event name= "SUBTRACTFROMPLAYER">
+    <var name= "SUBTRACTFROMPLAYER.PlayerId"/>
+    <var name= "SUBTRACTFROMPLAYER.TokenEncoding"/>
+  </event>
+
+  <event name= "ADDTOTRADEBASE">
+    <var name= "ADDTOTRADEBASE.RaceId"/>
+    <var name= "ADDTOTRADEBASE.TokenEncoding"/>
+    <var name= "ADDTOTRADEBASE.FromCup"/>
+  </event>
+
+  <event name= "SUBTRACTFROMTRADEBASE">
+    <var name= "SUBTRACTFROMTRADEBASE.RaceId"/>
+    <var name= "SUBTRACTFROMTRADEBASE.TokenEncoding"/>
+  </event>
+
+  <event name= "SOLARSYSTEMPRIVACY">
+    <var name= "SOLARSYSTEMPRIVACY.SolarSystemName"/>
+    <var name= "SOLARSYSTEMPRIVACY.Secrecy"/>
+  </event>
+
+  <event name= "BASELOCATION">
+    <var name= "BASELOCATION.SolarSystemName"/>
+    <var name= "BASELOCATION.RaceId"/>
+  </event>
+
+  <event name= "QBOXPRIVACY">
+    <var name= "QBOXPRIVACY.SpaceName"/>
+    <var name= "QBOXPRIVACY.Secrecy"/>
+  </event>
+
+  <event name= "QBOXCONTENTS">
+    <var name= "QBOXCONTENTS.SpaceName"/>
+    <var name= "QBOXCONTENTS.SpaceEncoding"/>
+  </event>
+
+  <event name= "PLAYERLOCATION">
+    <var name= "PLAYERLOCATION.PlayerId"/>
+    <var name= "PLAYERLOCATION.SpaceName"/>
+  </event>
+
+  <event name= "SWITCHABLES">
+    <var name= "SWITCHABLES.Switchables"/>
+  </event>
+
+  <event name= "SELECTEDSWITCHABLES">
+    <var name= "SELECTEDSWITCHABLES.PlayerId"/>
+    <var name= "SELECTEDSWITCHABLES.Switchables"/>
+  </event>
+
+  <event name= "DESTINATION">
+    <var name= "DESTINATION.CurSpacePenalty"/>
+    <var name= "DESTINATION.IsFirst"/>
+    <var name= "DESTINATION.Destinations"/>
+  </event>
+
+  <event name= "DICE">
+    <var name= "DICE.DiceString"/>
+  </event>
+
+  <event name= "MPLEFT">
+    <var name= "MPLEFT.MpLeft"/>
+  </event>
+
+  <event name= "PLAYERWINS">
+    <var name= "PLAYERWINS.PlayerId"/>
+  </event> 
+
+  <event name= "CURPLAYER">
+    <var name= "CURPLAYER.PlayerId"/>
+  </event>
+
+  <event name= "PILOTNUMBERCHOICE">
+    <var name="PILOTNUMBERCHOICE.PilotNumbers"/>
+  </event>
+
+  <event name="PILOTNUMBERCHOSEN">
+    <var name="PILOTNUMBERCHOSEN.PlayerId"/>
+    <var name="PILOTNUMBERCHOSEN.PilotNumber"/>
+    <var name="PILOTNUMBERCHOSEN.IsPermanent"/>
+  </event>
+
+  <event name="REMAININGTRANSCOUNT">
+    <var name="REMAININGTRANSCOUNT.PlayerId"/>
+    <var name="REMAININGTRANSCOUNT.NumBuys"/>
+    <var name="REMAININGTRANSCOUNT.NumSells"/>
+  </event>
+
+  <event name="FACTORYOWNER">
+    <var name="FACTORYOWNER.RaceId"/>
+    <var name="FACTORYOWNER.PlayerId"/>
+  </event>
+  
+  <event name="AGEPLAYER">
+    <var name="AGEPLAYER.PlayerId"/>
+  </event>
+    
+  <actions>
+
+    <action name= "REDEEMIOU" onstate= "statedalwayshidden"/>
+    <action name= "TRADEINSHIP" onstate= "statedalwayshidden">
+      <var name= "TRADEINSHIP.ShipEncoding" text="Encoding of New Ship" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "BUY" onstate= "statedalwayshidden">
+      <var name= "BUY.ItemEncoding" text="Encoding of Item to Purchase" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "PICKUP" onstate= "statedalwayshidden">
+      <var name= "PICKUP.FareEncoding" text="Encoding of Fare to pick up" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "DROPOFF" onstate= "statedalwayshidden">
+      <var name= "DROPOFF.FareEncoding" text="Encoding of Fare to drop off" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "JETTISON" onstate= "statedalwayshidden">
+      <var name= "JETTISON.ItemEncoding" text="Encoding of item to jettison" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "SELL" onstate= "statedalwayshidden">
+      <var name= "SELL.ItemEncoding" text="Encoding of item to sell" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "ENDTURN" onstate= "statedalwayshidden"/>
+
+
+    <action name= "GETRELIC" onstate= "statedalwayshidden"/>
+    <action name= "LEAVERELIC" onstate="statedalwayshidden"/>
+    <action name= "MULLIGAN" onstate= "statedalwayshidden">
+      <var name= "MULLIGAN.NumToReroll" text="Value of die to reroll" noreset="y" hastextbox="n"/>
+    </action>
+    <action name="NOMULLIGAN" onstate="statedalwayshidden"/>
+    <action name= "SELECTSWITCHABLES" onstate="statedalwayshidden">
+      <var name= "SELECTSWITCHABLES.Switchables" text="set of on switchables" noreset="y" hastextbox="n"/>
+    </action>
+    <action name="JOIN" onstate="statedalwayshidden"/>
+    <action name="UNJOIN" onstate="statedalwayshidden"/>
+    <action name="OPTIONS" onstate="statedalwayshidden">
+      <var name="OPTIONS.WinMoney" text="End of game win condition" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "VALIDATESETUP" onstate="statedalwayshidden"/>
+    <action name= "DONTLIKEOPTIONS" onstate="statedalwayshidden"/>
+    <action name= "LIKEOPTIONS" onstate="statedalwayshidden"/>
+
+    <action name= "ENDMOVE" onstate="statedalwayshidden"/>
+    <action name= "SELECTDESTINATION" onstate="statedalwayshidden">
+      <var name= "SELECTDESTINATION.Destination" text="desired destination" noreset="y" hastextbox="n"/>
+      <var name= "SELECTDESTINATION.IsJump" text="whether desired destination is a telegate jump" noreset="y" hastextbox="n"/>
+    </action>
+    <action name= "SELECTPILOTNUMBER" onstate= "statedalwayshidden">
+      <var name= "SELECTPILOTNUMBER.PilotNumber" text="Pilot Number" noreset="y" hastextbox="n"/>
+    </action>
+  </actions>
+
+  <window title= "Merchant Of Venus" noscroll="y" layout="border">
+    <javaclass classname="MerchantOfVenus"/>
+  </window>
+
+</gameboard>

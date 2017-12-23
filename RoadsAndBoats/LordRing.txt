@@ -1,0 +1,20 @@
+Name:
+Lord of the Ring
+.end.
+NumPlayers:
+1
+.end.
+Comment:
+The sea in the 'Lord of the Ring' is just a little
+too large for rafts.  How will your sea transporters
+cooperate with your land transporters to deliver
+everything in time.  Can you beat Werner
+Baer's 360 points?
+.end.
+Board:
+. m m m . 
+ p w w f .
+f w d w f
+ f w w p .
+. s s s .
+.end.

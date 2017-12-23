@@ -1,0 +1,2 @@
+Outpost,http://#IPADDRESS#/client/Outpost,OutpostClient.xml,data/Outpost/Outpost
+MerchantOfVenus,http://#IPADDRESS#/client/MerchantOfVenus,MerchantOfVenusClient.xml,data/MerchantOfVenus/MerchantOfVenus

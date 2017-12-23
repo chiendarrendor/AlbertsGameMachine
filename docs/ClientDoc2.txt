@@ -1,0 +1,74 @@
+a GameGUI
+	has a set of windows it owns
+	has a set of events it responds to
+	has an Action Transfer Manager
+	knows about a Print Writer (conduit for sending actions to server)
+	knows about a StatusWindows (conduit for Error popup dialog)
+	knows about a TabbedWindow (additional 'windows' in tabs)
+	Has an AttributeChecker
+		This is used for event handlers, to validate that
+		the event variables that they respond to represent
+		valid variables
+		the following events are always present:
+		NEWSTATE statename
+		LEGALACTION actionanme
+		RESET
+		MESSAGE messagetext
+		ERROR errortext
+		
+		The above variables (args to events)
+		are always valid in event handlers
+		plus the special var name 'eventname' which is present
+		in every event and contains the name of the event.
+
+public methods:
+	ShowDebug -- asks StatusWindows to show a debug message
+	dispose() -- disposes of all owned windows
+	SendAction -- sends a packet to server
+	HandleEvent -- given an incoming packet
+		parses and validates it
+		ignores it if it isn't one the GameGUI handles
+		RESET -- resets all windows
+		ERROR -- should be handled higher
+		otherwise -- sends event to all windows
+	GetEventType -- gets GameEventType for given event name
+	CreateEventTYpe -- makes a new GameEventType for given name
+	AddWindow -- adds a new window to owned windows
+	RealizeWindows -- calls refresh on all windows
+	GetActionTransferManager -- gets the GameGUI's ATM
+	GetTabbedWindow -- gets the Tabbed Window
+	GetAttributeChecker -- gets the event var name AttributeChecker
+
+		
+GameXMLWalker takes a client XML document and fills out a GameGUI with
+the information
+	knows about the GameGui
+	knows about the GameGUI's var name AttrbuteChecker
+	knows about the GameGUI's name
+	knows about the directory location of any concomitant data
+		images, .class files
+	has a Node Registry
+	has a Priority Map of clone variable names
+
+-------------------------------------------
+<gameboard>
+	<event name=>
+		creates an GameEventType for the given name
+		<var name=
+			* adds the var name to the GameEventType
+			* adds the var name to the var name AttributeChecker
+	<define name=>
+		adds to the node registry this DOM node
+	<tab title= (o)layout= >
+		layout is one of lock,hbox,vbox,flow,border
+		-- makes a new tab in the Tabbed Window with the given
+		   title and the given Layout Manager, and makes the
+		   given TabNode embodying the tab a GameGUI 'window'
+
+		
+	<window>
+
+	<actions>
+
+
+

@@ -1,0 +1,412 @@
+
+
+<define name="logcell">
+  <panel x="XPOS" y="YPOS">
+    <eventhandler>
+      <passif eventname="ADVANCESTATUS" capital="CAPITAL" advance="ADVANCEKEY"/>
+    </eventhandler>
+    <image image="Aor/Icons/new.gif" hidden="y" x="20" y="6">
+      <eventhandler>
+        <showhide status="new"/>
+      </eventhandler>
+    </image>
+    <image image="Aor/Icons/inline023.gif" hidden="y" x="26">
+      <eventhandler>
+        <showhide status="old"/>
+      </eventhandler>
+    </image>
+    <button varname="selectedadvance" varvalue="ADVANCEKEY" hidden="y">
+      <replace from="COST" eventvar="advancecost"/>
+      $COST
+      <eventhandler>
+        <showhide status="buy"/>
+      </eventhandler>
+    </button>
+  </panel>
+</define>
+
+<define name="logcolumn">
+  <named name="logcell" YPOS="71" ADVANCEKEY="A"/>
+  <named name="logcell" YPOS="97" ADVANCEKEY="B"/>
+  <named name="logcell" YPOS="123" ADVANCEKEY="C"/>
+  <named name="logcell" YPOS="149" ADVANCEKEY="D"/>
+  <named name="logcell" YPOS="201" ADVANCEKEY="E"/>
+  <named name="logcell" YPOS="227" ADVANCEKEY="F"/>
+  <named name="logcell" YPOS="253" ADVANCEKEY="G"/>
+  <named name="logcell" YPOS="279" ADVANCEKEY="H"/>
+  <named name="logcell" YPOS="331" ADVANCEKEY="I"/>
+  <named name="logcell" YPOS="357" ADVANCEKEY="J"/>
+  <named name="logcell" YPOS="383" ADVANCEKEY="K"/>
+  <named name="logcell" YPOS="409" ADVANCEKEY="L"/>
+  <named name="logcell" YPOS="435" ADVANCEKEY="M"/>
+  <named name="logcell" YPOS="487" ADVANCEKEY="N"/>
+  <named name="logcell" YPOS="513" ADVANCEKEY="O"/>
+  <named name="logcell" YPOS="539" ADVANCEKEY="P"/>
+  <named name="logcell" YPOS="565" ADVANCEKEY="Q"/>
+  <named name="logcell" YPOS="617" ADVANCEKEY="R"/>
+  <named name="logcell" YPOS="643" ADVANCEKEY="S"/>
+  <named name="logcell" YPOS="669" ADVANCEKEY="T"/>
+  <named name="logcell" YPOS="695" ADVANCEKEY="U"/>
+  <named name="logcell" YPOS="747" ADVANCEKEY="V"/>
+  <named name="logcell" YPOS="773" ADVANCEKEY="W"/>
+  <named name="logcell" YPOS="799" ADVANCEKEY="X"/>
+  <named name="logcell" YPOS="825" ADVANCEKEY="Y"/>
+  <named name="logcell" YPOS="851" ADVANCEKEY="Z"/>
+</define>
+
+<window title="Advance Log" height="900" width="1220">
+  <text>
+    <![CDATA[
+    <html>
+      <table border=1 align=center>
+        <tr>
+          <th>Key</th>
+	  <th>Name</th>
+	  <th>Cost</th>
+          <th>Class<p>Credit</th>
+	  <th>Misery<p>Relief</th>
+	  <th>Description</th>
+	  <th>Prerequisites</th>
+	  <th>Leader<p>Epochs</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+        </th>
+        <tr>
+          <th colspan=14>Science(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+        <tr>
+          <td>A</td>
+          <td>The Heavens</td>
+          <td>30</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>Allows transit of one sea as a Coastal Province.</td>
+	  <td></td>
+	  <td>2 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>B</td>
+	  <td>Human Body</td>
+	  <td>60</td>
+	  <td>20</td>
+	  <td>10</td>
+	  <td>Reduces Misery one space. Lessens Mysticism Misery.</td>
+	  <td></td>
+	  <td>3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>C</td>
+	  <td>Laws of Matter</td>
+	  <td>90</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>Voids Alchemy and lessens Mysticism Misery.</td>
+	  <td></td>
+	  <td>3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>D</td>
+	  <td>Enlightenment</td>
+	  <td>120</td>
+	  <td>20</td>
+	  <td>50</td>
+	  <td>Halves Misery Relief price and lessens Mysticism Misery.</td>
+	  <td></td>
+	  <td>3 3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Religion(300)</td>
+        </tr>
+	<tr>
+	  <td>E</td>
+	  <td>Patronage</td>
+	  <td>30+1MI</td>
+	  <td>20</td>
+	  <td>10</td>
+	  <td>Allows investment in Leaders played by other players.</td>
+	  <td></td>
+	  <td>1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>F</td>
+	  <td>Holy Indulgence</td>
+	  <td>60+1MI</td>
+	  <td>20</td>
+	  <td>0</td>
+	  <td>Collects two Expansion tokens/turn from each non-owner.</td>
+	  <td></td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>G</td>
+	  <td>Proselytism</td>
+	  <td>90+1MI</td>
+	  <td>20</td>
+	  <td>0</td>
+	  <td>Wins attacks if colored die roll is &#8805; Order of Play.</td>
+	  <td></td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>H</td>
+	  <td>Cathedral</td>
+	  <td>120+1MI</td>
+	  <td>20</td>
+	  <td>25</td>
+	  <td>Automatically wins one attack per turn vs each non-owner.</td>
+	  <td>F</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Commerce(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+	<tr>
+	  <td>I</td>
+	  <td>Caravan</td>
+	  <td>20</td>
+	  <td>10</td>
+	  <td>5</td>
+	  <td>May place tokens through adjacent uncontrolled province.</td>
+	  <td></td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>J</td>
+	  <td>Wind/Watermill</td>
+	  <td>40</td>
+	  <td>10</td>
+	  <td>5</td>
+	  <td>May buy one trade attempt with defeated Market. dr &#8804; Market #.</td>
+	  <td>I</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>K</td>
+	  <td>Improved Agriculture</td>
+	  <td>50</td>
+	  <td>10</td>
+	  <td>25</td>
+	  <td>Reduces Misery one space. Reduces effect of Famine.</td>
+	  <td>J</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>L</td>
+	  <td>Interest & Profit</td>
+	  <td>80</td>
+	  <td>10</td>
+	  <td>0</td>
+	  <td>Doubles cash after Expansion but only up to value of Income.</td>
+	  <td>K</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>M</td>
+	  <td>Industry</td>
+	  <td>110</td>
+	  <td></td>
+	  <td>5</td>
+	  <td>Increases commodity value by one payment box.</td>
+	  <td>L</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Communications(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+	<tr>
+	  <td>N</td>
+	  <td>Written Record</td>
+	  <td>30</td>
+	  <td>10</td>
+	  <td>5</td>
+	  <td>Increases Leader credits by $10 (including Patronage Claims).</td>
+	  <td></td>
+	  <td>1 1 1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>O</td>
+	  <td>Printed Word</td>
+	  <td>60</td>
+	  <td>10</td>
+	  <td>10</td>
+	  <td>Earns Leader Discount Rebate for any owned Advances.</td>
+	  <td>N</td>
+	  <td>2 2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>P</td>
+	  <td>Master Art</td>
+	  <td>90</td>
+	  <td>10</td>
+	  <td>5</td>
+	  <td>May discard one card/turn without effect in Buy Card Phase.</td>
+	  <td>O</td>
+	  <td>3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>Q</td>
+	  <td>Renaissance</td>
+	  <td>120</td>
+	  <td></td>
+	  <td>100</td>
+	  <td>Once/turn trades Order of Play with adjacent non-owner.</td>
+	  <td>P</td>
+	  <td>2 3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Exploration(400)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+	<tr>
+	  <td>R</td>
+	  <td>Overland East</td>
+	  <td>40</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>Allows transit of area V.</td>
+	  <td></td>
+	  <td>1 1 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>S</td>
+	  <td>Seaworthy Vessels</td>
+	  <td>80</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>May enter all coastal provinces except Far East and New World.</td>
+	  <td></td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>T</td>
+	  <td>Ocean Navigation</td>
+	  <td>120</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>Allows transit of Far East.</td>
+	  <td>A,S</td>
+	  <td>2 2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>U</td>
+	  <td>New World</td>
+	  <td>160</td>
+	  <td></td>
+	  <td>25</td>
+	  <td>May enter New World. Reduces Misery one space/Income Phase.</td>
+	  <td>V,T</td>
+	  <td>2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Civics(500)</td>
+        </tr>
+	<tr>
+	  <td>V</td>
+	  <td>Urban Ascendancy</td>
+	  <td>20</td>
+	  <td>10</td>
+	  <td>5</td>
+	  <td>May buy one extra card for $10 each turn.</td>
+	  <td></td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>W</td>
+	  <td>Nationalism</td>
+	  <td>60</td>
+	  <td>20</td>
+	  <td>5</td>
+	  <td>Adds 1 to all attack totals in Home Area.</td>
+	  <td></td>
+	  <td>1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>X</td>
+	  <td>Institutional Research</td>
+	  <td>100</td>
+	  <td>30</td>
+	  <td>10</td>
+	  <td>Provides 10 Credits for any Advance except Civics & Religion.</td>
+	  <td></td>
+	  <td>2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>Y</td>
+	  <td>Cosmopolitan</td>
+	  <td>150</td>
+	  <td>40</td>
+	  <td>25</td>
+	  <td>May add Established Satellites to all adjacent province attacks.</td>
+	  <td>R</td>
+	  <td>2 2 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+	<tr>
+	  <td>Z</td>
+	  <td>Middle Class</td>
+	  <td>170</td>
+	  <td>50</td>
+	  <td>50</td>
+	  <td>Increases Income by $10/turn. Halves Stabilization Costs.</td>
+	  <td>K</td>
+	  <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+      </table>
+    </html>
+    ]]>
+  </text>
+  <image image="AoR/Icons/Barcelona_Old_Token.jpg" x="853" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Barcelona"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Paris_Old_Token.jpg" x="917" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Paris"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Genoa_Old_Token.jpg" x="979" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Genoa"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/London_Old_Token.jpg" x="1042" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="London"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Venice_Old_Token.jpg" x="1105" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Venice"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Hamburg_Old_Token.jpg" x="1170" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Hamburg"/></eventhandler>
+  </image>
+
+  <named name="logcolumn" XPOS="834" CAPITAL="Barcelona"/>
+  <named name="logcolumn" XPOS="899" CAPITAL="Paris"/>
+  <named name="logcolumn" XPOS="964" CAPITAL="Genoa"/>
+  <named name="logcolumn" XPOS="1028" CAPITAL="London"/>
+  <named name="logcolumn" XPOS="1092" CAPITAL="Venice"/>
+  <named name="logcolumn" XPOS="1155" CAPITAL="Hamburg"/>
+
+</window>

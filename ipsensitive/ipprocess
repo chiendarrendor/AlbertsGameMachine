@@ -1,0 +1,76 @@
+#! perl
+use Cwd;
+
+
+my @targets = 
+(
+ {
+     SOURCE=>'mainloc.txt',
+     DEST=>'../data'
+ },
+ {
+     SOURCE=>'gameconfig.txt',
+     DEST=>'../data'
+ },
+ {
+     SOURCE=>'ClientApplet.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet2.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet3.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet4.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet5.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet6.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientApplet7.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+ {
+     SOURCE=>'ClientAppletChien.html',
+     DEST=>'C:/apache/htdocs/client'
+ },
+
+
+);
+
+if (@ARGV == 0)
+{
+    die("need ip address on command line.\n");
+}
+
+
+for (my $i = 0 ; $i < @targets ; ++$i)
+{
+    my $src = $targets[$i]->{SOURCE};
+    my $dest = $targets[$i]->{DEST} . '/' . $targets[$i]->{SOURCE};
+
+    open(IFH,$src) || die("Can't open $src\n");
+
+    open(OFH,">".$dest) || die("Can't open $dest for write\n");
+
+    while(<IFH>)
+    {
+	s/\#IPADDRESS\#/$ARGV[0]/g;
+	print OFH;
+    }
+
+    close(IFH);
+    close(OFH);
+}
+
+	 

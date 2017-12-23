@@ -1,0 +1,86 @@
+- reported
++ fixed
+* tested
+? not sure if bug
+
+bugs:
+*+-server bug: unlimited sells aren't
+*+-jettison allowed in client on new item.
+*+-action panels still visible in GUI tab
+*+-initial panel initial size too big...sticky to right wall (have it reconstrain?)
+*+-demands need to be doublewide
+*+-demands need to be handled in TradeItemFactory
+*+-unsellable items really shouldn't be visible in trade.
+	ship	
+	deeds
+	other ious
+*+-don't let player buy ship they already own
+*+-die panel needs to raise when Mulligan
+*+-code to display cup-outs at base of trade panel
+*+-bug in cup-out, race id is null
+*+-privacy overlay for player station (privacy never sent from server)
+*+-separator needed betwween trade items and cup-out items.
+*+-privacy overlay for qboxes removed
+*+-cup-out race text should be white
+*+-server bug: does not send updated MONEY event after ship tradein
+*+-paperwork on player panel doesn't take into account doublewides
+*+-no solar system edges
+*+-no starfield behind
+*+-display bug...items not disappearing after other player sells
+
+*+-look into antialiasing path lines
+*+-break spaces on space station names
+
++-Trade Panel should not report commissions where item cannot be sold
++-cost to move along says "ending your move will cost you..."
+
+
+
+
+
+meteor code not complete
+
+ship is too small
+telegate is too small
+next space marker doesnt animate
+planets not finished
+orbit marker is ugly
+asteroids are ugly
+control panels/player panel/base panel/dice panel need prettying
+
+
+no display for partial-privacy of races and qboxes
+
+lockandpop icons need to be more obvious
+drag point of lockandpop should be obvious
+inset popandlock icons/windows a pixel or two
+arrow keys for scrolling
+"no money" -> "too pricy"
+put in '1x'
+get rid of 'X' for errors
+"not buyer" -> "can't sell here"
+"is new" -> "can't jettison yet"
+
+need more visible and consistent representation of acting player
+	(grey/red border for trade window if it is not player)
+
+redo player panel
+add spaces in race name/location
+implement race tokens for culture boxes
+put player funds into penalty control panel
+remove qbox box after space is emptied
+auto-scroll to acting player
+hover over planet causes race window to pop up
+commission blue is too dark
+tool tip help for relics
+documentation page
+'stop and pick up or fly on' control for entering a relic space 
+full trade panel too big for mac 1440x900 (diff font on Mac?)
+
+Select Player Color (part of InitialPanel maybe?)
+sort Qossuth at 10
+
+?jettison/dropoff for no money should require verification
+
+
+

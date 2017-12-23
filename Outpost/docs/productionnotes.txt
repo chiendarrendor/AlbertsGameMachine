@@ -1,0 +1,64 @@
+
+
+
+// plan on a top end of 150 autos before completion
+// (9 resources by 8 players by 2 transitions per step, + the incoming and outgoing)
+
+// auto Transition: StartResources -> PromptMegaResources
+curresource = 8;
+curplayer = 0;
+numunproduced = player[curplayer].GetNumMannedFactories(curresource);
+
+// auto Transition: PromptMegaResources -> StartDiscard
+// allowed if curresource < 0 && advanced_discard 
+
+// auto Transition: PromptMegaResources -> StartPurchase
+// allowed if curresource < 0 && !advanced_discard
+
+// auto Transition: PromptMegaResources -> DeliverResources
+// allowed if curresource >= 0 && (!resource[curresource].HasMega() || numunproduced < 4)
+
+// auto Transition: PromptMegaResources -> MegaResources
+// allowed if curresource >= 0 && (resource[curresource].HasMega() && numunproduced >= 4)
+// UnicastMEGAREQUEST(curplayer,curresource,numunproduced / 4)
+
+// Transition: NUMMEGAS <count>: MegaResources -> DeliverResources
+// allowed if i_Player = curplayer
+// return false if count * 4 > numunproduced || count <  0
+for (i = 0 ; i < count ; ++i)
+{
+  GetPlayers[curplayer].AddToHand(Deck[curresource].DrawMega());
+  numunproduced-=4;
+}
+BroadcastRESOURCEINFO(curplayer,GetPlayers()[curplayer].GetHandDescription());
+
+
+// auto Transition: DeliverResources -> PromptMegaResources
+int numunmanned = (refineries) ? 0 : player[curplayer].GetNumUnMannedFactories(curresource);
+int numdraws = numunproduced + min(numunproduced,numunmanned);
+std::vector<Card> draws;
+for (i = 0 ; i < numdraws ; ++i)
+{
+  draws.push_back(Deck[curresource].draw());
+}
+std::sort(draws.begin(),draws.end(),LargestValue());
+for (i = 0 ; i < numunproduced ; ++i)
+  GetPlayers[curplayer].AddToHand(draws[i]);
+}
+for ( ; i < draws.size() ; ++i)
+  Deck[curresource].discard(draws[i]);
+}
+BroadcastRESOURCEINFO(curplayer,GetPlayers()[curplayer].GetHandDescription());
+
+curplayer++;
+if (curplayer >= GetPlayers().size())
+{
+  curplayer = 0;
+  curresource--;
+}
+if (curresource >= 0)
+{
+  numunproduced = player[curplayer].GetNumMannedFactories(curresource);
+}
+
+

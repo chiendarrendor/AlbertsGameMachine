@@ -1,0 +1,102 @@
+XML Documentation
+
+XML Walker members:
+    m_Name -- GUI Name
+    m_gamegui -- GameGui for given name
+    m_noderegistry -- string to DOM Node
+    m_eventvarnames -- m_gamegui.GetAttributeChecker()
+    m_CloneVars -- a PriorityMap
+    m_FilePrefix -- GUI file prefix
+
+    m_actionwindownode -- new ActionTabNode
+
+    XML Root: <gameboard>
+
+    children:
+	event
+	actions
+	window
+	tab
+	define
+
+    panel children:
+
+<define name="name">
+</define>
+	-- specifies a GUI 'subroutine' 
+	-- any string in any attribute name, attribute value or body within
+	   this block can be a 'variable', replaced by a corresponding
+	   string=value attribute in a 'named' node.
+
+<tab title="title">
+     -- optional attribute 'layout'
+	-- values: lock, hbox, vbox, flow, border
+	-- used to specify a layout manager for the panel
+     -- creates a tab in the tabbed window with the given name
+     -- children of this are drawn into the panel for the tab
+     -- children are any allowed 'panel child'
+
+<window>
+     -- optional attributes:
+	-- title: title of window
+	-- hidden: starts out unrendered
+	-- backimage: background of window is given image
+	   (found in m_FilePrefix)
+	-- width: window starts out this wide (default is 1024)
+	-- height: window starts out this wide (default is 768)
+	-- x: window starts out with left side here (default is 0)
+	-- y: window starts out with top side here (default is 0)
+	-- layout: values are lock, hbox, vbox, flow, border
+    -- children are any allowed 'panel child'
+
+<event name="name">
+  <var name="varname" />
+  .
+  .
+  .
+</event>
+
+   -- this particular construct is used to validate event 
+      messages that come from the server.  If a 
+      message comes in with a name not mentioned in an
+      <event> block, it is rejected.
+   -- In addition, a message will be rejected if it does not
+      have exactly as many arguments as there are 'var' 
+      nodes in this event.
+   -- The var 'Name' field is used by event handlers in the
+      attribute 'varname'.  Note that any event that specifies
+      a given varname will 'hit' on the event handler, so
+      if you want only one event to 'hit' that event handler,
+      the event handler must be protected by a superior
+      event handler that only allows events for the desired
+      eventname to pass.
+
+
+<actions>
+   -- this block must contain an 'action' node for every
+      action that the client is expected to present to the 
+      server, whether or not a subordinate panel or separate 
+      window/tab is responsible for causing the action to activate.
+
+<action>
+   -- Overview:  an action is representative of a message
+      the client can send to the server.  by default, this
+      is represented by a section of the 'actions' tab for this
+      GUI, which contains a text box for each argument (var) of 
+      the action, and a 'go' button at the right hand side.
+   -- attributes:
+      required: name -- name of action (message name)
+      required: text -- text description of action
+      optional: alerts -- if set to 'true' will make the action window flash
+                          when this action is a legal action
+      optional: onstate
+        newstatehides -- default: section for this action appears and 
+		         disappears as the transition is legal or illegal
+	alwayson -- section for this action is always present (should only
+		    be used if the action is always allowed)
+        statedalwayshidden 
+	alwayshidden -- these two will cause the section to never be
+		     present in the action tab.  The difference is that
+		     statedalwayshidden will cause the ActionTransferManager
+		     to report that the state is allowed or disallowed.
+      optional: color -- background color of the 'go' button

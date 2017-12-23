@@ -1,0 +1,86 @@
+<define name="commoditynumscell">
+  <panel hidden="y">
+    <eventhandler>
+      <showif eventname="COMMODITYNUM" capital="CAPITAL"/>
+      <passif capital="CAPITAL" commodity="COMMODITYNAME"/>
+    </eventhandler>
+    <text>
+      <replace from="ALLNUM" eventvar="num" initial="0"/>
+      ALLNUM
+    </text>
+    <text y="20" hidden="y">
+      <eventhandler><hideshow newnum="0"/></eventhandler>
+      <replace from="NEWNUM" eventvar="newnum" initial="0"/>
+      (NEWNUM new)
+    </text>
+  </panel>
+</define>
+
+<define name="commoditynumsrow">
+  <panel x="75" y="15">
+    <eventhandler>
+      <passif eventname="COMMODITYNUM"/>
+    </eventhandler>
+    <named name="commoditynumscell" x="0"   CAPITAL="Barcelona" />
+    <named name="commoditynumscell" x="48"  CAPITAL="Paris"     />
+    <named name="commoditynumscell" x="96"  CAPITAL="Genoa"     />
+    <named name="commoditynumscell" x="144" CAPITAL="London"    />
+    <named name="commoditynumscell" x="192" CAPITAL="Venice"    />
+    <named name="commoditynumscell" x="240" CAPITAL="Hamburg"   />
+  </panel>
+</define>
+
+<define name="surplusshortage">
+  <panel>
+    <eventhandler>
+      <passif eventname="SURPLUSSHORTAGE" commodity="COMMODITYNAME"/>
+    </eventhandler>
+    <text hidden="y" x="3" y="5">
+      <eventhandler>
+        <showif state="-"/>
+        <showif state="--"/>
+        <hideif state="+"/>
+        <hideif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Surplus
+    </text>
+    <text hidden="y" x="3" y="5">
+      <eventhandler>
+        <hideif state="-"/>
+        <hideif state="--"/>
+        <showif state="+"/>
+        <showif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Shortage
+    </text>
+    <text hidden="y" x="3" y="25">
+      <eventhandler>
+        <hideif state="-"/>
+        <showif state="--"/>
+        <hideif state="+"/>
+        <hideif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Surplus
+    </text>
+    <text hidden="y" x="3" y="25">
+      <eventhandler>
+        <hideif state="-"/>
+        <hideif state="--"/>
+        <hideif state="+"/>
+        <showif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Shortage
+    </text>
+  </panel>
+</define>    
+
+
+<define name="commoditypair">
+  <named name="surplusshortage"/>
+  <named name="commoditynumsrow"/>
+</define>
+

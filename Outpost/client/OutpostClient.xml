@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+#include "events.xml"
+#include "actions.xml"
+#include "Options.xml"
+#include "Players.xml"
+#include "ResourceRules.xml"
+
+<tab title="Purchase History" layout="border">
+  <javaclass classname="Spends"/>
+</tab>
+</gameboard>

@@ -1,0 +1,178 @@
+<tab title="Factory Info">
+<text>
+<![CDATA[
+<html>
+
+<table border=1>
+<tr>
+<th>Resource</th>
+<th>Factory<p>Cost</th>
+<th>Factory<p>VP's</th>
+</tr>
+
+<tr>
+<td><font color="#804000">Ore</font></td>
+<td>10</td>
+<td>1</td>
+</tr>
+
+<tr>
+<td><font color="#0000FF">Water</font></td>
+<td>20</td>
+<td>1</td>
+</tr>
+
+<tr>
+<td><font color="#808080">Titanium</font></td>
+<td>30*</td>
+<td>2</td>
+</tr>
+
+<tr>
+<td bgcolor="#FFFF00"><font color="#000000">Research</font></td>
+<td>40**</td>
+<td>2</td>
+</tr>
+
+<tr>
+<td><font color="#008000">New<p>Chemicals</font></td>
+<td>60***</td>
+<td>3</td>
+</tr>
+</table>
+
+* Must own 'Heavy Equipment' to Purchase<p>
+** Must own 'Laboratories' to Purchase<p>
+*** At least one resource spent must be Research(yellow)
+
+
+</html>
+]]>
+</text>
+</tab>
+
+
+<tab title="Resource Info">
+<text>
+<![CDATA[
+<html>
+
+<table border=1>
+<tr>
+<th>Resource</th>
+<th>Average<p>Value</th>
+<th>Mega<p>Value</th>
+<th>Deck Makeup</th>
+</tr>
+
+<tr>
+<td><font color="#804000">Ore</font></td>
+<td>3</td>
+<td></td>
+<td>4x1,6x2,6x3,6x4,4x5</td>
+</tr>
+
+<tr>
+<td><font color="#0000FF">Water</font></td>
+<td>7</td>
+<td>30</td>
+<td>3x4,5x5,7x6,9x7,7x8,5x9,3x10</td>
+</tr>
+
+<tr>
+<td><font color="#808080">Titanium</font></td>
+<td>10</td>
+<td>44</td>
+<td>5x7,7x8,9x9,11x10,9x11,7x12,5x13</td>
+</tr>
+
+<tr>
+<td bgcolor="#FFFF00"><font color="#000000">Research</font></td>
+<td>13</td>
+<td>56*</td>
+<td>2x9,3x10,4x11,5x12,6x13,5x14,4x15,3x16,2x17</td>
+</tr>
+
+<tr>
+<td><font color="#FF00FF">Micro-<p>biotics</font></td>
+<td>17</td>
+<td></td>
+<td>1x14,2x15,3x16,4x17,3x18,2x19,1x20</td>
+</tr>
+
+<tr>
+<td><font color="#008000">New<p>Chemicals</font></td>
+<td>20</td>
+<td>88</td>
+<td>2x14,3x16,4x18,5x20,4x22,3x24,2x26</td>
+</tr>
+
+<tr>
+<td><font color="#00FF00">Orbital<p>Medicine</font></td>
+<td>30</td>
+<td></td>
+<td>2x20,3x25,4x30,3x35,2x40</td>
+</tr>
+
+<tr>
+<td><font color="#8080FF">Ring Ore</font></td>
+<td>40</td>
+<td></td>
+<td>1x30,3x35,4x40,3x45,1x50</td>
+</tr>
+
+<tr>
+<td><font color="#FF8040">Moon Ore</font></td>
+<td>50</td>
+<td></td>
+<td>1x40,3x45,4x50,3x55,1x60</td>
+</tr>
+
+</table>
+
+* Only if 'Research has Mega' option is used
+
+
+</html>
+]]>
+</text>
+</tab>
+
+
+<tab title="Resource Decks">
+  <javaclass classname="ResourceDecks"/>
+</tab>
+
+<tab title="Quick Reference">
+<text>
+<![CDATA[
+<html>
+<ol>
+<li> Determine Turn Order
+  <ol>
+  <li> Victory Points
+  <li> Face Value of Purchased Items
+  <li> Random
+  </ol>
+<li> Fill Colony Ship
+  <ul>
+  <li> 0-9 points use 1d4
+  <li> 10-29 points use 1d10
+  <li> 30+ points use 1d12+1
+  </ul>
+<li> Production
+<li> (Expert) Discard Phase (initial hand limit 10)
+<li> Commander Actions, in turn order
+  <ul>
+  <li> Purchase Men/Robots (initial pop limit 5)
+  <li> Purchase Factories
+  <li> Bid on Items
+  </ul>
+<li> Final Manning, in turn order
+<li> (Basic) Discard Phase (initial hand limit 5)
+<li> Check for Game End
+</ol>
+</html>
+]]>
+</text>
+</tab>

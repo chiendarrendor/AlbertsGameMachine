@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+
+<actions>
+  <action name="CHESSREFLECT" alwayson="true">
+    <var name="ChessArgument" text="Some Random Chess Argument"/>
+  </action>
+</actions>
+
+<event name="CHESSINIT">
+  <var name="init1"/>
+</event>
+
+<event name="CHESSINIT2">
+  <var name="init2"/>
+</event>
+
+<event name="CHESSSET">
+  <var name="setid"/>
+</event>
+
+<event name="CHESSSTATE">
+  <var name="ChessPlayerName"/>
+  <var name="ChessArgument"/>
+  <var name="ChessActionCount"/>
+</event>
+
+<window title="Chess Game" width="550" height="300">
+  <text y="20" text="Chess Init 1: INIT" replace="INIT" eventvar="init1" initialvarvalue="xxxx"/>
+  <text y="40" text="Chess Init 2: INIT" replace="INIT" eventvar="init2" initialvarvalue="yyyy"/>
+  <text y="60" text="Chess Set num: INIT" replace="INIT" eventvar="setid" initialvarvalue="zzzz"/>
+  <text y="80" text="Last Actor Name: NAME" replace="NAME" eventvar="ChessPlayerName" initialvarvalue="wwww"/>
+  <text y="100" text="Last Action Argument: ARG" replace="ARG" eventvar="ChessArgument" initialvarvalue="vvvv"/>
+  <text y="120" text="Last Action Count: COUNT" replace="COUNT" eventvar="ChessActionCount" initialvarvalue="kkkk"/>
+  
+</window>
+</gameboard>

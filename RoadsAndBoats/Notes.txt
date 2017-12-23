@@ -1,0 +1,58 @@
+Setting up:
+	* which spaces are starting spaces?
+	* put transporters on space
+	* put goods on space
+	* must be at least one empty tile between player starting spaces
+	* set player starting space
+Production:
+	* which spaces have primary producers?
+	* mines: variable output (known output for 1-player)
+	* load goods on transporters
+	* unload goods from transporters
+	* delete goods from space (operating factories)
+	* which neighboring spaces are 'local' (on same tile)
+	* remove transporter (building wagons, obsolescence)
+	* contents of tile (for breeding)
+
+
+edges:
+      1 ^ 2
+       / \
+      |   | 3
+    6 |   |
+       \ / 
+      5 V 4
+
+exits:
+       ^
+  1S  / \ 2W
+  1  /   \ 2
+ 1W /     \ 2S
+6S |       | 3W
+6  |       | 3
+6W |       | 3S
+ 5S \     / 4W
+  5  \   / 4
+   5W \ / 4S
+       V
+
+
+
+
+Tile Info:
+     (unique id is x,y)
+     x,y,type,river exits,starting,contained space oids
+Space Info:
+     oid,tile oid,ccl river,cl river,building
+     -- transporter/goods contents?
+Bridge Info:
+     oid,space 1 oid, space 2 oid, has bridge
+Wall Info:
+     oid,tile 1 oid, tile 2 oid, height, owner
+Road Info:
+     oid,space 1 oid, space 1 exit, space 2 oid, space 2 exit,has road
+Internal Dock Info:
+     oid, tile oid, adjacent space oids
+External Dock Info:
+     oid, land space oid, land space exit,water space oid, water space exit
+

@@ -1,0 +1,162 @@
+Basename: aor
+States:
+	st_Initial:
+		"Initial"
+	st_ResolveOrderOfPlayTies:
+		"Resolve Ties in Order of Play"
+	st_ChooseHomes:
+		"Choose Capital"
+	st_OrderOfPlay:
+		"Allocate Cash To Purchase Tokens"
+	st_PlaceBids:
+		"Place Capital Bids"
+State Descriptions:
+	"Place Capital Bids":
+		st_PlaceBids
+	"Allocate Cash To Purchase Tokens":
+		st_OrderOfPlay
+	"Choose Capital":
+		st_ChooseHomes
+	"Initial":
+		st_Initial
+	"Resolve Ties in Order of Play":
+		st_ResolveOrderOfPlayTies
+Transition Descriptions:
+BidsDone:
+	ALLOWED:
+		 GetBoard().IsPlaying(i_PlayerNum) && GetBoard().AllBid()
+	AUTO:
+		 GetBoard().AllBid()
+	SOURCE:
+		st_PlaceBids
+	NAME:
+		BidsDone
+	INFO:
+		 "All Players Have Submitted a Bid.  Transition to determine Capital Choice Order"
+	BODY:
+		
+		GetBoard().DetermineCapitalChoiceOrder();
+		const std::vector<int> &capOrder = GetBoard().GetCapitalChoiceOrder(capOrder);
+		std::ostringstream oss;
+		oss << "Capital Choice Order:";
+		int i;
+		for (i = 0 ; i < capOrder.size() ; i++)
+		{
+			oss << " " << capOrder[i] << "(" << GetBoard().GetPlayerInfo(capOrder[i]).GetBid() << ")";
+		}
+		ALLSTREAM(oss.str());
+		return true;
+	
+
+	TARGET:
+		st_ChooseHomes
+PlaceBid:
+	ALLOWED:
+		 GetBoard().IsPlaying(i_PlayerNum)
+	ACTIONS:
+		0: 
+			NAME:
+				bid
+			MIN:
+				 0
+			MAX:
+				 GetBoard().GetStartingStake()
+			DESC:
+				"Capital Bid"
+	SOURCE:
+		st_PlaceBids
+	NAME:
+		PlaceBid
+	INFO:
+		"Each Player Bids $0 to $" << GetBoard().GetStartingStake() << " for Capital Choice."
+	BODY:
+		
+		GetBoard().SetPlayerBid(i_PlayerId,bid);
+		PLSTREAM(i_PlayerId,"You have Bid " << bid << " for your capital.");
+		return true;
+	
+
+	TARGET:
+		st_PlaceBids
+SpecifyRules:
+	ACTIONS:
+		0: 
+			NAME:
+				numPlayers
+			MIN:
+				 3
+			MAX:
+				 6
+			DESC:
+				"Number of Players"
+		1: 
+			NAME:
+				numEpochs
+			MIN:
+				 1
+			MAX:
+				 3
+			DESC:
+				"Number of Epochs"
+	SOURCE:
+		st_Initial
+	NAME:
+		SpecifyRules
+	INFO:
+		"Any player specify: <# of players (3-6),# of epochs (1-3)>"
+	BODY:
+		
+		GetBoard().StartGame(numPlayers,numEpochs);
+		ALLSTREAM("Game Started with " << numPlayers << " players and " << numEpochs << " epochs.");
+		return true;
+	
+
+	TARGET:
+		st_PlaceBids
+Cyclic Transition Descriptions:
+Message:
+	ACTIONS:
+		0: 
+			NAME:
+				targetPlayer
+			DESC:
+				"Recipient Id"
+		1: 
+			NAME:
+				message
+			TYPETRANS:
+				std::string
+			TYPE:
+				std::string
+			DESC:
+				"Message"
+	NAME:
+		Message
+	INFO:
+		 "Action: <plnum>,<message> -- Sends a message to player plnum"
+	BODY:
+		
+		PLSTREAM(targetPlayer,"Player " << targetPlayer << " says: " << message);
+		return true;
+	
+
+	CYCLIC:
+		0: 
+			st_Initial
+		1: 
+			st_PlaceBids
+		2: 
+			st_ChooseHomes
+		3: 
+			st_OrderOfPlay
+		4: 
+			st_ResolveOrderOfPlayTies
+Validating Transition BidsDone:
+	Has Valid CYCLIC/SOURCE/TARGET combination
+Validating Transition PlaceBid:
+	Has Valid CYCLIC/SOURCE/TARGET combination
+Validating Transition SpecifyRules:
+	Has Valid CYCLIC/SOURCE/TARGET combination
+Validating Transition Message:
+	Has Valid CYCLIC/SOURCE/TARGET combination
+New Basename: Aor

@@ -1,0 +1,23 @@
+      std::vector<Commodity> deletedItems;
+      CommodityHand newhand = GetPlayers().GetCurTurnPlayer().GetCommodityHand();
+      int result = newhand.ApplyDeletes(i_discardstring,deletedItems);
+      switch(result)
+      {
+      case -1: UnicastERROR(i_PlayerName,"Mismatched delete string length"); return false;
+      case -2: UnicastERROR(i_PlayerName,"Illegal characters in delete string"); return false;
+      case 0: break; // this is the ok case.
+      default: UnicastERROR(i_PlayerName,"Unknown error reported by ApplyDeletes"); return false;
+      }
+      if (GetPlayers().GetCurTurnPlayer().GetHandLimit(GetOptions().EarlyDiscard()) <
+          newhand.GetHandWeight(GetOptions().ResearchIsSmall(),GetOptions().MicroIsSmall()))
+      {
+        UnicastERROR(i_PlayerName,"You need to discard more.");
+        return false;
+      }
+
+      GetPlayers().GetCurTurnPlayer().GetCommodityHand() = newhand;
+      size_t i;
+      for (i = 0 ; i < deletedItems.size() ; ++i)
+      {
+        GetCommodities().GetDeck(deletedItems[i].GetType()).DiscardCommodity(deletedItems[i]);
+      }

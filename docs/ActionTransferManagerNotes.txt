@@ -1,0 +1,64 @@
+UserDefinedInterface
+	public ctor(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+	public void HandleEvent(GameEvent i_event)
+	public void Refresh();
+	public void Reset();
+
+GameEvent
+	String GetVarValue(String i_name)
+	Set GetKeys()
+
+ActionGenerator(interface)
+	public void ActionLegalityChanged(boolean i_islegal);
+	public void ActionReadinessChanged(boolean i_isready);
+
+
+ActionVariableConsumer(interface)
+	public void ReportNewVariableValue(String i_newvalue);
+
+ActionVariableGenerator(interface)
+	public void ActionVariableReset()
+	public String ActionVariableGetValue()
+
+
+DoActionHandler
+	public void ActionGo()
+
+ActionTransferManager
+	public interface Alerter
+		public void Alert();
+
+	GetCurrentAlerter/SetCurrentAlerter
+
+	HashMap String -> Vector ActionVariableConsumer m_Consumers
+	HashMap String -> Vector ActionVariableGenerator m_Generators
+	HashMap String -> DoActionHandler m_ActionHandlers
+	HashMap String -> Vector ActionGenerator m_ButtonPressers
+
+
+	AddActionHandler(name,DoActionHandler) // adds to m_ActionHandlers
+	AddButtonPresser(name,ActionGenerator) // adds to m_ButtonPressers
+	RemoveButtonPresser(name,ActionGenerator) // removes from m_ButtonPressers
+	AddVariableConsumer(name,ActionVariableConsumer) // adds to m_Consumers
+	AddVariableGenerator(name,ActionVariableGenerator) // adds to m_Generators
+	RemoveVariableGenerator(name,ActionVariableGenerator) // removes from m_Generators
+	ResetVariableGenerators(name) // calls ActionVariableReset on m_Generators[name]
+
+	void ButtonPressed(name) // m_ActionHandlers[name].ActionGo
+	void ActionLegalityChanged(name,islegal) 
+		// m_ButtonPressors[name].foreach.ActionLegalityChanged(islegal)
+	void ActionReadinessChanged(name,isready)
+		// m_ButtonPressors[name].foreach.ActionReadinessChanged(isready)
+
+	GetVariableGeneratorValue(name)
+		calls ActionVariableGetValue on m_Generators[name][0]
+		as long as size of m_Generators[name] is exactly 1
+
+	ReportNewValueToConsumers(name,value)
+		calls ReportNewVariableValue on each m_Consumers[name]
+
+	
+
+
+
+

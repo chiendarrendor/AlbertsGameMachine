@@ -1,0 +1,40 @@
+<define name="OptionRow">
+  <panel x="0" y="dYd">
+    <panel>
+      <checkbox varname="dVNAMEd" x="0" y="0" hidden="y">
+        <eventhandler>
+	  <hideif eventname="NEWSTATE"/>
+	  <showif eventname="NEWSTATE" statename="Initial Game State"/>
+        </eventhandler>
+      </checkbox>
+    </panel>
+    <panel x="30" y="2">
+      <eventhandler><passif eventname="OPTIONS"/></eventhandler>
+      <text hidden="y"><eventhandler><showhide dVNAMEd="1"/></eventhandler>
+        true
+      </text>
+      <text><eventhandler><hideshow dVNAMEd="1"/></eventhandler>
+        false
+      </text>
+    </panel>
+    <text x="100" y="2">
+      dTEXTd
+    </text>
+  </panel>
+</define>
+
+<window title="Options" width="400" height="300">
+  <panel>
+    <named name="OptionRow" dYd="0"    dVNAMEd="Discard"       dTEXTd="Discard Before Buy"/>
+    <named name="OptionRow" dYd="20"   dVNAMEd="Refinery"      dTEXTd="Refinery"/>
+    <named name="OptionRow" dYd="40"   dVNAMEd="OneUpgrade"    dTEXTd="One Upgrade Purchase Per Player Per Turn"/>
+    <named name="OptionRow" dYd="60"   dVNAMEd="ActiveBid"     dTEXTd="Only Active Players May Bid"/>
+    <named name="OptionRow" dYd="80"   dVNAMEd="HarshSupply"   dTEXTd="Harsh Ship Supply Loading"/>
+    <named name="OptionRow" dYd="100"  dVNAMEd="Robots"        dTEXTd="Robots = # cards * # people"/>
+    <named name="OptionRow" dYd="120"  dVNAMEd="ResearchMega"  dTEXTd="Research has Mega"/>
+    <named name="OptionRow" dYd="140"  dVNAMEd="SmallResearch" dTEXTd="Research resources are zero size"/>
+    <named name="OptionRow" dYd="160"  dVNAMEd="SmallMicro"    dTEXTd="Microbiotics resources are zero size"/>
+  </panel>
+</window>
+
+

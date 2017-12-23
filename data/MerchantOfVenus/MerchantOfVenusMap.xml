@@ -1,0 +1,880 @@
+<board>
+<solarsystem name="Trapped Rogue Planet" ishabitable="y" x="415" y="351" alpha="350">
+        <icon name="RoguePlanet_Homeworld.png" x="486" y="175" homeworld="y" radius="38"/>
+	<icon name="RoguePlanet_Sun.png" x="604" y="276"/>
+	<space name="Rumble City" type="city" x="469" y="202">
+		<adjacent dest="Rain City" flyable="y"/>
+		<adjacent dest="trp_loop_1"/>
+	</space>
+	<space name="Rain City" type="city" x="497" y="136">
+		<adjacent dest="Rumble City" flyable="y"/>
+		<adjacent dest="trp_loop_4"/>
+	</space>
+	<space name="trp_loop_1" type="dot" x="423" y="251">
+	        <orbit name="Rumbleport"/>
+		<adjacent dest="Rumble City"/>
+	</space>
+	<space name="trp_loop_2" type="dot" x="393" y="180"/>
+	<space name="trp_loop_3" type="dot" x="418" y="109"/>
+	<space name="trp_loop_4" type="dot" x="492" y="71">
+	        <orbit name="Rainfall" orient="N"/>
+		<adjacent dest="Rain City"/>
+	</space>
+	<space name="trp_loop_5" type="dot" x="562" y="97"/>
+	<space name="trp_loop_6" type="dot" color="red" x="620" y="151">
+		<adjacent dest="trp_dw_1"/>
+	</space>
+	<space name="trp_loop_7" type="penalty" cost="10" x="682" y="208"/>
+	<space name="trp_loop_8" type="penalty" cost="10" color="red" x="695" y="284">
+		<adjacent dest="trp_ib_1"/>
+	</space>
+	<space name="trp_loop_9" type="penalty" cost="10" x="656" y="343"/>
+	<space name="trp_loop_10" type="penalty" cost="10" color="yellow" x="557" y="344"/>
+	<space name="trp_loop_11" type="dot" color="red" x="488" y="302">
+		<adjacent dest="trp_jw_1"/>
+	</space>
+</solarsystem>
+<line name="trp-dw">
+	<begin name="trp_loop_6"/>
+	<space name="trp_dw_1" type="dot" color="yellow" x="699" y="152"/>
+	<space name="trp_dw_2" type="dot" color="blue" x="782" y="160"/>
+	<space name="trp_dw_3" type="dot" color="red" x="863" y="164"/>
+	<space name="trp_dw_4" type="dot" color="blue" x="940" y="173"/>
+	<space name="trp_dw_5" type="dot" color="yellow" x="1014" y="181"/>
+	<space name="trp_dw_6" type="dot" color="blue" x="1094" y="187"/>
+	<end name="dw_loop_9"/>
+</line>
+
+<line name="trp-ib">
+	<begin name="trp_loop_8"/>
+	<space name="trp_ib_1" type="dot" color="yellow" x="758" y="301"/>
+	<space name="trp_ib_2" type="dot" color="blue" x="825" y="313"/>
+	<space name="trp_ib_3" type="dot" color="red" x="902" y="331"/>
+	<end name="ib_loop_4"/>
+</line>
+
+<solarsystem name="Desert World" ishabitable="y" x="1097" y="87">
+        <icon name="DesertWorld_Homeworld.png" x="1268" y="118" homeworld="y" radius="16"/>
+	<icon name="DesertWorld_Sun.png" x="1270" y="233"/>
+	<space name="Desolation City" type="city" x="1236" y="115">
+		<adjacent dest="Dry City" flyable="y"/>
+		<adjacent dest="dw_loop_1"/>
+	</space>
+	<space name="Dry City" type="city" x="1294" y="117">
+		<adjacent dest="Desolation City" flyable="y"/>
+		<adjacent dest="dw_loop_4"/>
+	</space>
+	<space name="dw_loop_1" type="dot" x="1185" y="113">
+	        <orbit name="Desolation Landing" orient="SW"/>
+		<adjacent dest="Desolation City"/>
+	</space>
+	<space name="dw_loop_2" type="dot" x="1230" y="44"/>
+	<space name="dw_loop_3" type="qbox" x="1307" y="53"/>
+	<space name="dw_loop_4" type="dot" x="1351" y="111">
+	        <orbit name="Dryport"/>
+		<adjacent dest="Dry City"/>
+	</space>
+	<space name="dw_loop_5" type="asteroid" x="1359" y="157">
+		<adjacent dest="dw_sn_1"/>
+	</space>
+	<space name="dw_loop_6" type="dot" color="yellow" x="1358" y="236">
+		<adjacent dest="dw_cloud_1"/>
+	</space>
+	<space name="dw_loop_7" type="dot" color="red" x="1293" y="302"/>
+	<space name="dw_loop_8" type="dot" color="blue" x="1213" y="276"/>
+	<space name="dw_loop_9" type="dot" color="red" x="1190" y="195">
+		<adjacent dest="trp_dw_6"/>
+	</space>
+</solarsystem>
+
+<solarsystem name="Interstellar Biosphere" ishabitable="y" x="979" y="584">
+	<space name="Smoke Ring" type="station" x="1080" y="438">
+		<adjacent dest="ib_loop_1"/>
+		<adjacent dest="ib_loop_8"/>
+	</space>
+	<space name="ib_loop_1" type="dot" x="1019" y="499">
+		<adjacent dest="Smoke Ring"/>
+	</space>
+	<space name="ib_loop_2" type="dot" color="yellow" x="983" y="459"/>
+	<space name="ib_loop_3" type="dot" color="red" x="959" y="412"/>
+	<space name="ib_loop_4" type="dot" x="976" y="343">
+	        <orbit name="Bypass"/>
+		<adjacent dest="trp_ib_3"/>
+	</space>
+	<space name="ib_loop_5" type="dot" color="red" x="1023" y="304"/>
+	<space name="ib_loop_6" type="dot" color="blue" x="1084" y="304"/>
+	<space name="ib_loop_7" type="dot" color="yellow" x="1131" y="345"/>
+	<space name="ib_loop_8" type="dot" color="red" x="1157" y="398">
+		<adjacent dest="Smoke Ring"/>
+	</space>
+	<space name="ib_loop_9" type="dot" color="blue" x="1176" y="448">
+		<adjacent dest="ib_cloud_1"/>
+	</space>
+	<space name="ib_loop_10" type="dot" color="yellow" x="1178" y="513"/>
+	<space name="ib_loop_11" type="dot" color="blue" x="1122" y="554"/>
+	<space name="ib_loop_12" type="dot" color="red" x="1065" y="544">
+		<adjacent dest="ib_gb_1"/>
+	</space>
+</solarsystem>
+
+<line name="dw_sn">
+	<begin name="dw_loop_5"/>
+	<space name="dw_sn_1" type="dot" color="red" x="1436" y="144"/>
+	<space name="dw_sn_2" type="dot" color="blue" x="1512" y="137"/>
+	<end name="SN_loop_04"/>
+</line>
+
+<line name="ib_gb">
+	<begin name="ib_loop_12"/>
+	<space name="ib_gb_1" type="dot" color="blue" x="1072" y="625"/>
+	<space name="ib_gb_2" type="dot" color="red" x="1083" y="703"/>
+	<space name="ib_gb_3" type="dot" color="yellow" x="1093" y="779"/>
+	<end name="Galactic Base"/>
+</line>
+
+<solarsystem name="Galactic Base" inhabited="y" x="1098" y="971">
+	<space name="Galactic Base" type="station" x="1108" y="877">
+		<adjacent dest="ib_gb_3"/>
+		<adjacent dest="cloud_body_8"/>
+		<adjacent dest="gb_cw_1"/>
+	</space>
+</solarsystem>
+
+<line name="trp_jw">
+	<begin name="trp_loop_11"/>
+	<space name="trp_jw_1" type="dot" color="blue" x="495" y="396"/>
+	<space name="trp_jw_2" type="dot" color="yellow" x="495" y="480"/>
+	<space name="trp_jw_3" type="dot" color="blue" x="498" y="569"/>
+	<space name="trp_jw_4" type="dot" color="red" x="501" y="660"/>
+	<space name="trp_jw_5" type="dot" color="blue" x="504" y="751"/>
+	<space name="trp_jw_6" type="dot" color="yellow" x="507" y="839"/>
+	<space name="trp_jw_7" type="dot" color="blue" x="509" y="928"/>
+	<end name="jw_loop_4"/>
+</line>
+
+<solarsystem name="Jungle World" ishabitable="y" x="581" y="1269">
+	<space name="Jellybeast City" type="city" x="441" y="1129">
+		<adjacent dest="Jewelburg" flyable="y"/>
+		<adjacent dest="jw_loop_1"/>
+	</space>
+	<space name="Jewelburg" type="city" x="456" y="1076">
+		<adjacent dest="Jellybeast City" flyable="y"/>
+		<adjacent dest="jw_loop_3"/>
+	</space>
+	<space name="jw_loop_1" type="dot" x="394" y="1154">
+                <orbit name="Jellybeast Landing"/>
+		<adjacent dest="Jellybeast City"/>
+	</space>
+	<space name="jw_loop_2" type="dot" x="392" y="1078"/>
+	<space name="jw_loop_3" type="dot" x="433" y="1035">
+	        <orbit name="Jewelport" orient="N"/>
+		<adjacent dest="Jewelburg"/>
+	</space>
+	<space name="jw_loop_4" type="dot" color="red" x="515" y="1022">
+		<adjacent dest="trp_jw_7"/>
+	</space>
+	<space name="jw_loop_5" type="qbox" x="589" y="1017"/>
+	<space name="jw_loop_6" type="dot" color="yellow" x="657" y="1070"/>
+	<space name="jw_loop_7" type="dot" x="641" y="1140">
+		<adjacent dest="jw_sg_1"/>
+	</space>
+	<space name="jw_loop_8" type="qbox" x="560" y="1177"/>
+	<space name="jw_loop_9" type="asteroid" x="458" y="1201">
+		<adjacent dest="jw_ip_1"/>
+	</space>
+</solarsystem>
+
+<line name="jw_ip">
+	<begin name="jw_loop_9"/>
+	<space name="jw_ip_1" type="dot" color="yellow" x="462" y="1302"/>
+	<space name="jw_ip_2" type="dot" color="red" x="464" y="1388"/>
+	<space name="jw_ip_3" type="dot" color="blue" x="468" y="1461"/>
+	<space name="jw_ip_4" type="dot" color="yellow" x="473" y="1543"/>
+	<end name="ip_loop_3"/>
+</line>
+
+<solarsystem name="Ice Planet" ishabitable="y" x="784" y="1677">
+	<space name="Hoth Base" type="city" x="468" y="1765">
+		<adjacent dest="ip_loop_1"/>
+	</space>
+	<space name="ip_loop_1" type="dot" x="422" y="1803">
+                <orbit name="Ice Station" orient="S"/>
+		<adjacent dest="Hoth Base"/>
+	</space>
+	<space name="ip_loop_2" type="asteroid" x="419" y="1710"/>
+	<space name="ip_loop_3" type="dot" color="red" x="479" y="1633">
+		<adjacent dest="jw_ip_4"/>
+	</space>
+	<space name="ip_loop_4" type="qbox" x="542" y="1570"/>
+	<space name="ip_loop_5" type="dot" color="red" x="644" y="1546"/>
+	<space name="ip_loop_6" type="asteroid" x="701" y="1615"/>
+	<space name="ip_loop_7" type="dot" color="red" x="663" y="1710"/>
+	<space name="ip_loop_8" type="dot" color="blue" x="573" y="1779">
+		<adjacent dest="ip_as_1"/>
+	</space>
+	<space name="ip_loop_9" type="qbox" x="498" y="1823"/>
+</solarsystem>
+
+<line name="ip_as">
+	<begin name="ip_loop_8"/>
+	<space name="ip_as_1" type="dot" color="yellow" x="660" y="1775"/>
+	<space name="ip_as_2" type="dot" color="blue" x="746" y="1768"/>
+	<space name="ip_as_3" type="dot" color="red" x="844" y="1763"/>
+	<space name="ip_as_4" type="dot" color="blue" x="924" y="1753"/>
+	<space name="ip_as_5" type="dot" color="red" x="1016" y="1741"/>
+	<space name="ip_as_6" type="dot" color="yellow" x="1109" y="1734"/>
+	<end name="AS_9_6"/>
+</line>
+
+<line name="jw_sg">
+	<begin name="jw_loop_7"/>
+	<space name="jw_sg_1" type="dot" color="red" x="688" y="1190"/>
+	<space name="jw_sg_2" type="dot" color="blue" x="739" y="1242"/>
+	<end name="sg_loop_1"/>
+</line>
+
+<line name="gb_cw">
+	<begin name="Galactic Base"/>
+	<space name="gb_cw_1" type="dot" color="red" x="1021" y="849"/>
+	<space name="gb_cw_2" type="dot" color="blue" x="967" y="830"/>
+	<space name="gb_cw_3" type="dot" color="yellow" x="913" y="813"/>
+	<space name="gb_cw_4" type="dot" color="blue" x="855" y="794"/>
+	<end name="cw_loop_6"/>
+</line>
+
+<solarsystem name="Colony World" ishabitable="y" x="820" y="695">
+	<space name="Shoemaker Levee" type="city" x="659" y="826">
+		<adjacent dest="Southern Comfort" flyable="y"/>
+		<adjacent dest="cw_loop_1"/>
+	</space>
+	<space name="Southern Comfort" type="city" x="661" y="781">
+		<adjacent dest="Shoemaker Levee" flyable="y"/>
+		<adjacent dest="cw_loop_4"/>
+	</space>
+	<space name="cw_loop_1" type="dot" x="651" y="877">
+	        <orbit name="Cobbleport" orient="S"/>
+		<adjacent dest="Shoemaker Levee"/>
+	</space>
+	<space name="cw_loop_2" type="dot" x="588" y="825"/>
+	<space name="cw_loop_3" type="dot" x="598" y="751"/>
+	<space name="cw_loop_4" type="dot" x="667" y="726">
+	        <orbit name="Comfort Station" orient="N"/>
+		<adjacent dest="Southern Comfort"/>
+	</space>
+	<space name="cw_loop_5" type="dot" x="743" y="739"/>
+	<space name="cw_loop_6" type="dot" color="red" x="798" y="776">
+		<adjacent dest="gb_cw_4"/>
+	</space>
+	<space name="cw_loop_7" type="dot" x="789" y="841"/>
+	<space name="cw_loop_8" type="dot" color="red" x="730" y="871">
+		<adjacent dest="GP_CW_07"/>
+	</space>
+</solarsystem>
+
+<solarsystem name="Supergiant" x="845" y="1430">
+	<space name="sg_loop_1" type="penalty" cost="10" color="yellow" x="799" y="1294">
+		<adjacent dest="jw_sg_2"/>
+	</space>
+	<space name="sg_loop_2" type="penalty" cost="10" color="red" x="914" y="1318"/>
+	<space name="sg_loop_3" type="penalty" cost="10" color="blue" x="942" y="1406">
+		<adjacent dest="GP_SG_03"/>
+	</space>
+	<space name="sg_loop_4" type="penalty" cost="10" color="red" x="891" y="1473">
+		<adjacent dest="sg_as_1"/>
+	</space>
+	<space name="sg_loop_5" type="penalty" cost="10" color="blue" x="761" y="1450"/>
+	<space name="sg_loop_6" type="penalty" cost="10" color="red" x="741" y="1363"/>
+</solarsystem>
+
+<line name="sg_as">
+	<begin name="sg_loop_4"/>
+	<space name="sg_as_1" type="dot" color="blue" x="954" y="1527"/>
+	<space name="sg_as_2" type="dot" color="yellow" x="1007" y="1578"/>
+	<space name="sg_as_3" type="dot" color="blue" x="1062" y="1617"/>
+	<space name="sg_as_4" type="dot" color="red" x="1117" y="1660"/>
+	<end name="AS_9_6"/>
+</line>
+
+<solarsystem name="Space Station Planet" ishabitable="y" x="1463" y="758" alpha="100">
+        <icon name="TheCloud.png" x="1341" y="714"/>
+	<icon name="invisible.png"  x="1466" y="872" homeworld="y" radius="1"/>
+	<space name="cloud_wing_1" type="dot" color="red" x="2072" y="433">
+		<adjacent dest="cloud_wing_2"/>
+		<adjacent dest="IM_loop_04"/>
+	</space>
+	<space name="cloud_wing_2" type="dot" x="2055" y="576">
+		<adjacent dest="cloud_wing_1" pnumbers="4"/>
+		<adjacent dest="WW_loop_02" pnumbers="3,6"/>
+		<adjacent dest="cloud_wing_3" pnumbers="1,2,5"/>
+	</space>
+	<space name="cloud_wing_3" type="qbox" x="1994" y="682">
+		<adjacent dest="cloud_wing_2"/>
+		<adjacent dest="cloud_wing_4"/>
+	</space>
+	<space name="cloud_wing_4" type="dot" x="1915" y="793">
+		<adjacent dest="cloud_wing_3" pnumbers="4,6"/>
+		<adjacent dest="PP_loop_07" pnumbers="5"/>
+		<adjacent dest="cloud_body_1" pnumbers="1,2,3" invisible="y"/>
+	</space>
+
+	<space name="cloud_body_1" type="dot" x="1684" y="762">
+	        <orbit name="Shuttlestop" orient="S"/>
+		<adjacent dest="cloud_wing_4" pnumbers="4,5" invisible="y"/>
+		<adjacent dest="cloud_body_2" pnumbers="1,6"/>
+		<adjacent dest="cloud_body_5" pnumbers="2,3"/>
+	</space>
+	<space name="cloud_body_2" type="qbox" x="1561" y="826">
+		<adjacent dest="cloud_body_1"/>
+		<adjacent dest="cloud_body_3"/>
+	</space>
+	<space name="cloud_body_3" type="station" x="1466" y="872">
+		<adjacent dest="cloud_body_2"/>
+		<adjacent dest="cloud_body_4"/>
+		<adjacent dest="cloud_south_1"/>
+	</space>
+	<space name="cloud_body_4" type="qbox" x="1372" y="832">
+		<adjacent dest="cloud_body_3"/>
+		<adjacent dest="cloud_body_8"/>
+	</space>
+	<space name="cloud_body_5" type="qbox" x="1586" y="676">
+		<adjacent dest="cloud_body_1"/>
+		<adjacent dest="cloud_body_6"/>
+	</space>
+	<space name="cloud_body_6" type="dot" x="1482" y="588">
+		<adjacent dest="cloud_body_5" pnumbers="1,5"/>
+		<adjacent dest="cloud_body_7" pnumbers="2"/>
+		<adjacent dest="cloud_north_1" pnumbers="3,4,6"/>
+	</space>
+	<space name="cloud_body_7" type="dot" x="1302" y="608">
+		<adjacent dest="cloud_body_6" pnumbers="3,4,5"/>
+		<adjacent dest="cloud_body_8" pnumbers="1,6"/>
+		<adjacent dest="ib_cloud_1" pnumbers="2"/>
+	</space>
+	<space name="cloud_body_8" type="dot" x="1221" y="772">
+		<adjacent dest="cloud_body_4" pnumbers="1,4,5,6"/>
+		<adjacent dest="Galactic Base" pnumbers="2"/>
+		<adjacent dest="cloud_body_7" pnumbers="3"/>
+	</space>
+	<space name="cloud_north_1" type="qbox" x="1487" y="474">
+		<adjacent dest="cloud_body_6"/>
+		<adjacent dest="cloud_north_2"/>
+	</space>
+	<space name="cloud_north_2" type="dot" x="1488" y="353">
+		<adjacent dest="cloud_north_1" pnumbers="1,2,5"/>
+		<adjacent dest="dw_cloud_1" pnumbers="3"/>
+		<adjacent dest="cloud_north_3" pnumbers="4,6"/>
+	</space>
+	<space name="cloud_north_3" type="dot" color="red" x="1588" y="425">
+		<adjacent dest="cloud_north_2"/>
+		<adjacent dest="WW_cloud_01"/>
+	</space>
+	<space name="cloud_south_1" type="dot" color="red" x="1540" y="924">
+		<adjacent dest="cloud_body_3"/>
+		<adjacent dest="cloud_south_2"/>
+	</space>
+	<space name="cloud_south_2" type="dot" color="yellow" x="1605" y="970">
+		<adjacent dest="cloud_south_1"/>
+		<adjacent dest="MGS_cloud_01"/>
+	</space>
+</solarsystem>
+
+
+<line name="ib_cloud">
+	<begin name="ib_loop_9"/>
+	<space name="ib_cloud_1" type="dot" color="red" x="1222" y="508"/>
+	<end name="cloud_body_7"/>
+</line>
+
+<line name="dw_cloud">
+	<begin name="dw_loop_6"/>
+	<space name="dw_cloud_1" type="dot" color="red" x="1401" y="276"/>
+	<end name="cloud_north_2"/>
+</line>
+
+<solarsystem name="War-Torn System" ishabitable="y" x="2276" y="1500">
+	<space name="Terror Town" type="city" x="2212" y="1671">
+		<adjacent dest="Titantown" flyable="y"/>
+		<adjacent dest="WTS_loop_1"/>
+	</space>
+	<space name="Titantown" type="city" x="2203" y="1737">
+		<adjacent dest="Terror Town" flyable="y"/>
+		<adjacent dest="WTS_loop_3"/>
+	</space>
+	<space name="WTS_loop_1" type="dot" x="2257" y="1620">
+	        <orbit name="Terror Station" orient="W"/>
+		<adjacent dest="Terror Town"/>
+	</space>
+	<space name="WTS_loop_2" type="qbox" x="2298" y="1712"/>
+	<space name="WTS_loop_3" type="dot" x="2237" y="1797">
+	        <orbit name="Titan's Tower" orient="S"/>
+		<adjacent dest="Titantown"/>
+	</space>
+	<space name="WTS_loop_4" type="penalty" cost="10" x="2161" y="1807"/>
+	<space name="WTS_loop_5" type="qbox" x="2082" y="1741">
+		<adjacent dest="WTS_AS_01"/>
+	</space>
+	<space name="WTS_loop_6" type="penalty" cost="10" color="yellow" x="2025" y="1665"/>
+	<space name="WTS_loop_7" type="dot" color="red" x="1995" y="1579"/>
+	<space name="WTS_loop_8" type="asteroid" x="2040" y="1510">
+		<adjacent dest="MGS_WTS_03"/>
+	</space>
+	<space name="WTS_loop_9" type="qbox" x="2143" y="1529"/>
+	<space name="WTS_loop_10" type="penalty" cost="20" color="red" x="2199" y="1571">
+		<adjacent dest="WTS_PP_01"/>
+	</space>
+</solarsystem>
+
+<line name="WTS_PP">
+	<begin name="WTS_loop_10"/>
+	<space name="WTS_PP_01" type="dot" color="yellow" x="2190" y="1490"/>
+	<space name="WTS_PP_02" type="dot" x="2186" y="1408"/>
+	<space name="WTS_PP_03" type="dot" color="red" x="2181" y="1327"/>
+	<space name="WTS_PP_04" type="dot" x="2178" y="1245"/>
+	<space name="WTS_PP_05" type="dot" color="yellow" x="2171" y="1160"/>
+	<space name="WTS_PP_06" type="dot" x="2166" y="1077"/>
+	<end name="PP_loop_04"/>
+</line>
+
+<solarsystem name="Polluted Planet" ishabitable="y" x="2276" y="1091">
+	<space name="Paint Place" type="city" x="2264" y="901">
+		<adjacent dest="PP_loop_01"/>
+		<adjacent dest="Poison Park" flyable="y"/>
+	</space>
+	<space name="Poison Park" type="city" x="2238" y="949">
+		<adjacent dest="PP_loop_03"/>
+		<adjacent dest="Paint Place" flyable="y"/>
+	</space>
+	<space name="PP_loop_01" type="dot" x="2318" y="878">
+	        <orbit name="Paintfall" orient="W"/>
+		<adjacent dest="Paint Place"/>
+	</space>
+	<space name="PP_loop_02" type="dot" x="2317" y="962"/>
+	<space name="PP_loop_03" type="dot" x="2245" y="1016">
+	        <orbit name="Poison Port"/>
+		<adjacent dest="Poison Park"/>
+	</space>
+	<space name="PP_loop_04" type="dot" color="red" x="2162" y="1003">
+		<adjacent dest="WTS_PP_06"/>
+	</space>
+	<space name="PP_loop_05" type="qbox" x="2084" y="984"/>
+	<space name="PP_loop_06" type="dot" color="yellow" x="2019" y="915"/>
+	<space name="PP_loop_07" type="dot" color="blue" x="2042" y="852">
+		<adjacent dest="cloud_wing_4"/>
+	</space>
+	<space name="PP_loop_08" type="dot" color="red" x="2141" y="824">
+		<adjacent dest="PP_IM_01"/>
+	</space>
+	<space name="PP_loop_09" type="qbox" x="2242" y="815"/>
+</solarsystem>
+
+<line name="PP_IM">
+	<begin name="PP_loop_08"/>
+	<space name="PP_IM_01" type="dot" color="blue" x="2152" y="729"/>
+	<space name="PP_IM_02" type="dot" color="yellow" x="2165" y="639"/>
+	<space name="PP_IM_03" type="dot" color="blue" x="2180" y="544"/>
+	<space name="PP_IM_04" type="dot" color="red" x="2189" y="451"/>
+	<space name="PP_IM_05" type="dot" color="blue" x="2203" y="363"/>
+	<end name="IM_loop_02"/>
+</line>
+
+<solarsystem name="Inhabited Moon" ishabitable="y" x="2277" y="331">
+        <icon name="InhabitedMoon_Homeworld.png" homeworld="y" x="2190" y="124" radius="16"/>
+	<icon name="InhabitedMoon.png" x="2123" y="202"/>
+	<icon name="InhabitedMoon_Sun.png" x="2060" y="270"/>
+
+	<space name="Moonview" type="city" x="2213" y="139">
+		<adjacent dest="Minyan" flyable="y"/>
+		<adjacent dest="IM_loop_01"/>
+	</space>
+	<space name="Minyan" type="city" x="2180" y="104">
+		<adjacent dest="Moonview" flyable="y"/>
+		<adjacent dest="IM_loop_08"/>
+	</space>
+	<space name="IM_loop_01" type="dot" x="2270" y="192">
+                <orbit name="Moonport" orient="W"/>
+		<adjacent dest="Moonview"/>
+	</space>
+	<space name="IM_loop_02" type="dot" color="yellow" x="2214" y="262">
+		<adjacent dest="PP_IM_05"/>
+	</space>
+	<space name="IM_loop_03" type="qbox" x="2159" y="310"/>
+	<space name="IM_loop_04" type="dot" color="yellow" x="2081" y="347">
+		<adjacent dest="cloud_wing_1"/>
+	</space>
+	<space name="IM_loop_05" type="dot" color="red" x="1995" y="271"/>
+	<space name="IM_loop_06" type="asteroid" x="2039" y="166"/>
+	<space name="IM_loop_07" type="dot" color="red" x="2087" y="105">
+		<adjacent dest="IM_SN_01"/>
+	</space>
+	<space name="IM_loop_08" type="dot" x="2141" y="59">
+                <orbit name="Minion"/>
+		<adjacent dest="Minyan"/>
+	</space>
+	<space name="IM_loop_09" type="dot" color="blue" x="2218" y="42"/>
+	<space name="IM_loop_10" type="qbox" x="2278" y="101"/>
+</solarsystem>
+
+<line name="IM_SN">
+	<begin name="IM_loop_07"/>
+	<space name="IM_SN_01" type="dot" color="blue" x="2002" y="108"/>
+	<space name="IM_SN_02" type="dot" color="yellow" x="1919" y="115"/>
+	<space name="IM_SN_03" type="dot" color="blue" x="1842" y="121"/>
+	<end name="SN_loop_01"/>
+</line>
+
+<solarsystem name="Supernova" x="1687" y="163">
+        <icon name="SuperNova.png" x="1676" y="127"/>
+	<space name="SN_loop_01" type="penalty" cost="30" color="red" x="1767" y="126">
+		<adjacent dest="IM_SN_03"/>
+	</space>
+	<space name="SN_loop_02" type="penalty" cost="30" color="blue" x="1724" y="200">
+		<adjacent dest="SN_WW_01"/>
+	</space>
+	<space name="SN_loop_03" type="penalty" cost="30" color="red" x="1645" y="201"/>
+	<space name="SN_loop_04" type="penalty" cost="30" color="yellow" x="1600" y="124">
+		<adjacent dest="dw_sn_2"/>
+	</space>
+	<space name="SN_loop_05" type="penalty" cost="30" color="red" x="1639" y="57"/>
+	<space name="SN_loop_06" type="penalty" cost="30" color="blue" x="1729" y="56"/>
+</solarsystem>
+
+<line name="SN_WW">
+	<begin name="SN_loop_02"/>
+	<space name="SN_WW_01" type="dot" color="red" x="1740" y="305"/>
+	<end name="WW_loop_07"/>
+</line>
+
+<solarsystem name="Water World" ishabitable="y" x="1854" y="290">
+        <icon name="WaterWorld_Homeworld.png" x="1836" y="474" homeworld="y" radius="25"/>
+	<space name="Whale Watch" type="city" x="1872" y="461">
+		<adjacent dest="Wet Willy" flyable="y"/>
+		<adjacent dest="WW_loop_01"/>
+	</space>
+	<space name="Wet Willy" type="city" x="1849" y="506">
+		<adjacent dest="Whale Watch" flyable="y"/>
+		<adjacent dest="WW_loop_03"/>
+	</space>
+	<space name="WW_loop_01" type="dot" x="1933" y="434">
+	        <orbit name="Whaleport"/>
+		<adjacent dest="Whale Watch"/>
+	</space>
+	<space name="WW_loop_02" type="asteroid" x="1941" y="517">
+		<adjacent dest="cloud_wing_2"/>
+	</space>
+	<space name="WW_loop_03" type="dot" x="1865" y="587">
+                <orbit name="Wet Landing"/>
+		<adjacent dest="Wet Willy"/>
+	</space>
+	<space name="WW_loop_04" type="dot" color="red" x="1800" y="630">
+		<adjacent dest="WW_MGS_01"/>
+	</space>
+	<space name="WW_loop_05" type="dot" color="yellow" x="1716" y="600"/>
+	<space name="WW_loop_06" type="dot" color="blue" x="1708" y="504">
+		<adjacent dest="WW_cloud_01"/>
+	</space>
+	<space name="WW_loop_07" type="dot" color="yellow" x="1759" y="405">
+		<adjacent dest="SN_WW_01"/>
+	</space>
+	<space name="WW_loop_08" type="qbox" x="1851" y="373"/>
+</solarsystem>
+
+<line name="WW_cloud">
+	<begin name="WW_loop_06"/>
+	<space name="WW_cloud_01" type="dot" color="yellow" x="1649" y="466"/>
+	<end name="cloud_north_3"/>
+</line>
+
+<line name="WW_MGS">
+	<begin name="WW_loop_04"/>
+	<space name="WW_MGS_01" type="dot" color="blue" x="1798" y="714"/>
+	<space name="WW_MGS_02" type="dot" color="red" x="1795" y="797"/>
+	<space name="WW_MGS_03" type="dot" color="blue" x="1792" y="879"/>
+	<space name="WW_MGS_04" type="dot" color="yellow" x="1790" y="962"/>
+	<end name="MGS_loop_1"/>
+</line>
+
+<solarsystem name="Multi- Generation Ship" ishabitable="y" x="1986" y="1352">
+	<space name="MGS_loop_1" type="dot" x="1789" y="1101">
+	        <orbit name="Neutron Port" orient="S"/>
+		<adjacent dest="WW_MGS_04" pnumbers="3,4"/>
+		<adjacent dest="MGS_cloud_01" pnumbers="2,5"/>
+		<adjacent dest="MGS_loop_2" pnumbers="6"/>
+		<adjacent dest="MGS_loop_5" pnumbers="1"/>
+	</space>
+	<space name="MGS_loop_2" type="penalty" cost="20" color="red" x="1914" y="1142">
+		<adjacent dest="MGS_loop_1"/>
+		<adjacent dest="MGS_loop_3"/>
+	</space>
+	<space name="MGS_loop_3" type="station" x="1926" y="1245">
+		<adjacent dest="MGS_loop_2"/>
+		<adjacent dest="MGS_loop_4"/>
+	</space>
+	<space name="MGS_loop_4" type="dot" x="1780" y="1314">
+		<adjacent dest="MGS_loop_3" pnumbers="4,5"/>
+		<adjacent dest="MGS_WTS_01" pnumbers="6"/>
+		<adjacent dest="MGS_GP_01" pnumbers="1"/>
+		<adjacent dest="MGS_loop_5" pnumbers="2,3"/>
+	</space>
+	<space name="MGS_loop_5" type="asteroid" x="1709" y="1194">
+		<adjacent dest="MGS_loop_4"/>
+		<adjacent dest="MGS_loop_1"/>
+	</space>
+</solarsystem>
+
+<line name="MGS_cloud">
+	<begin name="MGS_loop_1"/>
+	<space name="MGS_cloud_01" type="dot" color="red" x="1671" y="1019"/>
+	<end name="cloud_south_2"/>
+</line>
+
+<line name="MGS_GP">
+	<begin name="MGS_loop_4"/>
+	<space name="MGS_GP_01" type="dot" color="red" x="1649" y="1306"/>
+	<space name="MGS_GP_02" type="dot" color="yellow" x="1582" y="1304"/>
+	<space name="MGS_GP_03" type="dot" color="red" x="1516" y="1302"/>
+	<end name="GP_loop_01"/>
+</line>
+
+<solarsystem name="Giant Planet" ishabitable="y" x="1475" y="1104">
+	<space name="Grand Jetee" type="city" x="1377" y="1301">
+		<adjacent dest="Great Scott" flyable="y"/>
+		<adjacent dest="Levitown" flyable="y"/>
+		<adjacent dest="GP_loop_01"/>
+	</space>
+	<space name="Great Scott" type="city" x="1348" y="1343">
+		<adjacent dest="Grand Jetee" flyable="y"/>
+		<adjacent dest="Levitown" flyable="y"/>
+		<adjacent dest="GP_loop_03"/>
+	</space>
+	<space name="Levitown" type="city" x="1289" y="1315">
+		<adjacent dest="Grand Jetee" flyable="y"/>
+		<adjacent dest="Great Scott" flyable="y"/>
+		<adjacent dest="GP_loop_05"/>
+	</space>
+	<space name="GP_loop_01" type="dot" x="1426" y="1298">
+	        <orbit name="Grandport" orient="NE"/>
+		<adjacent dest="Grand Jetee"/>
+		<adjacent dest="MGS_GP_03"/>
+	</space>
+	<space name="GP_loop_02" type="dot" color="blue" x="1416" y="1348"/>
+	<space name="GP_loop_03" type="dot" x="1373" y="1389">
+	        <orbit name="Greathome"/>
+		<adjacent dest="Great Scott"/>
+	</space>
+	<space name="GP_loop_04" type="dot" color="blue" x="1288" y="1397"/>
+	<space name="GP_loop_05" type="dot" x="1232" y="1329">
+	        <orbit name="Goliath" orient="NW"/>
+		<adjacent dest="Levitown"/>
+		<adjacent dest="GP_SG_01"/>
+	</space>
+	<space name="GP_loop_06" type="dot" color="blue" x="1244" y="1245">
+		<adjacent dest="GP_CW_01"/>
+	</space>
+	<space name="GP_loop_07" type="dot" color="red" x="1271" y="1158"/>
+	<space name="GP_loop_08" type="qbox" x="1369" y="1111"/>
+	<space name="GP_loop_09" type="dot" color="yellow" x="1423" y="1184"/>
+</solarsystem>
+
+<line name="GP_CW">
+	<begin name="GP_loop_06"/>
+	<space name="GP_CW_01" type="dot" color="red" x="1173" y="1196"/>
+	<space name="GP_CW_02" type="dot" color="blue" x="1110" y="1149"/>
+	<space name="GP_CW_03" type="dot" color="yellow" x="1046" y="1105"/>
+	<space name="GP_CW_04" type="dot" color="blue" x="984" y="1061"/>
+	<space name="GP_CW_05" type="dot" color="red" x="925" y="1016"/>
+	<space name="GP_CW_06" type="dot" color="blue" x="860" y="970"/>
+	<space name="GP_CW_07" type="dot" color="yellow" x="796" y="923"/>
+	<end name="cw_loop_8"/>
+</line>
+
+<line name="GP_SG">
+	<begin name="GP_loop_05"/>
+	<space name="GP_SG_01" type="dot" color="red" x="1155" y="1345"/>
+	<space name="GP_SG_02" type="dot" color="blue" x="1084" y="1368"/>
+	<space name="GP_SG_03" type="dot" color="yellow" x="1019" y="1387"/>
+	<end name="sg_loop_3"/>
+</line>
+
+<line name="MGS_WTS">
+	<begin name="MGS_loop_4"/>
+	<space name="MGS_WTS_01" type="dot" color="yellow" x="1872" y="1390"/>
+	<space name="MGS_WTS_02" type="dot" color="blue" x="1927" y="1433"/>
+	<space name="MGS_WTS_03" type="dot" color="red" x="1984" y="1475"/>
+	<end name="WTS_loop_8"/>
+</line>
+
+<line name="WTS_AS">
+	<begin name="WTS_loop_5"/>
+	<space name="WTS_AS_01" type="dot" color="red" x="2000" y="1735"/>
+	<space name="WTS_AS_02" type="dot" x="1926" y="1732"/>
+	<space name="WTS_AS_03" type="dot" color="yellow" x="1855" y="1726"/>
+	<end name="AS_1_2"/>
+</line>
+
+<solarsystem name="Asteroid System" ishabitable="y" x="1167" y="1800">
+	<space name="AS_1_1" type="dot" color="red" x="1780" y="1641">
+		<adjacent dest="AS_1_2"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_2_1"/>
+	</space>
+	<space name="AS_1_2" type="dot" x="1779" y="1715">
+	        <orbit name="Airhome" orient="S"/>
+		<adjacent dest="WTS_AS_03"/>
+		<adjacent dest="AS_1_1"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_2_3"/>
+	</space>
+	<space name="AS_2_1" type="penalty" cost="20" color="blue" x="1704" y="1596">
+		<adjacent dest="AS_1_1"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_3_2"/>
+		<adjacent dest="AS_3_1"/>
+	</space>
+	<space name="AS_2_2" type="asteroid" x="1708" y="1679">
+		<adjacent dest="AS_1_1"/>
+		<adjacent dest="AS_1_2"/>
+		<adjacent dest="AS_2_1"/>
+		<adjacent dest="AS_2_3"/>
+		<adjacent dest="AS_3_2"/>
+		<adjacent dest="AS_3_3"/>
+	</space>
+	<space name="AS_2_3" type="dot" color="red" x="1706" y="1756">
+		<adjacent dest="AS_1_2"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_3_3"/>
+		<adjacent dest="AS_3_4"/>
+	</space>
+	<space name="AS_3_1" type="station" x="1639" y="1556">
+		<adjacent dest="AS_2_1"/>
+		<adjacent dest="AS_3_2"/>
+		<adjacent dest="AS_4_1"/>
+	</space>
+	<space name="AS_3_2" type="penalty" cost="10" color="red" x="1638" y="1633">
+		<adjacent dest="AS_3_1"/>
+		<adjacent dest="AS_2_1"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_3_3"/>
+		<adjacent dest="AS_4_3"/>
+	</space>
+	<space name="AS_3_3"	type="penalty" cost="20" color="yellow" x="1637" y="1718">
+		<adjacent dest="AS_3_2"/>
+		<adjacent dest="AS_2_2"/>
+		<adjacent dest="AS_2_3"/>
+		<adjacent dest="AS_3_4"/>
+		<adjacent dest="AS_4_4"/>
+		<adjacent dest="AS_4_3"/>
+	</space>
+	<space name="AS_3_4" type="qbox" x="1633" y="1803">
+		<adjacent dest="AS_2_3"/>
+		<adjacent dest="AS_3_3"/>
+		<adjacent dest="AS_4_4"/>
+	</space>
+	<space name="AS_4_1" type="qbox" x="1570" y="1512">
+		<adjacent dest="AS_3_1"/>
+		<adjacent dest="AS_5_2"/>
+	</space>
+	<space name="AS_4_3" type="asteroid" x="1563" y="1675">
+		<adjacent dest="AS_3_2"/>
+		<adjacent dest="AS_3_3"/>
+		<adjacent dest="AS_4_4"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_5_3"/>
+	</space>
+	<space name="AS_4_4" type="penalty" cost="30" color="red" x="1561" y="1762">
+		<adjacent dest="AS_3_4"/>
+		<adjacent dest="AS_3_3"/>
+		<adjacent dest="AS_4_3"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_5_5"/>
+	</space>
+	<space name="AS_5_2" type="penalty" cost="10" color="yellow" x="1489" y="1553">
+		<adjacent dest="AS_4_1"/>
+		<adjacent dest="AS_5_3"/>
+		<adjacent dest="AS_6_3"/>
+	</space>
+	<space name="AS_5_3" type="penalty" cost="40" color="blue" x="1486" y="1636">
+		<adjacent dest="AS_4_3"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_6_4"/>
+		<adjacent dest="AS_6_3"/>
+		<adjacent dest="AS_5_2"/>
+	</space>
+	<space name="AS_5_4" type="asteroid" x="1485" y="1721">
+		<adjacent dest="AS_5_3"/>
+		<adjacent dest="AS_4_3"/>
+		<adjacent dest="AS_4_4"/>
+		<adjacent dest="AS_5_5"/>
+		<adjacent dest="AS_6_5"/>
+		<adjacent dest="AS_6_4"/>
+	</space>
+	<space name="AS_5_5" type="qbox" x="1486" y="1806">
+		<adjacent dest="AS_4_4"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_6_5"/>
+	</space>
+
+	<space name="AS_6_3" type="station" x="1414" y="1597">
+		<adjacent dest="AS_5_2"/>
+		<adjacent dest="AS_5_3"/>
+		<adjacent dest="AS_6_4"/>
+		<adjacent dest="AS_7_4"/>
+	</space>
+	<space name="AS_6_4" type="qbox" x="1412" y="1678">
+		<adjacent dest="AS_6_3"/>
+		<adjacent dest="AS_5_3"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_6_5"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_7_4"/>
+	</space>
+	<space name="AS_6_5" type="dot" color="yellow" x="1411" y="1761">
+		<adjacent dest="AS_5_5"/>
+		<adjacent dest="AS_5_4"/>
+		<adjacent dest="AS_6_4"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_7_6"/>
+	</space>
+	<space name="AS_7_4" type="penalty" cost="30" color="blue" x="1336" y="1641">
+		<adjacent dest="AS_6_3"/>
+		<adjacent dest="AS_6_4"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_8_5"/>
+	</space>
+	<space name="AS_7_5" type="penalty" cost="20" color="red" x="1336" y="1719"> 
+		<adjacent dest="AS_7_4"/>
+		<adjacent dest="AS_6_4"/>
+		<adjacent dest="AS_6_5"/>
+		<adjacent dest="AS_7_6"/>
+		<adjacent dest="AS_8_6"/>
+		<adjacent dest="AS_8_5"/>
+	</space>
+	<space name="AS_7_6" type="qbox" x="1336" y="1799">
+		<adjacent dest="AS_6_5"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_8_6"/>
+	</space>
+	<space name="AS_8_5" type="asteroid" x="1265" y="1678">
+		<adjacent dest="AS_7_4"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_8_6"/>
+		<adjacent dest="AS_9_6"/>
+	</space>
+	<space name="AS_8_6" type="dot" color="yellow" x="1265" y="1757">
+		<adjacent dest="AS_7_6"/>
+		<adjacent dest="AS_7_5"/>
+		<adjacent dest="AS_8_5"/>
+		<adjacent dest="AS_9_6"/>
+	</space>
+	<space name="AS_9_6" type="dot" x="1193" y="1718">
+	        <orbit name="Aerie" orient="N"/>
+		<adjacent dest="AS_8_5"/>
+		<adjacent dest="AS_8_6"/>
+		<adjacent dest="ip_as_6"/>
+		<adjacent dest="sg_as_4"/>
+	</space>
+</solarsystem>
+
+
+</board>
+
+

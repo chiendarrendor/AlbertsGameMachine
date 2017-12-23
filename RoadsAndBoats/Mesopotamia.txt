@@ -1,0 +1,21 @@
+Name:
+Mesopotamia
+.end.
+NumPlayers:
+1
+.end.
+Comment:
+In Mesopotamia you have lots of resources,
+but rivers make distances relatively large.  How
+will you get stone for roads and bridges?  This puzzle
+is interesting for more experienced players.  The
+current record is 440 points, but check www.splotter.com
+for the latest news!
+.end.
+Board:
+. m3 s36 d46 .
+ m f35 f46 w .
+m3 f26 p45 p135 w
+ m f25 f12 w .
+. m2 s d .
+.end.

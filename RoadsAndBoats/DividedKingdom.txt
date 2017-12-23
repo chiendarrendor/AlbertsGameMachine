@@ -1,0 +1,62 @@
+# comment line
+# hex positioning:
+#
+#. . . . . . . . 
+# . . . . . . . .
+#. . . . . . . .
+# name
+Name:
+Divided Kingdoms
+.end.
+#
+# number of players
+NumPlayers:
+3
+.end.
+Board:
+# 
+# . = empty	f = forest	s = stone
+# m = mountain	w = water	d = desert
+# p = pasture
+# suffixes: 
+# Outlets of water
+# 1 2
+#6   3
+# 5 4
+# start positions: *
+# without river, start position is simply the tile
+# with river, the * is placed after the river edge 
+# number that represents the counterclockwise edge
+# of the part of the tile the starting position is in.
+# i.e.
+#
+#            ^
+#        1  / \  2
+#          /   \
+#         / \   \
+#        |   \   |
+#     6  |   |---| 3
+#        |   |   |
+#         \ / * /
+#          \   /
+#         5 \ / 4
+#            v
+#
+# would be represented by
+# p13*5 (or p53*1, or p153*)
+#
+#
+# board:
+. . m . . f f w w . 
+ m w w s f w w p w m
+. w m f p w s* p m w
+ w p p f p24 s f f w m
+. w w s* s p135 p46 p s .
+ . f w w p26 s w f . .
+. . f f p f s* w f .
+ . . . s f p w f . .
+. . . . w m p w . .
+ . . . m w w w . . .
+. . . . . m . . . .
+.end.
+

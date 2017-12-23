@@ -1,0 +1,35 @@
+trade notes:
+	20% discount on deeds if player id matches trade base id
+	goods sell for money
+	everything else sellable sells for barter
+	goods only sellable to listed races
+	goods go into cup, immediate redraw and place
+	barter is zeroed at end of turn
+	iou is bartered to culture (does not count as a sale)
+	relics go to culture's Trade Base
+	equipment goes away
+	goods to cup
+	fares to cup
+	ship:
+		do not allow purchase if not enough holds
+		prior ship is bartered to culture
+		new ship is bought
+	at city: one buy, one sell/barter the turn player lands
+	unlimited on subsequent turns
+	demands: 
+		when a good is sold
+			player gets bonus of all matching demands
+			one matching demand goes to cup
+	fares:
+		pickup/dropoff not a buy/sell
+	relics can be picked up for free from asteroid
+	goods, equipment, fares can be jettisoned at any spaceport/city
+	item cannot be jettisoned the turn player got it.
+	owning player of a space station gets 10% of
+		sales (including demand bonus)
+		buys
+		barters (including IOU)
+		fare dropoff
+	owning player of a factory gets 50% of 
+		buy cost of factory good when bought
+	player may only buy items if they fit on their ship

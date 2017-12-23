@@ -1,0 +1,1159 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gameboard>
+
+<actions>
+  <action name="JOIN"/>
+  <action name="STARTGAME">
+    <var name="numepochs" text="Game Length (# of epochs)">
+      <fixedselection varname="numepochs" list="1,2,3"/>
+    </var>
+  </action>
+  <action name="MAKECAPITALBID">
+    <var name="capitalbid" text="Amount to bid on Capital">
+      <varspinner varname="capitalbid" listvar="capitalbids"/>
+    </var>
+  </action>
+  <action name="CHOOSECAPITAL">
+    <var name="capital" text="Capital (color) you will play">
+      <varselection varname="capital" listvar="capitals"/>
+    </var>
+  </action>
+</actions>
+
+<event name="PLAYER">
+  <var name="playername"/>
+  <var name="playernum"/>
+</event>
+<event name="EPOCHSTATUS">
+  <var name="curturn"/>
+  <var name="curepoch"/>
+  <var name="cardsindeck"/>
+  <var name="numepochs"/>
+</event>
+<event name="NUMCARDS">
+  <var name="playernum"/>
+  <var name="numcards"/>
+</event>
+<event name="HANDCARD">
+  <var name="cardname"/>
+  <var name="cardnum"/>
+</event>
+<event name="CASH">
+  <var name="playernum"/>
+  <var name="curcash"/>
+</event>
+<event name="CAPITALBID">
+  <var name="playernum"/>
+  <var name="capitalbid"/>
+</event>
+<event name="CAPITALBIDS">
+  <var name="capitalbids"/>
+</event>
+<event name="CAPITALS">
+  <var name="capitals"/>
+</event>
+<event name="PLAYERCAPITAL">
+  <var name="playernum"/>
+  <var name="capitalname"/>
+</event>
+<event name="SHIP">
+  <var name="capital"/>
+  <var name="shiptype"/>
+  <var name="shipnum"/>
+</event>
+<event name="MISERY">
+  <var name="capital"/>
+  <var name="miserynum"/>
+</event>
+<event name="NUMSTOCK">
+  <var name="playernum"/>
+  <var name="dominstock"/>
+  <var name="domonboard"/>
+  <var name="tokeninstock"/>
+  <var name="tokenonboard"/>
+  <var name="expansiontokens"/>
+</event>
+<event name="DOMINANCE">
+  <var name="space"/>
+  <var name="capital"/>
+  <var name="age"/>
+</event>
+<event name="SPACEEMPTY">
+  <var name="space"/>
+</event>
+<event name="COMMODITYNUM">
+  <var name="commodity"/>
+  <var name="capital"/>
+  <var name="num"/>
+  <var name="newnum"/>
+</event>
+<event name="SURPLUSSHORTAGE">
+  <var name="commodity"/>
+  <var name="state"/>
+</event>
+<event name="ADVANCESTATUS">
+  <var name="capital"/>
+  <var name="advance"/>
+  <var name="status"/>
+  <var name="advancecost"/>
+</event>
+<event name="TURNLOG">
+  <var name="playernum"/>
+  <var name="logtotal"/>
+  <var name="logturn"/>
+  <var name="logtokens"/>
+  <var name="logcash"/>
+</event>
+
+
+
+
+<define name="commoditynumscell">
+  <panel hidden="y">
+    <eventhandler>
+      <showif eventname="COMMODITYNUM" capital="CAPITAL"/>
+      <passif capital="CAPITAL" commodity="COMMODITYNAME"/>
+    </eventhandler>
+    <text>
+      <replace from="ALLNUM" eventvar="num" initial="0"/>
+      ALLNUM
+    </text>
+    <text y="20" hidden="y">
+      <eventhandler><hideshow newnum="0"/></eventhandler>
+      <replace from="NEWNUM" eventvar="newnum" initial="0"/>
+      (NEWNUM new)
+    </text>
+  </panel>
+</define>
+
+<define name="commoditynumsrow">
+  <panel x="75" y="15">
+    <eventhandler>
+      <passif eventname="COMMODITYNUM"/>
+    </eventhandler>
+    <named name="commoditynumscell" x="0" CAPITAL="Barcelona" />
+    <named name="commoditynumscell" x="48" CAPITAL="Paris" />
+    <named name="commoditynumscell" x="96" CAPITAL="Genoa" />
+    <named name="commoditynumscell" x="144" CAPITAL="London" />
+    <named name="commoditynumscell" x="192" CAPITAL="Venice" />
+    <named name="commoditynumscell" x="240" CAPITAL="Hamburg" />
+  </panel>
+</define>
+
+<define name="surplusshortage">
+  <panel>
+    <eventhandler>
+      <passif eventname="SURPLUSSHORTAGE" commodity="COMMODITYNAME"/>
+    </eventhandler>
+    <text hidden="y" x="3" y="5">
+      <eventhandler>
+        <showif state="-"/>
+        <showif state="--"/>
+        <hideif state="+"/>
+        <hideif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Surplus
+    </text>
+    <text hidden="y" x="3" y="5">
+      <eventhandler>
+        <hideif state="-"/>
+        <hideif state="--"/>
+        <showif state="+"/>
+        <showif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Shortage
+    </text>
+    <text hidden="y" x="3" y="25">
+      <eventhandler>
+        <hideif state="-"/>
+        <showif state="--"/>
+        <hideif state="+"/>
+        <hideif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Surplus
+    </text>
+    <text hidden="y" x="3" y="25">
+      <eventhandler>
+        <hideif state="-"/>
+        <hideif state="--"/>
+        <hideif state="+"/>
+        <showif state="++"/>
+        <hideif state="0"/>
+      </eventhandler>
+      Shortage
+    </text>
+  </panel>
+</define>
+
+
+<define name="commoditypair">
+  <named name="surplusshortage"/>
+  <named name="commoditynumsrow"/>
+</define>
+
+
+
+<define name="miseryunit">
+  <panel>
+    <eventhandler>
+      <passif capital="CAPITAL"/>
+    </eventhandler>
+    <image image="AoR/Icons/CAPITAL_Old_Token.jpg" x="XPOS" hidden="y">
+      <eventhandler>
+        <showhide miserynum="NUM"/>
+      </eventhandler>
+    </image>
+  </panel>
+</define>
+
+<define name="misery">
+  <panel>
+    <eventhandler>
+      <passif eventname="MISERY"/>
+    </eventhandler>
+    <named name="miseryunit" CAPITAL="Paris" XPOS="0" />
+    <named name="miseryunit" CAPITAL="London" XPOS="8" />
+    <named name="miseryunit" CAPITAL="Hamburg" XPOS="16" />
+    <named name="miseryunit" CAPITAL="Barcelona" XPOS="24" />
+    <named name="miseryunit" CAPITAL="Venice" XPOS="32" />
+    <named name="miseryunit" CAPITAL="Genoa" XPOS="40" />
+  </panel>
+</define>
+
+<define name="dominance">
+  <panel>
+    <eventhandler>
+      <passif space="SPACE"/>
+    </eventhandler>
+    <foreach varname="CAPITAL" value="Barcelona,Genoa,Hamburg,London,Paris,Venice">
+      <foreach varname="AGE" value="Old,New">
+        <image image="Aor/Icons/CAPITAL_AGE_Dom.png" hidden="y">
+          <eventhandler>
+            <showhide eventname="DOMINANCE" capital="CAPITAL" age="AGE"/>
+            <hideif eventname="SPACEEMPTY"/>
+          </eventhandler>
+        </image>
+      </foreach>
+    </foreach>
+  </panel>
+</define>
+
+
+<define name="shipunit">
+  <panel>
+    <eventhandler>
+      <passif capital="CAPITAL"/>
+    </eventhandler>
+    <image image="AoR/Icons/CAPITAL_Ship.jpg" y="YPOS" hidden="y">
+      <eventhandler>
+        <showhide shiptype="TYPE" shipnum="NUM"/>
+      </eventhandler>
+    </image>
+  </panel>
+</define>
+
+
+
+<define name="shipset">
+  <panel>
+    <eventhandler>
+      <passif eventname="SHIP"/>
+    </eventhandler>
+    <named name="shipunit" CAPITAL="Barcelona" YPOS="0" />
+    <named name="shipunit" CAPITAL="Paris" YPOS="15" />
+    <named name="shipunit" CAPITAL="Genoa" YPOS="30" />
+    <named name="shipunit" CAPITAL="Venice" YPOS="45" />
+    <named name="shipunit" CAPITAL="London" YPOS="60" />
+    <named name="shipunit" CAPITAL="Hamburg" YPOS="75" />
+  </panel>
+</define>
+
+<window title="Game Board" backimage="AoR/AoRBoard.jpg">
+  <text x="55" y="1693">Total:</text>
+
+  <panel x="173" y="927">
+    <image image="AoR/Icons/Barcelona_Old_Token.jpg" x="0" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="Barcelona"/></eventhandler>
+    </image>
+    <image image="AoR/Icons/Paris_Old_Token.jpg" x="48" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="Paris"/></eventhandler>
+    </image>
+    <image image="AoR/Icons/Genoa_Old_Token.jpg" x="96" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="Genoa"/></eventhandler>
+    </image>
+    <image image="AoR/Icons/London_Old_Token.jpg" x="144" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="London"/></eventhandler>
+    </image>
+    <image image="AoR/Icons/Venice_Old_Token.jpg" x="192" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="Venice"/></eventhandler>
+    </image>
+    <image image="AoR/Icons/Hamburg_Old_Token.jpg" x="240" hidden="y">
+      <eventhandler><showif eventname="COMMODITYNUM" capital="Hamburg"/></eventhandler>
+    </image>
+  </panel>
+
+
+  <text x="114" y="927">
+    <![CDATA[Surplus/]]>
+  </text>
+  <text x="113" y="947">
+    Shortage
+  </text>
+
+  <text x="1575" y="543" hidden="y">
+    <eventhandler><showif eventname="EPOCHSTATUS"/></eventhandler>
+    <replace from="CURTURN" eventvar="curturn"/>
+    <replace from="CUREPOCH" eventvar="curepoch"/>
+    <replace from="NUMEPOCHS" eventvar="numepochs"/>
+    <replace from="CARDSLEFT" eventvar="cardsindeck"/>
+
+<![CDATA[
+<html>
+  <font color=BEC5AC face="times new roman" size=+2>
+    <b><i>
+    Turn CURTURN<p><p>
+    Epoch CUREPOCH<p>
+    out of NUMEPOCHS<p><p>
+    CARDSLEFT cards left<p><p>
+    </i></b>
+  </font>
+</html>
+]]>
+
+  </text>
+
+  <named name="shipset" x="2" y="84" TYPE="0" NUM="0" />
+  <named name="shipset" x="80" y="83" TYPE="0" NUM="1" />
+  <named name="shipset" x="189" y="82" TYPE="0" NUM="2" />
+  <named name="shipset" x="245" y="85" TYPE="0" NUM="3" />
+  <named name="shipset" x="347" y="84" TYPE="0" NUM="4" />
+  <named name="shipset" x="70" y="221" TYPE="1" NUM="1" />
+  <named name="shipset" x="191" y="222" TYPE="1" NUM="2" />
+  <named name="shipset" x="233" y="222" TYPE="1" NUM="3" />
+  <named name="shipset" x="351" y="221" TYPE="1" NUM="4" />
+  <named name="shipset" x="74" y="360" TYPE="2" NUM="1" />
+  <named name="shipset" x="181" y="362" TYPE="2" NUM="2" />
+  <named name="shipset" x="238" y="361" TYPE="2" NUM="3" />
+  <named name="shipset" x="339" y="363" TYPE="2" NUM="4" />
+
+  <named name="misery" x="1786" y="263" NUM="0" />
+  <named name="misery" x="1786" y="287" NUM="1" />
+  <named name="misery" x="1786" y="310" NUM="2" />
+  <named name="misery" x="1786" y="333" NUM="3" />
+  <named name="misery" x="1786" y="356" NUM="4" />
+  <named name="misery" x="1786" y="380" NUM="5" />
+  <named name="misery" x="1786" y="405" NUM="6" />
+  <named name="misery" x="1786" y="430" NUM="7" />
+  <named name="misery" x="1786" y="453" NUM="8" />
+  <named name="misery" x="1786" y="475" NUM="9" />
+  <named name="misery" x="1786" y="499" NUM="10" />
+  <named name="misery" x="1786" y="526" NUM="11" />
+  <named name="misery" x="1786" y="549" NUM="12" />
+  <named name="misery" x="1786" y="572" NUM="13" />
+  <named name="misery" x="1786" y="595" NUM="14" />
+  <named name="misery" x="1786" y="622" NUM="15" />
+  <named name="misery" x="1786" y="644" NUM="16" />
+  <named name="misery" x="1786" y="668" NUM="17" />
+  <named name="misery" x="1786" y="691" NUM="18" />
+  <named name="misery" x="1786" y="717" NUM="19" />
+  <named name="misery" x="1786" y="740" NUM="20" />
+  <named name="misery" x="1786" y="764" NUM="21" />
+  <named name="misery" x="1786" y="787" NUM="22" />
+  <named name="misery" x="1786" y="814" NUM="23" />
+  <named name="misery" x="1786" y="836" NUM="24" />
+  <named name="misery" x="1786" y="862" NUM="25" />
+  <named name="misery" x="1786" y="880" NUM="26" />
+
+  <named name="dominance" SPACE="Iceland" x="532" y="286" />
+  <named name="dominance" SPACE="Edinburg" x="606" y="440" />
+  <named name="dominance" SPACE="York" x="737" y="539" />
+  <named name="dominance" SPACE="London" x="845" y="657" />
+  <named name="dominance" SPACE="Chester" x="690" y="581" />
+  <named name="dominance" SPACE="Portsmouth" x="768" y="690" />
+  <named name="dominance" SPACE="Waterford" x="488" y="749" />
+  <named name="dominance" SPACE="Bergen" x="1020" y="87" />
+  <named name="dominance" SPACE="Stockholm" x="1299" y="104" />
+  <named name="dominance" SPACE="Hamburg" x="1126" y="522" />
+  <named name="dominance" SPACE="Lubeck" x="1215" y="508" />
+  <named name="dominance" SPACE="Danzig" x="1520" y="383" />
+  <named name="dominance" SPACE="Riga" x="1643" y="98" />
+  <named name="dominance" SPACE="Navgorod" x="1797" y="62" />
+  <named name="dominance" SPACE="Kiev" x="2060" y="415" />
+  <named name="dominance" SPACE="Tana" x="2213" y="643" />
+  <named name="dominance" SPACE="Sarai" x="2407" y="607" />
+  <named name="dominance" SPACE="Varna" x="1944" y="777" />
+  <named name="dominance" SPACE="Poti" x="2401" y="760" />
+  <named name="dominance" SPACE="Erzerum" x="2422" y="879" />
+  <named name="dominance" SPACE="Trebizond" x="2253" y="945" />
+  <named name="dominance" SPACE="Angora" x="2144" y="1032" />
+  <named name="dominance" SPACE="Constantinople" x="2050" y="1036" />
+  <named name="dominance" SPACE="Smyrna" x="2072" y="1243" />
+  <named name="dominance" SPACE="Cyprus" x="2189" y="1334" />
+  <named name="dominance" SPACE="Aleppo" x="2318" y="1228" />
+  <named name="dominance" SPACE="Acre" x="2360" y="1331" />
+  <named name="dominance" SPACE="East Indies" x="2447" y="1176" />
+  <named name="dominance" SPACE="China" x="2446" y="1366" />
+  <named name="dominance" SPACE="India" x="2444" y="1558" />
+  <named name="dominance" SPACE="Suez" x="2258" y="1548" />
+  <named name="dominance" SPACE="Cairo" x="2199" y="1602" />
+  <named name="dominance" SPACE="Alexandria" x="2143" y="1589" />
+  <named name="dominance" SPACE="Tripoli" x="1585" y="1625" />
+  <named name="dominance" SPACE="Crete" x="1872" y="1368" />
+  <named name="dominance" SPACE="Salonika" x="1762" y="1116" />
+  <named name="dominance" SPACE="Tunis" x="1367" y="1517" />
+  <named name="dominance" SPACE="Algiers" x="1125" y="1536" />
+  <named name="dominance" SPACE="Fez" x="831" y="1634" />
+  <named name="dominance" SPACE="Seville" x="792" y="1546" />
+  <named name="dominance" SPACE="Granada" x="867" y="1519" />
+  <named name="dominance" SPACE="South America" x="515" y="1609" />
+  <named name="dominance" SPACE="North America" x="516" y="1409" />
+  <named name="dominance" SPACE="West Africa" x="636" y="1599" />
+  <named name="dominance" SPACE="Lisbon" x="686" y="1449" />
+  <named name="dominance" SPACE="Toledo" x="756" y="1323" />
+  <named name="dominance" SPACE="Valencia" x="957" y="1404" />
+  <named name="dominance" SPACE="Basque" x="926" y="1178" />
+  <named name="dominance" SPACE="Barcelona" x="965" y="1248" />
+  <named name="dominance" SPACE="St. Malo" x="828" y="931" />
+  <named name="dominance" SPACE="Paris" x="992" y="811" />
+  <named name="dominance" SPACE="Bruges" x="957" y="721" />
+  <named name="dominance" SPACE="Cologne" x="1111" y="651" />
+  <named name="dominance" SPACE="Nuremberg" x="1249" y="770" />
+  <named name="dominance" SPACE="Prague" x="1254" y="656" />
+  <named name="dominance" SPACE="Dijon" x="1051" y="877" />
+  <named name="dominance" SPACE="Strassburg" x="1070" y="814" />
+  <named name="dominance" SPACE="Basel" x="1120" y="902" />
+  <named name="dominance" SPACE="Vienna" x="1467" y="688" />
+  <named name="dominance" SPACE="Budapest" x="1535" y="754" />
+  <named name="dominance" SPACE="Bordeaux" x="922" y="1057" />
+  <named name="dominance" SPACE="Lyons" x="1167" y="951" />
+  <named name="dominance" SPACE="Milan" x="1264" y="918" />
+  <named name="dominance" SPACE="Venice" x="1409" y="900" />
+  <named name="dominance" SPACE="Dubrovnik" x="1568" y="978" />
+  <named name="dominance" SPACE="Belgrade" x="1678" y="847" />
+  <named name="dominance" SPACE="Montpelier" x="1089" y="1025" />
+  <named name="dominance" SPACE="Marseilles" x="1175" y="1051" />
+  <named name="dominance" SPACE="Genoa" x="1272" y="1027" />
+  <named name="dominance" SPACE="Florence" x="1401" y="1007" />
+  <named name="dominance" SPACE="Rome" x="1430" y="1052" />
+  <named name="dominance" SPACE="Naples" x="1504" y="1165" />
+  <named name="dominance" SPACE="Sicily" x="1496" y="1310" />
+
+  <named name="commoditypair" COMMODITYNAME="Stone" x="106" y="969" />
+  <named name="commoditypair" COMMODITYNAME="Wool" x="106" y="1029" />
+  <named name="commoditypair" COMMODITYNAME="Timber" x="105" y="1088" />
+  <named name="commoditypair" COMMODITYNAME="Grain" x="107" y="1147" />
+  <named name="commoditypair" COMMODITYNAME="Cloth" x="105" y="1207" />
+  <named name="commoditypair" COMMODITYNAME="Wine" x="106" y="1265" />
+  <named name="commoditypair" COMMODITYNAME="Metal" x="104" y="1323" />
+  <named name="commoditypair" COMMODITYNAME="Fur" x="105" y="1380" />
+  <named name="commoditypair" COMMODITYNAME="Silk" x="105" y="1439" />
+  <named name="commoditypair" COMMODITYNAME="Spice" x="106" y="1497" />
+  <named name="commoditypair" COMMODITYNAME="Gold" x="105" y="1556" />
+  <named name="commoditypair" COMMODITYNAME="Ivory" x="105" y="1613" />
+  <named name="commoditypair" COMMODITYNAME="Total" x="105" y="1670" />
+
+
+
+</window>
+
+<define name="playercapital">
+  <foreach varname="CAPITAL" value="Barcelona,Genoa,Hamburg,London,Paris,Venice">
+    <panel hidden="y">
+      <eventhandler>
+        <showif capitalname="CAPITAL"/>
+      </eventhandler>
+      <image x="6" y="6" image="Aor/Icons/CAPITAL_Old_Token.jpg"/>
+      <image x="0" y="43" image="Aor/Icons/CAPITAL_Old_Dom.png"/>
+      <image x="43" y="0" image="Aor/Icons/CAPITAL_New_Dom.png"/>
+      <image x="49" y="49" image="Aor/Icons/CAPITAL_New_Token.jpg"/>
+    </panel>
+  </foreach>
+</define>
+
+<define name="turnlogunit">
+  <panel hidden="y">
+    <eventhandler>
+      <passif eventname="TURNLOG" playernum="PLNUM" logturn="$LOGTURN$"/>
+      <showif eventname="TURNLOG" playernum="PLNUM" logturn="$LOGTURN$"/>
+    </eventhandler>
+    <text>
+      <replace from="rLOGTOTALr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logtotal="-1"/>
+      </replace>
+      <replace from="rLOGTOKENSr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logtokens="-1"/>
+      </replace>
+      <replace from="rLOGCASHr" initial="&lt;font color=red&gt;no bid&lt;/font&gt;">
+        <if logcash="-1"/>
+      </replace>
+
+      <replace from="rLOGTOTALr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logtotal="-2"/>
+      </replace>
+      <replace from="rLOGTOKENSr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logtokens="-2"/>
+      </replace>
+      <replace from="rLOGCASHr" initial="&lt;font color=green&gt;bid made&lt;/font&gt;">
+        <if logcash="-2"/>
+      </replace>
+
+      <replace from="rLOGTOTALr" eventvar="logtotal">
+        <ifnot logtotal="-1|-2"/>
+      </replace>
+      <replace from="rLOGTOKENSr" eventvar="logtokens">
+        <ifnot logtokens="-1|-2"/>
+      </replace>
+      <replace from="rLOGCASHr" eventvar="logcash">
+        <ifnot logcash="-1|-2"/>
+      </replace>
+
+      <![CDATA[
+        <html>
+          <table border=1>
+            <tr>
+              <td><font color=rTOTALCOLORr>rLOGTOTALr</font></td>
+            </tr>
+            <tr>
+              <td>$LOGTURN$</td>
+            </tr>
+            <tr>
+              <td><font color=rTOKENCOLORr>rLOGTOKENSr</font></td>
+            </tr>
+            <tr>
+              <td><font color=rCASHCOLORr>rLOGCASHr</font></td>
+            </tr>
+          </table>
+        </html>
+      ]]>
+    </text>
+  </panel>
+</define>
+
+<define name="turnlog">
+  <panel layout="hbox" x="XPOS">
+    <text hidden="y">
+      <eventhandler><showif eventname="TURNLOG"/></eventhandler>
+      <![CDATA[
+        <html>
+          <table border=1>
+            <tr>
+              <td>Total:</td>
+            </tr>
+            <tr>
+              <td>Turn:</td>
+            </tr>
+            <tr>
+              <td>Tokens:</td>
+            </tr>
+            <tr>
+              <td>Cash:</td>
+            </tr>
+          </table>
+        </html>
+      ]]>
+    </text>
+    <forupto varname="$LOGTURN$" low="1" high="30">
+      <named name="turnlogunit"/>
+    </forupto>
+  </panel>
+</define>
+<define name="Player">
+  <panel hidden="y">
+    <eventhandler>
+      <showif playernum="PLNUM"/>
+      <passif playernum="PLNUM"/>
+    </eventhandler>
+    <named name="playercapital"/>
+    <text x="90" y="0">
+      <replace from="PLAYER" eventvar="playername"/>
+      Name: PLAYER
+    </text>
+    <text x="90" y="15" hidden="y">
+      <eventhandler>
+        <showif eventname="NUMCARDS"/>
+      </eventhandler>
+      <replace from="NUMCARDS" eventvar="numcards"/>
+      number of cards: NUMCARDS
+    </text>
+    <text x="90" y="30" hidden="y">
+      <eventhandler>
+        <showif eventname="CAPITALBID"/>
+        <hideif capitalbid="-1"/>
+        <hideif capitalbid="-2"/>
+      </eventhandler>
+      <replace from="BID" eventvar="capitalbid"/>
+      Capital Bid: BID
+    </text>
+    <text x="90" y="30" hidden="y">
+      <eventhandler>
+        <showif eventname="CAPITALBID"/>
+        <hideifnot capitalbid="-1"/>
+      </eventhandler>
+      <![CDATA[
+      <html>
+        Capital Bid:
+        <font color=red>
+          &#60;no bid made&#62;
+        </font>
+      </html>
+      ]]>
+    </text>
+    <text x="90" y="30" hidden="y">
+      <eventhandler>
+        <showif eventname="CAPITALBID"/>
+        <hideifnot capitalbid="-2"/>
+      </eventhandler>
+      <![CDATA[
+      <html>
+        Capital Bid:
+        <font color=green>
+          &#60;BID MADE&#62;
+        </font>
+      </html>
+      ]]>
+    </text>
+
+    <text x="90" y="45" hidden="y">
+      <eventhandler> <showif eventname="CASH"/> </eventhandler>
+      <replace from="CASH" eventvar="curcash"/>
+      Current Cash: CASH
+    </text>
+    <text x="200" y="15" hidden="y">
+      <eventhandler> <showif eventname="NUMSTOCK"/> </eventhandler>
+      <replace from="INSTOCK" eventvar="dominstock"/>
+      <replace from="ONBOARD" eventvar="domonboard"/>
+      Dominance Markers: ONBOARD on board, INSTOCK in stock.
+    </text>
+    <text x="200" y="40" hidden="y">
+      <eventhandler> <showif eventname="NUMSTOCK"/> </eventhandler>
+      <replace from="INSTOCK" eventvar="tokeninstock"/>
+      <replace from="ONBOARD" eventvar="tokenonboard"/>
+      <replace from="TOPLAY" eventvar="expansiontokens"/>
+      Tokens: ONBOARD on board, INSTOCK in stock, TOPLAY available to play.
+    </text>
+    <text x="90" y="60">
+      <![CDATA[<html>&nbsp;</html>]]>
+   </text>
+
+   <named name="turnlog" XPOS="500"/>
+  </panel>
+</define>
+
+
+<window title="Players">
+  <panel layout="vbox">
+    <forupto varname="INDEX" low="0" high="5">
+      <named name="Player" PLNUM="INDEX"/>
+    </forupto>
+  </panel>
+</window>
+
+
+<define name="onecard">
+  <image image="AoR/Cards/CARDNAME.jpg" hidden="y">
+    <eventhandler>
+      <showhide cardname="CARDNAME"/>
+    </eventhandler>
+  </image>
+</define>
+
+<define name="anyonecard">
+  <panel>
+    <named name="onecard" CARDNAME="Stone_1" />
+    <named name="onecard" CARDNAME="Wool_1" />
+    <named name="onecard" CARDNAME="Timber_1" />
+    <named name="onecard" CARDNAME="ClothWine_1" />
+    <named name="onecard" CARDNAME="Metal_1" />
+    <named name="onecard" CARDNAME="Fur_1" />
+    <named name="onecard" CARDNAME="Silk_1" />
+    <named name="onecard" CARDNAME="Spice_1" />
+    <named name="onecard" CARDNAME="IvoryGold_1" />
+    <named name="onecard" CARDNAME="Timber_2" />
+    <named name="onecard" CARDNAME="Grain_2" />
+    <named name="onecard" CARDNAME="Cloth_2" />
+    <named name="onecard" CARDNAME="Wine_2" />
+    <named name="onecard" CARDNAME="Metal_2" />
+    <named name="onecard" CARDNAME="Silk_2" />
+    <named name="onecard" CARDNAME="Spice_2" />
+    <named name="onecard" CARDNAME="Cloth_3" />
+    <named name="onecard" CARDNAME="Wine_3" />
+    <named name="onecard" CARDNAME="Metal_3" />
+    <named name="onecard" CARDNAME="Fur_3" />
+    <named name="onecard" CARDNAME="Silk_3" />
+    <named name="onecard" CARDNAME="Spice_3" />
+    <named name="onecard" CARDNAME="Gold_3" />
+    <named name="onecard" CARDNAME="StBenedict" />
+    <named name="onecard" CARDNAME="DionysusExiguus" />
+    <named name="onecard" CARDNAME="Charlemagne" />
+    <named name="onecard" CARDNAME="WalterthePenniless" />
+    <named name="onecard" CARDNAME="RashidadDin" />
+    <named name="onecard" CARDNAME="MarcoPolo" />
+    <named name="onecard" CARDNAME="PrinceHenry" />
+    <named name="onecard" CARDNAME="JohannGutenberg" />
+    <named name="onecard" CARDNAME="WilliamCaxton" />
+    <named name="onecard" CARDNAME="IbnMajid" />
+    <named name="onecard" CARDNAME="ChristopherColumbus" />
+    <named name="onecard" CARDNAME="DesideriusErasmus" />
+    <named name="onecard" CARDNAME="NicolausCopernicus" />
+    <named name="onecard" CARDNAME="LeonardoDaVinci" />
+    <named name="onecard" CARDNAME="BartolomedeLasCasas" />
+    <named name="onecard" CARDNAME="AndreasVesalius" />
+    <named name="onecard" CARDNAME="GalileoGalilei" />
+    <named name="onecard" CARDNAME="HenryOldenburg" />
+    <named name="onecard" CARDNAME="SirIsaacNewton" />
+    <named name="onecard" CARDNAME="AlchemistsGold" />
+    <named name="onecard" CARDNAME="MysticismAbounds" />
+    <named name="onecard" CARDNAME="TheCrusades" />
+    <named name="onecard" CARDNAME="EnlightenedRuler" />
+    <named name="onecard" CARDNAME="War" />
+    <named name="onecard" CARDNAME="PapalDecree" />
+    <named name="onecard" CARDNAME="RevolutionaryUprisings" />
+    <named name="onecard" CARDNAME="Famine" />
+    <named name="onecard" CARDNAME="Rebellion" />
+    <named name="onecard" CARDNAME="PiratesVikings" />
+    <named name="onecard" CARDNAME="CivilWar" />
+    <named name="onecard" CARDNAME="Armor" />
+    <named name="onecard" CARDNAME="Stirrups" />
+    <named name="onecard" CARDNAME="ReligiousStrife" />
+    <named name="onecard" CARDNAME="BlackDeath" />
+    <named name="onecard" CARDNAME="Gunpowder" />
+    <named name="onecard" CARDNAME="LongBow" />
+    <named name="onecard" CARDNAME="MongolArmies" />
+  </panel>
+</define>
+
+<window title="Player Hand" width="1080" height="420">
+  <panel layout="hbox">
+    <eventhandler>
+      <passif eventname="HANDCARD"/>
+    </eventhandler>
+    <forupto varname="INDEX" low="0" high="63">
+      <panel hidden="y">
+        <eventhandler>
+          <passif cardnum="INDEX"/>
+          <showif cardnum="INDEX"/>
+          <hideif cardnum="-"/>
+        </eventhandler>
+        <named name="anyonecard"/>
+      </panel>
+    </forupto>
+  </panel>
+</window>
+
+
+
+
+<define name="logcell">
+  <panel x="XPOS" y="YPOS">
+    <eventhandler>
+      <passif eventname="ADVANCESTATUS" capital="CAPITAL" advance="ADVANCEKEY"/>
+    </eventhandler>
+    <image image="Aor/Icons/new.gif" hidden="y" x="20" y="6">
+      <eventhandler>
+        <showhide status="new"/>
+      </eventhandler>
+    </image>
+    <image image="Aor/Icons/inline023.gif" hidden="y" x="26">
+      <eventhandler>
+        <showhide status="old"/>
+      </eventhandler>
+    </image>
+    <button varname="selectedadvance" varvalue="ADVANCEKEY" hidden="y">
+      <replace from="COST" eventvar="advancecost"/>
+      $COST
+      <eventhandler>
+        <showhide status="buy"/>
+      </eventhandler>
+    </button>
+  </panel>
+</define>
+
+<define name="logcolumn">
+  <named name="logcell" YPOS="71" ADVANCEKEY="A"/>
+  <named name="logcell" YPOS="97" ADVANCEKEY="B"/>
+  <named name="logcell" YPOS="123" ADVANCEKEY="C"/>
+  <named name="logcell" YPOS="149" ADVANCEKEY="D"/>
+  <named name="logcell" YPOS="201" ADVANCEKEY="E"/>
+  <named name="logcell" YPOS="227" ADVANCEKEY="F"/>
+  <named name="logcell" YPOS="253" ADVANCEKEY="G"/>
+  <named name="logcell" YPOS="279" ADVANCEKEY="H"/>
+  <named name="logcell" YPOS="331" ADVANCEKEY="I"/>
+  <named name="logcell" YPOS="357" ADVANCEKEY="J"/>
+  <named name="logcell" YPOS="383" ADVANCEKEY="K"/>
+  <named name="logcell" YPOS="409" ADVANCEKEY="L"/>
+  <named name="logcell" YPOS="435" ADVANCEKEY="M"/>
+  <named name="logcell" YPOS="487" ADVANCEKEY="N"/>
+  <named name="logcell" YPOS="513" ADVANCEKEY="O"/>
+  <named name="logcell" YPOS="539" ADVANCEKEY="P"/>
+  <named name="logcell" YPOS="565" ADVANCEKEY="Q"/>
+  <named name="logcell" YPOS="617" ADVANCEKEY="R"/>
+  <named name="logcell" YPOS="643" ADVANCEKEY="S"/>
+  <named name="logcell" YPOS="669" ADVANCEKEY="T"/>
+  <named name="logcell" YPOS="695" ADVANCEKEY="U"/>
+  <named name="logcell" YPOS="747" ADVANCEKEY="V"/>
+  <named name="logcell" YPOS="773" ADVANCEKEY="W"/>
+  <named name="logcell" YPOS="799" ADVANCEKEY="X"/>
+  <named name="logcell" YPOS="825" ADVANCEKEY="Y"/>
+  <named name="logcell" YPOS="851" ADVANCEKEY="Z"/>
+</define>
+
+<window title="Advance Log" height="900" width="1220">
+  <text>
+    <![CDATA[
+    <html>
+      <table border=1 align=center>
+        <tr>
+          <th>Key</th>
+          <th>Name</th>
+          <th>Cost</th>
+          <th>Class<p>Credit</th>
+          <th>Misery<p>Relief</th>
+          <th>Description</th>
+          <th>Prerequisites</th>
+          <th>Leader<p>Epochs</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+        </th>
+        <tr>
+          <th colspan=14>Science(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+        <tr>
+          <td>A</td>
+          <td>The Heavens</td>
+          <td>30</td>
+          <td>20</td>
+          <td>5</td>
+          <td>Allows transit of one sea as a Coastal Province.</td>
+          <td></td>
+          <td>2 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Human Body</td>
+          <td>60</td>
+          <td>20</td>
+          <td>10</td>
+          <td>Reduces Misery one space. Lessens Mysticism Misery.</td>
+          <td></td>
+          <td>3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>C</td>
+          <td>Laws of Matter</td>
+          <td>90</td>
+          <td>20</td>
+          <td>5</td>
+          <td>Voids Alchemy and lessens Mysticism Misery.</td>
+          <td></td>
+          <td>3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>Enlightenment</td>
+          <td>120</td>
+          <td>20</td>
+          <td>50</td>
+          <td>Halves Misery Relief price and lessens Mysticism Misery.</td>
+          <td></td>
+          <td>3 3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Religion(300)</td>
+        </tr>
+        <tr>
+          <td>E</td>
+          <td>Patronage</td>
+          <td>30+1MI</td>
+          <td>20</td>
+          <td>10</td>
+          <td>Allows investment in Leaders played by other players.</td>
+          <td></td>
+          <td>1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>F</td>
+          <td>Holy Indulgence</td>
+          <td>60+1MI</td>
+          <td>20</td>
+          <td>0</td>
+          <td>Collects two Expansion tokens/turn from each non-owner.</td>
+          <td></td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>G</td>
+          <td>Proselytism</td>
+          <td>90+1MI</td>
+          <td>20</td>
+          <td>0</td>
+          <td>Wins attacks if colored die roll is &#8805; Order of Play.</td>
+          <td></td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>H</td>
+          <td>Cathedral</td>
+          <td>120+1MI</td>
+          <td>20</td>
+          <td>25</td>
+          <td>Automatically wins one attack per turn vs each non-owner.</td>
+          <td>F</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Commerce(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+        <tr>
+          <td>I</td>
+          <td>Caravan</td>
+          <td>20</td>
+          <td>10</td>
+          <td>5</td>
+          <td>May place tokens through adjacent uncontrolled province.</td>
+          <td></td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>J</td>
+          <td>Wind/Watermill</td>
+          <td>40</td>
+          <td>10</td>
+          <td>5</td>
+          <td>May buy one trade attempt with defeated Market. dr &#8804; Market #.</td>
+          <td>I</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>K</td>
+          <td>Improved Agriculture</td>
+          <td>50</td>
+          <td>10</td>
+          <td>25</td>
+          <td>Reduces Misery one space. Reduces effect of Famine.</td>
+          <td>J</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>L</td>
+          <td>Interest & Profit</td>
+          <td>80</td>
+          <td>10</td>
+          <td>0</td>
+          <td>Doubles cash after Expansion but only up to value of Income.</td>
+          <td>K</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>M</td>
+          <td>Industry</td>
+          <td>110</td>
+          <td></td>
+          <td>5</td>
+          <td>Increases commodity value by one payment box.</td>
+          <td>L</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Communications(300)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+        <tr>
+          <td>N</td>
+          <td>Written Record</td>
+          <td>30</td>
+          <td>10</td>
+          <td>5</td>
+          <td>Increases Leader credits by $10 (including Patronage Claims).</td>
+          <td></td>
+          <td>1 1 1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>O</td>
+          <td>Printed Word</td>
+          <td>60</td>
+          <td>10</td>
+          <td>10</td>
+          <td>Earns Leader Discount Rebate for any owned Advances.</td>
+          <td>N</td>
+          <td>2 2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>P</td>
+          <td>Master Art</td>
+          <td>90</td>
+          <td>10</td>
+          <td>5</td>
+          <td>May discard one card/turn without effect in Buy Card Phase.</td>
+          <td>O</td>
+          <td>3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Q</td>
+          <td>Renaissance</td>
+          <td>120</td>
+          <td></td>
+          <td>100</td>
+          <td>Once/turn trades Order of Play with adjacent non-owner.</td>
+          <td>P</td>
+          <td>2 3 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Exploration(400)<font size=-2> advance X gives $10 credit</font></td>
+        </tr>
+        <tr>
+          <td>R</td>
+          <td>Overland East</td>
+          <td>40</td>
+          <td>20</td>
+          <td>5</td>
+          <td>Allows transit of area V.</td>
+          <td></td>
+          <td>1 1 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>S</td>
+          <td>Seaworthy Vessels</td>
+          <td>80</td>
+          <td>20</td>
+          <td>5</td>
+          <td>May enter all coastal provinces except Far East and New World.</td>
+          <td></td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>T</td>
+          <td>Ocean Navigation</td>
+          <td>120</td>
+          <td>20</td>
+          <td>5</td>
+          <td>Allows transit of Far East.</td>
+          <td>A,S</td>
+          <td>2 2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>U</td>
+          <td>New World</td>
+          <td>160</td>
+          <td></td>
+          <td>25</td>
+          <td>May enter New World. Reduces Misery one space/Income Phase.</td>
+          <td>V,T</td>
+          <td>2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <th colspan=14>Civics(500)</td>
+        </tr>
+        <tr>
+          <td>V</td>
+          <td>Urban Ascendancy</td>
+          <td>20</td>
+          <td>10</td>
+          <td>5</td>
+          <td>May buy one extra card for $10 each turn.</td>
+          <td></td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>W</td>
+          <td>Nationalism</td>
+          <td>60</td>
+          <td>20</td>
+          <td>5</td>
+          <td>Adds 1 to all attack totals in Home Area.</td>
+          <td></td>
+          <td>1</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td>Institutional Research</td>
+          <td>100</td>
+          <td>30</td>
+          <td>10</td>
+          <td>Provides 10 Credits for any Advance except Civics & Religion.</td>
+          <td></td>
+          <td>2 2</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Y</td>
+          <td>Cosmopolitan</td>
+          <td>150</td>
+          <td>40</td>
+          <td>25</td>
+          <td>May add Established Satellites to all adjacent province attacks.</td>
+          <td>R</td>
+          <td>2 2 3</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Z</td>
+          <td>Middle Class</td>
+          <td>170</td>
+          <td>50</td>
+          <td>50</td>
+          <td>Increases Income by $10/turn. Halves Stabilization Costs.</td>
+          <td>K</td>
+          <td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+      </table>
+    </html>
+    ]]>
+  </text>
+  <image image="AoR/Icons/Barcelona_Old_Token.jpg" x="853" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Barcelona"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Paris_Old_Token.jpg" x="917" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Paris"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Genoa_Old_Token.jpg" x="979" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Genoa"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/London_Old_Token.jpg" x="1042" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="London"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Venice_Old_Token.jpg" x="1105" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Venice"/></eventhandler>
+  </image>
+  <image image="AoR/Icons/Hamburg_Old_Token.jpg" x="1170" y="8" hidden="y">
+    <eventhandler><showif eventname="PLAYERCAPITAL" capitalname="Hamburg"/></eventhandler>
+  </image>
+
+  <named name="logcolumn" XPOS="834" CAPITAL="Barcelona"/>
+  <named name="logcolumn" XPOS="899" CAPITAL="Paris"/>
+  <named name="logcolumn" XPOS="964" CAPITAL="Genoa"/>
+  <named name="logcolumn" XPOS="1028" CAPITAL="London"/>
+  <named name="logcolumn" XPOS="1092" CAPITAL="Venice"/>
+  <named name="logcolumn" XPOS="1155" CAPITAL="Hamburg"/>
+
+</window>
+</gameboard>

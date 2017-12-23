@@ -1,0 +1,9 @@
+GameBox:
+	given Name,DataDir,XMLLoc,XMLFile, and DLLFile
+	calls LoadLibrary(DLLFile) (Windows DLL Load call)
+	calls library.Initialize(DataDir)
+
+	Game *CreateGame(OutputPort)
+	     returns library.CreateGame(GameBox,OutputPort)
+	GameBox is a ServerGameInfo
+

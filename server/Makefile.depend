@@ -1,0 +1,166 @@
+ServerMain.o: ServerMain.cpp LogManager.hpp \
+ GameServerConnectionHandler.hpp ServerSocket.hpp \
+ ../common/SystemSpecificTCPIP.hpp ../gamecommon/ActionParser.hpp \
+ LoginManager.hpp ActionManager.hpp RoomManager.hpp RoomOutputPort.hpp \
+ ../gamecommon/OutputPort.hpp GameCloset.hpp ../common/FileUtilities.hpp
+GameServerConnectionHandler.o: GameServerConnectionHandler.cpp \
+ GameServerConnectionHandler.hpp ServerSocket.hpp \
+ ../common/SystemSpecificTCPIP.hpp ../gamecommon/ActionParser.hpp \
+ LoginManager.hpp ActionManager.hpp \
+ c:/Boost/include/boost-1_46/boost/lexical_cast.hpp \
+ c:/Boost/include/boost-1_46/boost/config.hpp \
+ c:/Boost/include/boost-1_46/boost/config/user.hpp \
+ c:/Boost/include/boost-1_46/boost/config/select_compiler_config.hpp \
+ c:/Boost/include/boost-1_46/boost/config/compiler/gcc.hpp \
+ c:/Boost/include/boost-1_46/boost/config/select_stdlib_config.hpp \
+ c:/Boost/include/boost-1_46/boost/config/no_tr1/utility.hpp \
+ c:/Boost/include/boost-1_46/boost/config/stdlib/libstdcpp3.hpp \
+ c:/Boost/include/boost-1_46/boost/config/select_platform_config.hpp \
+ c:/Boost/include/boost-1_46/boost/config/platform/win32.hpp \
+ c:/Boost/include/boost-1_46/boost/config/suffix.hpp \
+ c:/Boost/include/boost-1_46/boost/limits.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/if.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/value_wknd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/static_cast.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/workaround.hpp \
+ c:/Boost/include/boost-1_46/boost/detail/workaround.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/integral.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/msvc.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/eti.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/na_spec.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/lambda_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/void_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/adl_barrier.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/adl.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/intel.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/gcc.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/na.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/bool.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/bool_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/integral_c_tag.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/static_constant.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/na_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/ctps.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/lambda.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/ttp.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/int.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/int_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/nttp_decl.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/nttp.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/integral_wrapper.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/cat.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/config/config.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/lambda_arity_param.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/template_arity_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/arity.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/dtp.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/preprocessor/params.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/preprocessor.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/comma_if.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/punctuation/comma_if.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/control/if.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/control/iif.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/logical/bool.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/facilities/empty.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/punctuation/comma.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/repeat.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/repetition/repeat.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/debug/error.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/detail/auto_rec.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/tuple/eat.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/inc.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/arithmetic/inc.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/preprocessor/enum.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/preprocessor/def_params_tail.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/limits/arity.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/logical/and.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/logical/bitand.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/identity.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/facilities/identity.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/empty.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/arithmetic/add.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/arithmetic/dec.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/control/while.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/fold_left.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/detail/fold_left.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/control/expr_iif.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/adt.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/detail/is_binary.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/detail/check.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/logical/compl.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/fold_right.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/detail/fold_right.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/list/reverse.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/control/detail/while.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/tuple/elem.hpp \
+ c:/Boost/include/boost-1_46/boost/preprocessor/arithmetic/sub.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/config/overload_resolution.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/aux_/lambda_support.hpp \
+ c:/Boost/include/boost-1_46/boost/throw_exception.hpp \
+ c:/Boost/include/boost-1_46/boost/exception/detail/attribute_noreturn.hpp \
+ c:/Boost/include/boost-1_46/boost/exception/exception.hpp \
+ c:/Boost/include/boost-1_46/boost/current_function.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_pointer.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_member_pointer.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/config.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_member_function_pointer.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/remove_cv.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/broken_compiler_spec.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/cv_traits_impl.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/type_trait_def.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/template_arity_spec.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/type_trait_undef.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/bool_trait_def.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/integral_constant.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/integral_c.hpp \
+ c:/Boost/include/boost-1_46/boost/mpl/integral_c_fwd.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/bool_trait_undef.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/ice_and.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/ice_not.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/make_unsigned.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_integral.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_signed.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_enum.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/intrinsics.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_same.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_reference.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_lvalue_reference.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_rvalue_reference.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/ice.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/yes_no_type.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/ice_or.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/detail/ice_eq.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_volatile.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_unsigned.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_const.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/add_const.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/add_volatile.hpp \
+ c:/Boost/include/boost-1_46/boost/static_assert.hpp \
+ c:/Boost/include/boost-1_46/boost/call_traits.hpp \
+ c:/Boost/include/boost-1_46/boost/detail/call_traits.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_arithmetic.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_float.hpp \
+ c:/Boost/include/boost-1_46/boost/detail/lcast_precision.hpp \
+ c:/Boost/include/boost-1_46/boost/integer_traits.hpp \
+ c:/Boost/include/boost-1_46/boost/type_traits/is_abstract.hpp
+LogManager.o: LogManager.cpp LogManager.hpp
+LoginManager.o: LoginManager.cpp LoginManager.hpp LogManager.hpp
+RoomManager.o: RoomManager.cpp RoomManager.hpp ActionManager.hpp \
+ RoomOutputPort.hpp ../gamecommon/OutputPort.hpp \
+ GameServerConnectionHandler.hpp ServerSocket.hpp \
+ ../common/SystemSpecificTCPIP.hpp ../gamecommon/ActionParser.hpp \
+ LoginManager.hpp ../common/StringUtilities.hpp GameCloset.hpp \
+ GameBox.hpp ../gamecommon/ServerGameInfo.hpp ../gamecommon/Game.hpp \
+ ../common/FileUtilities.hpp
+GameCloset.o: GameCloset.cpp GameCloset.hpp GameBox.hpp \
+ ../gamecommon/ServerGameInfo.hpp ../common/StringUtilities.hpp \
+ ../common/FileUtilities.hpp
+ServerSocket.o: ServerSocket.cpp ServerSocket.hpp \
+ ../common/SystemSpecificTCPIP.hpp LogManager.hpp
+RoomOutputPort.o: RoomOutputPort.cpp RoomOutputPort.hpp \
+ ../gamecommon/OutputPort.hpp GameServerConnectionHandler.hpp \
+ ServerSocket.hpp ../common/SystemSpecificTCPIP.hpp \
+ ../gamecommon/ActionParser.hpp LoginManager.hpp ActionManager.hpp
+GameBox.o: GameBox.cpp GameBox.hpp ../gamecommon/ServerGameInfo.hpp \
+ ../common/SystemSpecificDynamicLoading.hpp

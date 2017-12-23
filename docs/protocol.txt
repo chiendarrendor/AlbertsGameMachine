@@ -1,0 +1,280 @@
+General protocol notes:
+1. Packets are arbitrary length, always terminated with a \n character
+2. Each packet consists of a packet name, and zero or more 
+   fields.  Each field, including the packet name, is separated
+   by commas.
+2a. To protect the correct parsing of the packets, all fields
+    must have their ',' characters replaced by the digraph '%C',
+    and their '%' with the digraph '%%'.
+3. The server is, by default, on port 4356 of the server machine.
+4. client->server packets are, within this system, called 'actions'
+   while server->client packets are called 'events'
+
+non-game specific packets:
+These packets are used to communicate information about
+the non-game aspects of the server and client, involving
+* initial connection/handshaking
+
+event CONNECTSTRING
+  * welcome string
+-- the server sends this event upon initial connection.
+   the only legal action is LOGIN
+
+action LOGIN
+  * user name
+  * encrypted password
+-- if the user name does not exist in the server database,
+   the server will insert the name/password pair, otherwise
+   the given encrypted password must match the encrypted 
+   password in the database.  The server will respond with
+   either WELCOME or ERROR
+
+event WELCOME (no arguments)
+-- LOGIN accepted.  expect further events describing server state.
+event ERROR
+  * error message
+-- used for all server->client errors.  will always be based on
+   the action most recently sent from the client to the server.
+
+event NEWGUI
+  * gui name
+  * gui url directory
+  * gui xml file name
+-- a GUI, within this system, is a description of a set of
+   events and actions that become legal at that point, and
+   information sent to the client about server-stored 
+   information on how to display and generate those packets.
+   There is a gui for general player interaction with the
+   server, called 'ROOMGUI'  as well as a separate gui for 
+   each game.
+event DROPGUI
+  * gui name
+-- sent when the server will no longer communicate with
+   packets belonging to that particular GUI.
+event RESET
+  * gui name
+-- sent when the server is going to start sending packets
+   assuming the client has no data 
+   
+ROOMGUI packets:
+event GAMES
+  * comma separated game list (escaped, of course)
+-- this will contain a list of all game names that are legal
+   in the room the player is in.  Currently, all games are legal
+   in all rooms, except that no games are allowed in 'Great Hall'
+   this packet will be sent on initial connection, and whenever
+   the player moves to a new room.
+event SAVEGAMES
+  * comma separated file name list (escaped of course)
+-- this will contain a list of all save files for the game currently
+   active in the room the player is in.  The list will be empty
+   if no game is active.
+   this packet will be sent on initial connection, whenever
+   the player moves to a new room, and whenever the game in
+   the current room is saved.
+event GUIIAM
+  * player name
+-- this will send back to the client the player's name,
+   sent on initial connection.
+event GUIROOM
+  * room name
+  * game name
+  * game state
+-- the server will send a packet for each room in the game
+   on initial connection, and whenever the game or game state
+   might have changed.
+event INHABITANT
+  * player name
+  * player room name
+-- the server will send a packet for each player (including yourself)
+   on initial connection, and whenever a player moves from one
+   room to another.
+event DROPINHABITANT
+  * player name
+-- this packet is sent whenever a player other than you disconnects
+   from the server
+event MESSAGE
+  * message body
+-- this packet is sent whenever a player sends a message to you.
+   the message body will indicate whether it is a private message
+   or a room-wide message.
+
+action NEWROOM
+  * new room name
+-- this action can be sent to make a new room. Server will
+   respond with either GUIROOM or ERROR
+action CHANGEROOM
+  * new room name
+-- this action can be sent to move to any existing room.  Server
+   will respond with either ERROR or INHABITANT. 
+   if the player leaves a room with a game in it, a DROPGUI
+   will be sent to the player.
+   furthermore, if a game is already present in the destination 
+   room, a NEWGUI packet for that game followed by all appropriate 
+   packets for that game.
+action ROOMTALK
+  * message
+-- this action will send a message to all players in the room.
+   you will get a MESSAGE packet for this message.
+action PLAYERTALK
+  * player name
+  * message
+-- this action will send a message to a particular logged-in
+   player, or ERROR.  you will not recieve a MESSAGE packet
+   for your own message (unless you send a PLAYERTALK to 
+   yourself, which is legal)
+action NEWGAME
+  * game name
+-- this action will start a new game in the player's current room, unless
+   there already is a game in that room whose state is "Complete.",	
+   or if the room in question is "Great Hall", in either case an
+   ERROR will be sent, otherwise, a NEWGUI will be sent, as well
+   as additional packets.
+action LOADGAME
+  * save game file name
+-- this action will cause the current game to load the specified
+   save file.  An ERROR will be returned if the file is not 
+   loadable.
+action SAVEGAME
+  * save game flie name
+-- this action will cause the current state of the current game
+   to be saved to the given file.  An ERROR will be returned
+   if there is no current game or if the file name is not
+   legal.
+
+Generic Game Packets:
+
+event NEWSTATE
+  * current state description
+-- every time an action is taken by any player in the game, 
+   this packet is sent to all players to indicate the current state.
+event LEGALACTION
+  * action name
+-- each time an action is taken by any player in the game,
+   the server determines, for each connected player, what
+   actions are legal, and sends a LEGALACTION packet
+   for each such legal action. (all generic and
+   ROOMGUI actions are always legal, so not mentioned)
+   An action sent not in the most recent set of legal actions
+   will always return an ERROR.
+
+Outpost Game Packets:
+
+Game States (with shorthand form, and what events and actions occur)
+  * Initial Game State (InitialState)
+    * action JOIN (cyc)
+      * event PLAYER
+      * event IAM
+    * action UNJOIN (cyc)
+      * event RESET
+      * event PLAYER
+      * event IAM
+    * action OPTIONS (cyc)
+      * event OPTIONS
+    * action STANDARDBASIC (cyc)
+      * event OPTIONS
+    * action STANDARDEXPERT (cyc)
+      * event OPTIONS
+    * action VALIDATESETUP (->ValidateSetup)
+      * event PLAYEROKSTARTUP
+      * event CURTURN
+      * event ITEMSTOCK
+      * event PLAYERFACTORIES
+      * event PLAYERSTATE
+      * event COMMODITYSTOCK
+  * Give all Players an Opportunity to ok Players and Options (ValidateSetup)
+    * action DONTLIKEOPTIONS (->InitialState)
+    * action LIKEOPTIONS(cyc/->TurnOrder)
+      * event PLAYEROKSTARTUP
+  * Turn Order Determination (TurnOrder)
+    * event TURNORDER
+  * Supply Ship Fill (SupplyFill)
+    * event SUPPLYSHIP
+    * event ITEMSTOCK
+    * event PURCHASEDATA
+  * Start Resource Dissemination (StartResources)
+    * event PLAYERCARDBACKS
+    * event PLAYERCARDS
+    * event PLAYERSTATE
+    * event COMMODITYSTOCK
+  * Prompt for Mega Resources (PromptMegaResources)
+    * event MEGAREQUEST 
+  * Handle Mega Resource Request (MegaResources)
+    * action NUMMEGAS
+      * event PLAYERCARDBACKS
+      * event PLAYERCARDS
+      * event PLAYERSTATE
+      * event COMMODITYSTOCK
+  * Start Discard Phase (StartDiscard)
+    * event PLAYERSTATE
+  * Handle Discards (DoDiscard)
+    * event PLAYERSTATE
+  * Handle Manual Discard (Manual Discard)
+    * action DISCARD
+      * event SPENDS
+      * event PLAYERCARDBACKS
+      * event PLAYERCARDS
+      * event PLAYERSTATE
+      * event COMMODITYSTOCK
+  * Start Player Purchase and Bid Phase (StartPurchase)
+    * event PLAYERSTATE
+    * event PLAYERPURCHASEINFO
+  * Player Purchase Turns (Purchase)
+    * action BUYMEN/BUYROBOTS/BUYOREFACTORIES/BUYWATERFACTORIES/
+             BUYTITANIUMFACTORIES/BUYRESEARCHFACTORIES/
+	     BUYNEWCHEMFACTORIES/WATERMULLIGAN
+      * event SPENDS
+      * event PLAYERSTATE
+      * event PLAYERCARDBACKS
+      * event PLAYERCARDS
+      * event PLAYERPURCHASEINFO
+      * event COMMODITYSTOCK
+    * action INTERNALIZE
+      * event PLAYERSTATE
+    * action DONE
+      * event PLAYERSTATE
+    * action OPENBID
+      * event PLAYERSTATE
+      * event BIDITEM
+      * event PURCHASEPRICE
+    * action ALTERMANNING
+      * event PLAYERFACTORIES
+      * event PLAYERSTATE
+      * event PLAYERPURCHASEINFO
+  * Player Bidding Turns (Bid)
+    * action BUYMEN/BUYROBOTS/BUYOREFACTORIES/BUYWATERFACTORIES/
+             BUYTITANIUMFACTORIES/BUYRESEARCHFACTORIES/
+	     BUYNEWCHEMFACTORIES/WATERMULLIGAN
+    * action INTERNALIZE
+    * action DONE
+    * action ALTERMANNING
+    * action PURCHASEBID
+      * event SPENDS
+      * event SUPPLYSHIP
+      * event PLAYERCARDBACKS
+      * event PLAYERCARDS
+      * event PLAYERPURCHASEINFO
+      * event PLAYERITEMS
+      * event PLAYERFACTORIES
+      * event PLAYERSTATE
+      * event BIDITEM
+      * event COMMODITYSTOCK
+      * event PURCHASEDATA
+    * action BID
+      * event PLAYERSTATE
+      * event PURCHASEPRICE
+    * action PASS
+      * event PLAYERSTATE
+    * action PASSOUT
+      * event PLAYERSTATE
+  * Start Final Chance to Change Manning (StartFinalManning)
+    * event PLAYERSTATE
+  * Final Chance to Change Manning (FinalManning)
+    * action ALTERMANNING
+    * action DONEMANNING
+  * End of Turn Handling (TurnEnd)
+    * event PLAYERWINS
+    * event CURTURN
+  * End Of Game State (TerminalState)
+
+

@@ -1,0 +1,5 @@
+ActionParser.o: ActionParser.cpp ActionParser.hpp \
+ ../common/StringUtilities.hpp
+Game.o: Game.cpp Game.hpp ServerGameInfo.hpp ../common/FileUtilities.hpp
+ServerGameInfo.o: ServerGameInfo.cpp ServerGameInfo.hpp \
+ ../common/FileUtilities.hpp

@@ -1,0 +1,41 @@
+
+
+
+attributes:
+panel
+	note panel
+
+	card panel
+
+note panel (not IAM)
+     Estimated Value: value
+     Weight: weight
+
+note panel (IAM)
+     Value: value
+     Weight: weight
+     Discard:
+     Value: value
+     Weight: weight
+
+card panel
+     panel
+	card
+	checkbox (IAM)
+
+events to handle:
+       OPTIONS SmallResearch,SmallMicro
+         remember values of SmallResearch and SmallMicro
+         redraw note panel
+
+       IAM PlayerNumber (if PlayerNumber == m_PlayerNum)
+         make a new HandListener (assume that IAM comes before any card specifications)
+
+       PLAYERCARDBACKS PlayerNumber BackString (if PlayerNumber == m_PlayerNum and !IAM)
+       PLAYERCARDS CardString (if IAM)
+         use given string to remove and replace all cards in card panel
+	 redraw note panel
+
+       PLAYERSTATE PlayerNumber HandLimit (if PlayerNumber == m_PlayerNum and IAM)
+         remember value of HandLimit
+	 redraw note panel

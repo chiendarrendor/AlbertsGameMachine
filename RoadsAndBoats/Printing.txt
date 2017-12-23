@@ -1,0 +1,30 @@
+Printing of Board
+
+  432101234
+5     ^         ^
+4    / \       / \
+3   \   /     /   \
+2  / | | \   /     \
+1 |  \ /  | |       |
+0 ----*---- |       |
+1 |  / \  | |       |
+2  \ | | / ^ \     / V
+3   /   \ / \ \   / / \
+4    \ / /   \ \ / /   \
+5     V /     \ V /     \
+       |       | |       |
+       |       | |       |
+       |       | |       |
+        \     /   \     /
+         \   /     \   /
+          \ /       \ /
+           V         V 
+
+
+Width: 9*cwidth + (cwidth - 1) (+5 if height > 1)
+height: 11 + (7*(cheight-1))
+
+center coords:
+x: 4 + (5 if cy is odd) + cx*10
+y: 7*cy
+

@@ -1,0 +1,84 @@
+<event name="PLAYER">
+  <var name="playername"/>
+  <var name="playernum"/>
+</event>
+<event name="EPOCHSTATUS">
+  <var name="curturn"/>
+  <var name="curepoch"/>
+  <var name="cardsindeck"/>
+  <var name="numepochs"/>
+</event>
+<event name="NUMCARDS">
+  <var name="playernum"/>
+  <var name="numcards"/>
+</event>
+<event name="HANDCARD">
+  <var name="cardname"/>
+  <var name="cardnum"/>
+</event>
+<event name="CASH">
+  <var name="playernum"/>
+  <var name="curcash"/>
+</event>
+<event name="CAPITALBID">
+  <var name="playernum"/>
+  <var name="capitalbid"/>
+</event>
+<event name="CAPITALBIDS">
+  <var name="capitalbids"/>
+</event>
+<event name="CAPITALS">
+  <var name="capitals"/>
+</event>
+<event name="PLAYERCAPITAL">
+  <var name="playernum"/>
+  <var name="capitalname"/>
+</event>
+<event name="SHIP">
+  <var name="capital"/>
+  <var name="shiptype"/>
+  <var name="shipnum"/>
+</event>
+<event name="MISERY">
+  <var name="capital"/>
+  <var name="miserynum"/>
+</event>
+<event name="NUMSTOCK">
+  <var name="playernum"/>
+  <var name="dominstock"/>
+  <var name="domonboard"/>
+  <var name="tokeninstock"/>
+  <var name="tokenonboard"/>
+  <var name="expansiontokens"/>
+</event>
+<event name="DOMINANCE">
+  <var name="space"/>
+  <var name="capital"/>
+  <var name="age"/>
+</event>
+<event name="SPACEEMPTY">
+  <var name="space"/>
+</event>
+<event name="COMMODITYNUM">
+  <var name="commodity"/>
+  <var name="capital"/>
+  <var name="num"/>
+  <var name="newnum"/>
+</event>
+<event name="SURPLUSSHORTAGE">
+  <var name="commodity"/>
+  <var name="state"/>
+</event>
+<event name="ADVANCESTATUS">
+  <var name="capital"/>
+  <var name="advance"/>
+  <var name="status"/>
+  <var name="advancecost"/>
+</event>
+<event name="TURNLOG">
+  <var name="playernum"/>
+  <var name="logtotal"/>
+  <var name="logturn"/>
+  <var name="logtokens"/>
+  <var name="logcash"/>
+</event>

@@ -1,0 +1,27 @@
+Name:
+The Triangle
+.end.
+NumPlayers:
+3
+.end.
+Comment:
+This is a scenario with lots of land and great opportunities
+to use all different kinds of transportation.  Start at the 
+marked spaces on the indicated side of the river.
+There are more than enough resources in this game, so the
+only trouble will probably be about the mines.
+
+A relatively fast game that is suitable for beginners and may
+be a bit too easy for those who are more experienced.
+.end.
+Board:
+. . . p f s p . . .
+ . . w w w w w . . .
+. . p25 m s f p35* f46 . . 
+ . f24 s p p p25 s p14 . .
+. w p13* p36 m6 m2 p m w . 
+ p w f p m4 p s w p .
+. s w s p p14 f w f .
+ . f w m s p1*5 w s . .
+. . p w p36 f26 w p . .
+.end.

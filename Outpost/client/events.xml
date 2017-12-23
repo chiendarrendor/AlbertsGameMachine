@@ -1,0 +1,135 @@
+<event name="OPTIONS">
+  <var name="Discard"/>
+  <var name="Refinery"/>
+  <var name="OneUpgrade"/>
+  <var name="ActiveBid"/>
+  <var name="SupplyShipFilling"/>
+  <var name="Robots"/>
+  <var name="ResearchMega"/>
+  <var name="SmallResearch"/>
+  <var name="SmallMicro"/>
+  <var name="BlindDraws"/>
+  <var name="Stocking"/>
+</event>
+
+<event name="ITEMSTOCK">
+  <var name="ItemNumber"/>
+  <var name="ItemCount"/>
+</event>
+
+<event name="COMMODITYSTOCK">
+  <var name="CommodityNumber"/>
+  <var name="DrawCount"/>
+  <var name="DiscardCount"/>
+  <var name="MegaValue"/>
+  <var name="AverageValue"/>
+</event>
+
+<event name="SUPPLYSHIP">
+  <var name="ShipSlotNumber"/>
+  <var name="ItemNumber"/>
+</event>
+
+<event name="BIDITEM">
+  <var name="ShipSlotNumber"/>
+</event>
+
+<event name="CURTURN">
+  <var name="TurnNumber"/>
+</event>
+
+<event name="PLAYER">
+  <var name="PlayerName"/>
+  <var name="PlayerNumber"/>
+</event>
+
+<event name="PLAYEROKSTARTUP">
+  <var name="PlayerNumber"/>
+  <var name="OkToStart"/>
+</event>
+
+<event name="PLAYERWINS">
+  <var name="PlayerNumber"/>
+</event>
+
+<event name="TURNORDER">
+  <var name="PlayerNumber"/>
+  <var name="TurnOrder"/>
+</event>
+
+<event name="PURCHASEDATA">
+  <var name="ShipSlotNumber"/>
+  <var name="PlayerNumber"/>
+  <var name="ItemNumber"/>
+  <var name="Cost"/>
+</event>
+
+
+<event name="PLAYERITEMS">
+  <var name="PlayerNumber"/>
+  <var name="PlayerSlotNumber"/>
+  <var name="ItemNumber"/>
+</event>
+
+<event name="PLAYERPURCHASEINFO">
+  <var name="NumPurRobots"/>
+  <var name="NumPurMen"/>
+  <var name="NumPurOre"/>
+  <var name="NumPurWater"/>
+  <var name="NumPurTite"/>
+  <var name="NumPurResearch"/>
+  <var name="NumPurNewChem"/>
+</event>
+
+<event name="MEGAREQUEST">
+  <var name="CommodityNumber"/>
+  <var name="MaxMegas"/>
+</event>
+
+<event name="PLAYERCARDBACKS">
+  <var name="PlayerNumber"/>
+  <var name="BackString"/>
+</event>
+
+<event name="PLAYERCARDS">
+  <var name="CardString"/>
+</event>
+
+<event name="PLAYERSTATE">
+  <var name="PlayerNumber"/>
+  <var name="VictoryPoints"/>
+  <var name="ItemCostSum"/>
+  <var name="HandLimit"/>
+  <var name="PeopleLimit"/>
+  <var name="RobotLimit"/>
+  <var name="PeopleCost"/>
+  <var name="NumberPeople"/>
+  <var name="NumberRobots"/>
+  <var name="PurchaseState"/>
+  <var name="BidState"/>
+  <var name="HasPurchased"/>
+  <var name="HighBid"/>
+  <var name="LastBid"/>
+</event>
+
+<event name="IAM">
+  <var name="PlayerNumber"/>
+</event>
+
+<event name="PLAYERFACTORIES">
+  <var name="PlayerNumber"/>
+  <var name="FactoryString"/>
+</event>
+
+<event name="PURCHASEPRICE">
+  <var name="PurchasePrice"/>
+</event>
+
+<event name="SPENDS">
+  <var name="TurnNumber"/>
+  <var name="PlayerNumber"/>
+  <var name="SpendType"/>
+  <var name="SpendItem"/>
+  <var name="SpendCost"/>
+  <var name="Resources"/>
+</event>

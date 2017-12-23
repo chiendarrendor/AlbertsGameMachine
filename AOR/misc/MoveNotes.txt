@@ -1,0 +1,15 @@
+// features of normal movement:
+// 1. 1 space on land.
+// 2. Advance I -- Caravan: allows an extra land movement, as long as intervening 
+//                          is not old domination from another player, or old 
+//                          tokens filling the space (multiple players)
+// 3. COAST/SEA/OCEAN movement not allowed
+// 4. # of Player based limit to movement (6 - none, 5 - disallow I, 4 - disallow I&II, 3, disallow I&II&III
+// 5. Area V disallowed
+// 6. Advance R -- Overland East: allows movement in Area V 
+// Water: if one or more water spaces in path, only two land spaces allowed.
+// 7. Galley 2/4/6/8 -- COAST movement allowed, up to (2 * level + 1) COASTS in path
+// 8. Advance A -- The Heavens.  Allow SEA movement, but only 1 SEA per path
+// 9. Advance S -- Seaworthy Vessels: Disallow only OCEAN, no limit to seas or coasts in path
+// 10. Advance T -- Ocean Navigation: Allow Pacific Ocean, limit # of overseas holdings
+// 11. Advance U -- New World: Allow Atlantic Ocean, limit # of overseas holdings
