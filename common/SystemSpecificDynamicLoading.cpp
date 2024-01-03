@@ -25,7 +25,7 @@ std::string GenericLibraryLoader::GetErrorString()
   return m_libname + ": " + boost::lexical_cast<std::string>(GetLastError());
 }
 
-#elif defined(FreeBSD)
+#elif defined(FreeBSD) || defined(linux)
 
 GenericLibraryLoader::GenericLibraryLoader(const std::string &i_prefix) :
   m_library(NULL)

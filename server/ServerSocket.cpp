@@ -73,6 +73,10 @@ void ConnectionHandler::ReadOneBuffer()
       m_stringbuf.erase();
       break;
     }
+    else if (buf[0] < ' ') // all characters below ASCII space are non-printing characters... this should eat linefeeds
+    {
+        // do nothing here.
+    }
     else
     {
       m_stringbuf += buf[0];

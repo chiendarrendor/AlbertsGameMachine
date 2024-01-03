@@ -1,4 +1,15 @@
+
+ifeq (${OSTYPE},msys)
+OSLIBS=-lwsock32
 BOOSTINC=/c/Boost/include/boost-1_46
+endif
+
+ifeq (${OSTYPE},linux)
+BOOSTINC=/usr/include
+OSLIBS=-ldl
+endif
+
+
 COMMON=../common
 GAMECOMMON=../gamecommon
 
@@ -11,9 +22,7 @@ INCS=-I${GAMECOMMON} -I${COMMON} -I${BOOSTINC}
 GCC=g++ -g -Wall -Werror ${INCS} -D${OSTYPE}
 LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
 
-ifeq (${OSTYPE},msys)
-OSLIBS=-lwsock32
-endif
+
 
 LIBS=${OSLIBS} ${LOCLIBS}
 

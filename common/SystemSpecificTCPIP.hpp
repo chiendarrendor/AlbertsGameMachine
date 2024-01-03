@@ -1,3 +1,4 @@
+/* msys (windows, MinGW, gnu) */
 #ifdef msys
 #include <winsock.h>
 #define ERRSTRING WSAGetLastError()
@@ -12,6 +13,8 @@
   }\
 }
 #define ACCEPT(SOCK,ADDR,SIZE) accept(SOCK,ADDR,(int*)SIZE)
+
+/* FreeBSD (Rasperry PI?) */
 #elif defined FreeBSD
 #include <unistd.h>
 #include <sys/types.h>
@@ -28,5 +31,27 @@ typedef int BOOL;
 #define SOCKET_ERROR -1
 #define IPC_INITIALIZE
 #define ACCEPT(SOCK,ADDR,SIZE) accept(SOCK,ADDR,SIZE)
+
+/* AWS EC2 instance */
+#elif defined linux
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
+#include <netinet/in.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+typedef int BOOL;
+#define ERRSTRING strerror(errno)
+#define CLOSESOCKET(ARG) close(ARG)
+#define TRUE 1
+#define SOCKET_ERROR -1
+#define ACCEPT(SOCK,ADDR,SIZE) accept(SOCK,ADDR,(unsigned int*)SIZE)
+#define IPC_INITIALIZE
+
+
 #endif
+
+
+
+
 

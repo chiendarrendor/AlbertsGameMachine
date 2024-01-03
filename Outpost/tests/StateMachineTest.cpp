@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   BOOST_CHECK_EQUAL(pOptions->IsLegal("Player1","InitialState",ogi) , true);
   BOOST_CHECK_EQUAL(pOptions->ExecuteAction("InitialState",ogi,"Player1",ap) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,1,4,2,0,1,0,1,2\n");
+  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,1,3,2,0,1,0,1,2\n");
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , false);
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   BOOST_CHECK_EQUAL(pSB->IsLegal("Player1","InitialState",ogi) , true);
   BOOST_CHECK_EQUAL(pSB->ExecuteAction("InitialState",ogi,"Player1",ap2) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,0,1,1,0,0,0,0,1\n");
+  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,0,0,1,0,0,0,0,1\n");
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , false);
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   BOOST_CHECK_EQUAL(pSE->IsLegal("Player1","InitialState",ogi) , true);
   BOOST_CHECK_EQUAL(pSE->ExecuteAction("InitialState",ogi,"Player1",ap3) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,1,0,0,0,1,1,0,1,1,0,1\n");
+  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,1,0,0,0,0,1,0,1,1,0,1\n");
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , true);
@@ -2089,7 +2089,7 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
   always.insert("unicast: ## -- PLAYER,Player0,0\n");
   always.insert("unicast: ## -- PLAYER,Player1,1\n");
   always.insert("unicast: ## -- PLAYER,Player2,2\n");
-  always.insert("unicast: ## -- OPTIONS,1,0,0,0,5,1,0,1,1,1,1\n");
+  always.insert("unicast: ## -- OPTIONS,1,0,0,0,4,1,0,1,1,1,1\n");
 
   ogi.SetCurTurn(3);
   ogi.GetPlayers()[0].GetOwnedItems().AddItem(OUTPOST);

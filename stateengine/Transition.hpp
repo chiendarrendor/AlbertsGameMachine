@@ -13,6 +13,7 @@ template <class T_GameInfo>
 class Transition
 {
 public:
+    virtual ~Transition() { }
 	virtual bool IsLegal(const std::string &i_PlayerName,
                        const StateName &i_StateName,
                        const T_GameInfo &) const = 0;

@@ -3,7 +3,7 @@
 #ifdef msys
 #include <windows.h>
 #define LIBPTR HINSTANCE
-#elif defined(FreeBSD)
+#elif defined(FreeBSD) || defined(linux)
 #include <dlfcn.h>
 #define LIBPTR void *
 #endif

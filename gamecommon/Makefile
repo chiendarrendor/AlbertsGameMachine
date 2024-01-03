@@ -6,7 +6,7 @@ CFILES=$(OBJS:%.o=%.cpp)
 INCS=-I${COMMON}
 
 AR=ar
-GCC=g++ -g -Wall -Werror ${INCS}
+GCC=g++ -g -Wall -Werror -fPIC ${INCS}
 
 libGameCommon.a: ${OBJS}
 	${AR} rcs $@ ${OBJS}

@@ -53,7 +53,7 @@ public:
 
     if (m_MegaValue == 0)
     {
-      i_cm.GetDeck(m_ctype).HasMega() == false;
+      BOOST_CHECK(i_cm.GetDeck(m_ctype).HasMega() == false);
     }
     else
     {

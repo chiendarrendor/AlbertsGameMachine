@@ -1,8 +1,14 @@
+BOOSTINC=/usr/include
 GAMECOMMON=../../gamecommon
 COMMON=../../common
 SENGINE=../../stateengine
 
 JAVADIR=/c/Program\ Files/Java/jdk1.6.0_25
+
+LIBSUFFIX=.so
+ifeq (${OSTYPE},msys)
+LIBSUFFIX=.dll
+endif
 
 JAVAC=${JAVADIR}/bin/javac
 
@@ -48,26 +54,26 @@ JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/Outpost/%)
 
 CFILES=$(OBJS:%.o=../%.cpp) $(ARTIFACTOBJS:%.o=%.cpp)
 
-INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I.
+INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I. -DBOOST_TEST_DYN_LINK
 LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a 
-GCC=g++ -g -Wall -Werror ${INCS}
+GCC=g++ -g -Wall -Werror ${INCS} -fPIC
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
-BOOSTSERIALLIB=${BOOSTINC}/lib/libboost_serialization-mgw45-mt-1_46.a
-BOOSTTESTLIB=${BOOSTINC}/lib/libboost_unit_test_framework-mgw45-mt-1_46.a
+BOOSTSERIALLIB=-lboost_serialization-mt
+BOOSTTESTLIB=-lboost_unit_test_framework-mt
 EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB} 
 
-Outpost.dll: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS}
+Outpost${LIBSUFFIX}: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS}
 	${GCCL} -shared -o $@ ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTSERIALLIB} 
 
-tests: stochastictest.exe outposttest.exe
+tests: stochastictest outposttest
 
-outposttest.exe: ${MAINTESTOBJ} ${TESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
-	${GCCL} -o outposttest.exe ${MAINTESTOBJ} ${TESTOBJS} ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS} 
+outposttest: ${MAINTESTOBJ} ${TESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
+	${GCCL} -o $@ ${MAINTESTOBJ} ${TESTOBJS} ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
 
 
-stochastictest.exe: ${MAINTESTOBJ} ${STOCHASTICTESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
-	${GCCL} -o stochastictest.exe ${MAINTESTOBJ} ${STOCHASTICTESTOBJS} ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
+stochastictest: ${MAINTESTOBJ} ${STOCHASTICTESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
+	${GCCL} -o $@ ${MAINTESTOBJ} ${STOCHASTICTESTOBJS} ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
 
 ${COMMON}/libCommon.a:
 	- (cd ${COMMON} ; make)
@@ -79,8 +85,8 @@ OutpostDLL.cpp OutpostEventGenerator.hpp OutpostGameInfo.hpp: ../OutpostServer.x
 
 install: serverinstall clientinstall
 
-serverinstall: Outpost.dll
-	cp -f Outpost.dll ${SERVERINSTALL}
+serverinstall: Outpost${LIBSUFFIX}
+	cp -f Outpost${LIBSUFFIX} ${SERVERINSTALL}
 
 clientinstall: OutpostClient.xml clientjava
 	cp -f OutpostClient.xml ${CLIENTINSTALL}
