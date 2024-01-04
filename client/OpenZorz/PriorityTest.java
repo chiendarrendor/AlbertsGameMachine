@@ -1,15 +1,17 @@
 package OpenZorz;
 
-class TestVVO implements PriorityMap.VarValOperator
-{
-  public void OperateVarVal(String i_key,String i_val)
-  {
-    System.out.println("Key: " + i_key + "    Value: " + i_val);
-  }
-}
+
 
 class PriorityTest
 {
+  static class TestVVO implements PriorityMap.VarValOperator
+  {
+    public void OperateVarVal(String i_key,String i_val)
+    {
+      System.out.println("Key: " + i_key + "    Value: " + i_val);
+    }
+  }
+
   public static void main(String argv[])
   {
     PriorityMap pmap = new PriorityMap();

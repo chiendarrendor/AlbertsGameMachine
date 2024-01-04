@@ -1,2 +1,0 @@
-Outpost,http://192.168.1.4/client/Outpost,OutpostClient.xml,data/Outpost/Outpost
-MerchantOfVenus,http://192.168.1.4/client/MerchantOfVenus,MerchantOfVenusClient.xml,data/MerchantOfVenus/MerchantOfVenus

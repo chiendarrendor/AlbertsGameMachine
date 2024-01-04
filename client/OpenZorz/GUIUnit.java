@@ -11,19 +11,21 @@ import java.net.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.DOMException;
 
-class PassIntoGui implements Runnable
-{
-  private String m_contents;
-  private GameGui m_gamegui;
-  public PassIntoGui(String i_contents,GameGui i_gamegui) { m_contents = i_contents; m_gamegui = i_gamegui;}
-  public void run() 
-  { 
-    m_gamegui.HandleEvent(m_contents); 
-  }
-}
+
 
 public class GUIUnit
 {
+  class PassIntoGui implements Runnable
+  {
+    private String m_contents;
+    private GameGui m_gamegui;
+    public PassIntoGui(String i_contents,GameGui i_gamegui) { m_contents = i_contents; m_gamegui = i_gamegui;}
+    public void run()
+    {
+      m_gamegui.HandleEvent(m_contents);
+    }
+  }
+
   private GameGui m_gamegui;
 
   public void dispose()

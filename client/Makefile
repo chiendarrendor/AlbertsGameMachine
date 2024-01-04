@@ -2,8 +2,8 @@ INSTALLTARGET=/c/apache/htdocs/client
 
 JAVADIR=C:/Program\ Files/Java/jdk1.6.0_25
 
-JAVAC=${JAVADIR}/bin/javac
-JAVAJAR=${JAVADIR}/bin/jar
+JAVAC=javac
+JAVAJAR=jar
 
 JCMD=${JAVAC} -classpath . -Xlint:unchecked -Xlint:deprecation
 
@@ -16,6 +16,7 @@ all:
 	${JCMD} OpenZorz/GameClient.java
 	${JCMD} OpenZorz/GUITester.java
 	${JCMD} OpenZorz/ClientApplet.java
+	${JCMD} OpenZorz/ClientApplication.java
 	${JCMD} MySwing/*.java
 	${JCMD} Voronoi/*.java
 

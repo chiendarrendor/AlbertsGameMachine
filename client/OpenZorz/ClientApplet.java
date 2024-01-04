@@ -25,6 +25,12 @@ public class ClientApplet extends Applet implements Runnable
     m_pass = getParameter("password");
   }
 
+  public void init(String server,String uname,String password) {
+    m_server = server;
+    m_uname = uname;
+    m_pass = password;
+  }
+
   public void start() 
   {
     m_cm = new ClientManager(m_server,m_port,m_uname,m_pass);

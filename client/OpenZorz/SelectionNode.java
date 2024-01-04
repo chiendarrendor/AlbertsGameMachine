@@ -11,7 +11,7 @@ import Utilities.StringUtility;
 
 public class SelectionNode extends ActionGeneratorNode implements ActionListener
 {
-  JComboBox m_box;
+  JComboBox<String> m_box;
   String m_VarName;
   boolean m_IsVariable;
 
@@ -29,7 +29,7 @@ public class SelectionNode extends ActionGeneratorNode implements ActionListener
 
   public void InitializeNode(GameNode i_ParentNode,int i_x,int i_y)
   {
-    m_box = new JComboBox();
+    m_box = new JComboBox<>();
     m_box.addActionListener(this);
 
     Point p = new Point(i_x,i_y);

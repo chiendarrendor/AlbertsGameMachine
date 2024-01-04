@@ -10,7 +10,7 @@ import NodeInterfacePackage.GameEvent;
 
 public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionListener
 {
-  private JComboBox m_box;
+  private JComboBox<String> m_box;
   private String m_Min;
   private String m_Max;
   boolean m_varmin;
@@ -62,7 +62,7 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
 
   public void InitializeBox(GameNode i_ParentNode,int i_x,int i_y)
   {
-    m_box = new JComboBox();
+    m_box = new JComboBox<>();
     m_box.addActionListener(this);
 
     Point p = new Point(i_x,i_y);
