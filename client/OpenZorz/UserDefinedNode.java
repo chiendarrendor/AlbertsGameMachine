@@ -1,6 +1,9 @@
 package OpenZorz;
 
 import javax.swing.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.awt.*;
 import java.lang.reflect.*;
@@ -30,7 +33,7 @@ public class UserDefinedNode extends GameNode
     SetComponent(panel);
 
 
-    m_udi = ConstructUserDefinedInterface(i_ClassName,i_DataLoc,i_Options,panel,atm);
+    m_udi = ConstructUserDefinedInterface(i_ClassName,i_DataLoc,i_Options,panel,atm,i_gamegui.getRemoteClassLoader());
 
   }
 
@@ -55,7 +58,8 @@ public class UserDefinedNode extends GameNode
                                                              String i_DataLoc,
                                                              HashMap<String,String> i_Options,
                                                              JPanel i_Panel,
-                                                             ActionTransferManager i_atm)
+                                                             ActionTransferManager i_atm,
+                                                             ClassLoader i_remoteClassLoader)
     throws GameXMLException
   {
     Object newo;
@@ -64,7 +68,8 @@ public class UserDefinedNode extends GameNode
 
     try
     {
-      Class<?> newclass = this.getClass().getClassLoader().loadClass(i_ClassName);
+      Class<?> newclass = i_remoteClassLoader.loadClass(i_ClassName);
+
       Class<?>[] contypearg = new Class[4];
       contypearg[0] = i_Options.getClass();
       contypearg[1] = i_DataLoc.getClass();

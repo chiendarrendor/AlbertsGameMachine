@@ -1,3 +1,5 @@
+
+AWSBUCKET=albertsgamemachine
 INSTALLTARGET=/c/apache/htdocs/client
 
 JAVADIR=C:/Program\ Files/Java/jdk1.6.0_25
@@ -24,5 +26,6 @@ jar: all
 	${JAVAJAR} cf Client.jar ${SUBCLASS}
 	
 
-install: jar
-	cp Client.jar ${INSTALLTARGET}
+installaws: jar
+# TODO: figure out how to add CloudFront Cache Validation here
+	aws s3 cp Client.jar s3://${AWSBUCKET}/

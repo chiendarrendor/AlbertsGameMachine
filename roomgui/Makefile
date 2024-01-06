@@ -1,6 +1,9 @@
 
+AWSBUCKET=albertsgamemachine
+
 #JAVAC=javac
-JAVAC=/c/Program\ Files/Java/jdk1.6.0_25/bin/javac
+JAVAC=javac -Xlint:unchecked
+JAR=jar cvf
 
 INSTALLDIR=/c/apache/htdocs/client/ROOMGUI
 
@@ -12,12 +15,13 @@ JAVALOCS=$(JAVAS:%=ROOMGUI/%)
 java:
 	- rm ROOMGUI/*.class
 	${JAVAC} -d . -sourcepath . -classpath ../client ${JAVALOCS}
+	${JAR} ROOMGUI.jar ROOMGUI/*.class
 
 
 
 
 
-install: java
-	cp rooms.xml ${INSTALLDIR}
-	cp ROOMGUI/*.class ${INSTALLDIR}
+installaws: java
+	aws s3 cp rooms.xml s3://${AWSBUCKET}/
+	aws s3 cp ROOMGUI.jar s3://${AWSBUCKET}/
 

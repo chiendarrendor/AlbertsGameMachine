@@ -26,7 +26,7 @@ public class TalkPanel implements ActionListener
   ActionTransferManager m_atm;
   JRadioButton m_room;
   JRadioButton m_player;
-  JComboBox m_playerlist;
+  JComboBox<String> m_playerlist;
   JTextField m_message;
   JLabel m_err;
   JTextArea m_messages;
@@ -100,9 +100,9 @@ public class TalkPanel implements ActionListener
 
   private class PListAVG implements ActionVariableGenerator
   {
-    private JComboBox m_plist;
+    private JComboBox<String> m_plist;
 
-    public PListAVG(JComboBox i_plist)
+    public PListAVG(JComboBox<String> i_plist)
     {
       m_plist = i_plist;
     }
@@ -169,7 +169,7 @@ public class TalkPanel implements ActionListener
     playerpanel.add(m_player); 
     bg.add(m_player);
 
-    m_playerlist = new JComboBox();  
+    m_playerlist = new JComboBox<String>();
     playerpanel.add(m_playerlist); 
     m_playerlist.setEnabled(false);
     JRBActivator jrba = new JRBActivator(m_playerlist,m_player);

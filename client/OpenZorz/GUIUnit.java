@@ -33,9 +33,21 @@ public class GUIUnit
     m_gamegui.dispose();
   }
   
-  public GUIUnit(PrintWriter i_out,StatusWindows i_StatusWindows,TabbedWindow i_tabs)
+  public GUIUnit(PrintWriter i_out, StatusWindows i_StatusWindows, TabbedWindow i_tabs, GuiPacketParser i_gpp)
   {
-    m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs);
+
+    // assume (require?) that all User Defined Nodes of this GUI Unit are found in a jar in the same remote directory
+    // as the .xml file, with the same prefix as the name of the GUI
+    try {
+      URL[] urls = new URL[]{new URL(i_gpp.GetXMLLoc() + "/" + i_gpp.GetGuiName() + ".jar")};
+      URLClassLoader classLoader = new URLClassLoader(urls, this.getClass().getClassLoader());
+      m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader);
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("Couldn't create remote classloader:", e);
+    }
+
+
+
   }
 
   private boolean m_invokeok;

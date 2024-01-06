@@ -207,7 +207,7 @@ public class TabbedWindow extends JFrame
     jp.setLayout(new BoxLayout(jp,BoxLayout.X_AXIS));
     //    jp.setLayout(new FlowLayout(FlowLayout.LEFT,1,0));
 
-    ImageIcon ii = ImageLoader.MakeImageIcon(m_dataloc + "/outbutton.PNG");
+    ImageIcon ii = ImageLoader.MakeImageIcon(NetworkStuff.COMMONDISTRO + "/outbutton.PNG");
     JButton jb = new JButton(ii);
     jb.addActionListener(new ExportButtonListener(i_component));
     jb.setMargin(new Insets(0,0,0,0));

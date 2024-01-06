@@ -8,6 +8,7 @@ import Utilities.StringUtility;
 
 public class GameGui
 {
+  private ClassLoader m_remoteClassLoader;
   private ArrayList<GameNode> m_Windows;
   private HashMap<String,GameEventType> m_EventTypes;
   private ActionTransferManager m_ActionManager;
@@ -21,7 +22,7 @@ public class GameGui
     m_StatusWindows.ShowDebug(i_message);
   }
 
-
+  public ClassLoader getRemoteClassLoader() { return m_remoteClassLoader; }
 
   public void dispose()
   {
@@ -171,8 +172,9 @@ public class GameGui
 
   }
 
-  public GameGui(PrintWriter i_pw,StatusWindows i_StatusWindows,TabbedWindow i_tabs)
+  public GameGui(PrintWriter i_pw, StatusWindows i_StatusWindows, TabbedWindow i_tabs, ClassLoader i_remoteClassLoader)
   {
+    m_remoteClassLoader = i_remoteClassLoader;
     m_StatusWindows = i_StatusWindows;
     m_tabs = i_tabs;
     m_ActionManager = new ActionTransferManager();

@@ -47,7 +47,7 @@ public class ClientManager
     m_gum = new GUIUnitMap();
     m_exiting = false;
 
-    String topdloc = "http://" + i_HostName + "/client";
+    String topdloc = "https://" + i_HostName;
 
     m_tabs = new TabbedWindow(550,550,topdloc);
     m_tabs.RefreshMe();
@@ -275,7 +275,7 @@ public class ClientManager
       opguiunit = null;
       if (!m_gum.IsInMap(gpp.GetGuiName()))
       {
-        opguiunit = new GUIUnit(m_out,m_statuswindows,m_tabs);
+        opguiunit = new GUIUnit(m_out,m_statuswindows,m_tabs,gpp);
         m_gum.AddToMap(gpp.GetGuiName(),opguiunit);
         System.out.println("New Gui Created: " + gpp.GetGuiName());
         ParseXML(opguiunit,gpp);

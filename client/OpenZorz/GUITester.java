@@ -27,7 +27,8 @@ public class GUITester {
       twin.RefreshMe();
 
       StatusWindows statuswindows = new StatusWindows(twin);
-      GUIUnit testgui = new GUIUnit(m_out,statuswindows,twin);
+      GuiPacketParser gpp = new GuiPacketParser("dummy"); // TODO, if we ever use this again, figure out what this should parse
+      GUIUnit testgui = new GUIUnit(m_out,statuswindows,twin,gpp);
       
       if (!testgui.ParseXML(argv[0],argv[1],argv[2]))
       {
