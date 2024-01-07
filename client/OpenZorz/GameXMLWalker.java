@@ -300,11 +300,13 @@ public class GameXMLWalker
     acheck.AddAttribute("image",true);
     acheck.ValidateAttributes(i_XMLNode);
 
-    ImageNode inode = new ImageNode(i_ParentGameNode,
-                                    DOMUtil.GetIntAttribute(i_XMLNode,"x"),
-                                    DOMUtil.GetIntAttribute(i_XMLNode,"y"),
-                                    DOMUtil.GetAttributeWithName(i_XMLNode,"hidden"),
-                                    m_FilePrefix + "/" + DOMUtil.GetAttributeWithName(i_XMLNode,"image"));
+    ImageNode inode = new ImageNode(
+            m_gamegui,
+            i_ParentGameNode,
+            DOMUtil.GetIntAttribute(i_XMLNode,"x"),
+            DOMUtil.GetIntAttribute(i_XMLNode,"y"),
+            DOMUtil.GetAttributeWithName(i_XMLNode,"hidden"),
+            DOMUtil.GetAttributeWithName(i_XMLNode,"image"));
 
     DOMChildIterator cit = new DOMChildIterator(i_XMLNode);
     org.w3c.dom.Node childNode;

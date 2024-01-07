@@ -24,26 +24,24 @@ public class Item extends DrawThing
   private static final int veepleftoffset = 2+coffx;
   private static final int veepdownoffset = 55+coffy;
 
+  private static final String TOOLSUFFIX = ".JPG";
+
+
   private String m_imagename;
 
   public void setJLabel(JLabel i_jlabel)
   {
     super.setJLabel(i_jlabel);
 
-    String s = m_imagename + ".jpg";
-    if (!s.toLowerCase().startsWith("http:"))
-    {
-      s = "file:" + s;
-    }
-    String text="<HTML><img src=\"" + s + "\" alt=\"" + s + "\"></HTML>";
+    URL tooltipurl = ImageLoader.getImageURL(this.getClass(),m_imagename + TOOLSUFFIX);
+    i_jlabel.setToolTipText("<HTML><image src=\"" + tooltipurl + "\"></HTML>");
 
-    i_jlabel.setToolTipText(text);
   }
 
   public Item(String i_DataLoc,int i_num,String i_name,int i_cost,String i_veep,String i_imgname)
   {
     super();
-    m_imagename = i_DataLoc + "/" + i_imgname;
+    m_imagename = i_imgname;
 
     Font f = m_g2d.getFont();
     Font fsmall = f.deriveFont((float)9);

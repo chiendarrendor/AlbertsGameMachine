@@ -254,8 +254,8 @@ public class Factories implements UserDefinedInterface
   public Factories(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
   {
     Toolkit tk = Toolkit.getDefaultToolkit();
-    Image manimage = ImageLoader.MakeImageIcon(i_DataLoc + "/Man.PNG").getImage();
-    Image robotimage = ImageLoader.MakeImageIcon(i_DataLoc + "/Robot.PNG").getImage();
+    Image manimage = ImageLoader.MakeImageIcon(this.getClass(), "/Man.PNG").getImage();
+    Image robotimage = ImageLoader.MakeImageIcon(this.getClass(), "/Robot.PNG").getImage();
     m_mancursor = tk.createCustomCursor(manimage,
                                         new Point(manimage.getWidth(null)/2,manimage.getHeight(null)/2),
                                         "ManCursor"
@@ -311,14 +311,14 @@ public class Factories implements UserDefinedInterface
 
 
     m_manjl = new MouseAwareJLabel(MAN_SOURCE_DRAGGER,m_fmm);
-    m_manjl.setIcon(ImageLoader.MakeImageIcon(i_DataLoc + "/Man.PNG"));
+    m_manjl.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "/Man.PNG"));
     m_mainpanel.add(m_manjl,new Point(45,0));
 
     m_mancountlabel = new JLabel();
     m_mainpanel.add(m_mancountlabel,new Point(60,42));
 
     m_robotjl = new MouseAwareJLabel(ROBOT_SOURCE_DRAGGER,m_fmm);
-    m_robotjl.setIcon(ImageLoader.MakeImageIcon(i_DataLoc + "/Robot.PNG"));
+    m_robotjl.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "/Robot.PNG"));
     m_mainpanel.add(m_robotjl,new Point(45,60));
 
     m_robotcountlabel = new JLabel();

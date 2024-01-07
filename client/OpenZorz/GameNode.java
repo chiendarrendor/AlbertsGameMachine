@@ -35,16 +35,6 @@ abstract public class GameNode implements EventHandlerNode
     s_xypopup.AddPopup(i_comp);
   }
 
-  public static ImageIcon MakeImageIcon(String i_Name)
-  {
-    return ImageLoader.MakeImageIcon(i_Name);
-  }
-
-  public static JLabel MakeImageLabel(String i_Name)
-  {
-    return ImageLoader.MakeImageLabel(i_Name);
-  }
-
   public GameNode(GameNode i_Parent,String i_hidden)
   {
     m_VisibilityComponent = null;

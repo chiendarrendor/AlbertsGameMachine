@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+import MySwing.ImageLoader;
 import NodeInterfacePackage.GameEvent;
 
 
@@ -35,7 +36,7 @@ public class ButtonNode
 
     if (i_image != null)
     {
-	    m_button.setIcon(MakeImageIcon(i_image));
+	    m_button.setIcon(ImageLoader.MakeImageIcon(i_gamegui.getRemoteClassLoader(),i_image));
     }
     if (m_esp.GetText() != null)
     {

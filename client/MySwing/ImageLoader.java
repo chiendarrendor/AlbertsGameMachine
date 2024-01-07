@@ -1,5 +1,8 @@
 package MySwing;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import javax.swing.JLabel;
 import javax.swing.ImageIcon;
@@ -12,18 +15,54 @@ public class ImageLoader
 {
   private static HashMap<String,ImageIcon> m_Icons = new HashMap<String,ImageIcon>();
 
-  public static ImageIcon MakeImageIcon(String i_Name)
+  public static URL getImageURL(Class cl,String i_name) {
+    return getImageURL(cl.getClassLoader(),i_name);
+  }
+  public static URL getImageURL(ClassLoader loader, String i_name) {
+    try {
+      Enumeration<URL> imageurls = loader.getResources(i_name);
+      while (imageurls.hasMoreElements()) {
+        URL url = imageurls.nextElement();
+        if (url != null) return url;
+      }
+      return null;
+    } catch (IOException e) {
+      throw new RuntimeException("MakeImageIcon failed ", e);
+    }
+  }
+
+
+  public static ImageIcon MakeImageIcon(ClassLoader loader,String i_name) {
+      URL url = getImageURL(loader,i_name);
+      if (url != null) {
+        return new ImageIcon(url);
+      }
+      return null;
+  }
+
+  public static JLabel MakeImageLabel(ClassLoader loader, String i_name) {
+    ImageIcon ii = MakeImageIcon(loader,i_name);
+
+    JLabel label = new JLabel();
+    label.setIcon(ii);
+    label.setText("");
+    return label;
+  }
+
+
+
+
+  public static ImageIcon MakeImageIcon(String i_Name) {
+    return MakeImageIcon(ImageLoader.class,i_Name);
+  }
+
+  public static ImageIcon MakeImageIcon(Class opClass,String i_Name)
   {
     ImageIcon icon = m_Icons.get(i_Name);
 
     if (icon == null)
     {
-	    java.net.URL imageURL = ImageLoader.class.getResource(i_Name);
-
-      if (imageURL != null)
-      {
-        icon = new ImageIcon(imageURL);
-      }
+      icon = MakeImageIcon(opClass.getClassLoader(),i_Name);
     }
 
     if (icon == null)
@@ -69,9 +108,14 @@ public class ImageLoader
     return icon;
   }
 
-  public static JLabel MakeImageLabel(String i_Name)
+  public static JLabel MakeImageLabel(String i_name) {
+    return MakeImageLabel(ImageLoader.class,i_name);
+  }
+
+
+  public static JLabel MakeImageLabel(Class theClass, String i_Name)
   {
-    ImageIcon icon = MakeImageIcon(i_Name);
+    ImageIcon icon = MakeImageIcon(theClass, i_Name);
 
     JLabel label = new JLabel();
     label.setIcon(icon);

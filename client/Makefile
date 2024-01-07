@@ -1,8 +1,6 @@
-
-AWSBUCKET=albertsgamemachine
 INSTALLTARGET=/c/apache/htdocs/client
 
-JAVADIR=C:/Program\ Files/Java/jdk1.6.0_25
+AWSBUCKET = albertsgamemachine
 
 JAVAC=javac
 JAVAJAR=jar
@@ -19,6 +17,7 @@ all:
 	${JCMD} OpenZorz/GUITester.java
 	${JCMD} OpenZorz/ClientApplet.java
 	${JCMD} OpenZorz/ClientApplication.java
+	${JCMD} OpenZorz/TestResource.java
 	${JCMD} MySwing/*.java
 	${JCMD} Voronoi/*.java
 
@@ -26,6 +25,8 @@ jar: all
 	${JAVAJAR} cf Client.jar ${SUBCLASS}
 	
 
-installaws: jar
-# TODO: figure out how to add CloudFront Cache Validation here
+install: jar
+	cp Client.jar ${INSTALLTARGET}
+
+awsinstall: jar
 	aws s3 cp Client.jar s3://${AWSBUCKET}/

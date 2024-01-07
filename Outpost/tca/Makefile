@@ -1,20 +1,20 @@
+
+AWSBUCKET=albertsgamemachine
 BOOSTINC=/usr/include
 GAMECOMMON=../../gamecommon
 COMMON=../../common
 SENGINE=../../stateengine
-
-JAVADIR=/c/Program\ Files/Java/jdk1.6.0_25
 
 LIBSUFFIX=.so
 ifeq (${OSTYPE},msys)
 LIBSUFFIX=.dll
 endif
 
-JAVAC=${JAVADIR}/bin/javac
+JAVAC=javac -Xlint:unchecked
 
 CLIENTJAVADIR=../client
 CLIENTJAVALIB=../../client
-CLIENTINSTALL=C:/apache/htdocs/client/Outpost
+CLIENTINSTALL=./clientstage
 SERVERINSTALL=../../data/Outpost
 TCOMDIR=../../transitioncompiler
 TCOM=perl -I${TCOMDIR} ${TCOMDIR}/tcom.pl
@@ -88,11 +88,18 @@ install: serverinstall clientinstall
 serverinstall: Outpost${LIBSUFFIX}
 	cp -f Outpost${LIBSUFFIX} ${SERVERINSTALL}
 
+# I'm sure there are cleaner ways to do this, but I'm lazy.
 clientinstall: OutpostClient.xml clientjava
-	cp -f OutpostClient.xml ${CLIENTINSTALL}
+	- rm -fr ${CLIENTINSTALL}
+	- mkdir ${CLIENTINSTALL}
+	- mkdir ${CLIENTINSTALL}/Outpost
+
 	cp -f ../client/*.JPG ${CLIENTINSTALL}
 	cp -f ../client/*.PNG ${CLIENTINSTALL}
-	cp -f ../client/Outpost/*.class ${CLIENTINSTALL}
+	cp -f ../client/Outpost/*.class ${CLIENTINSTALL}/Outpost
+	cd ${CLIENTINSTALL} ; jar -cf ../Outpost.jar *
+	aws s3 cp OutpostClient.xml s3://${AWSBUCKET}/
+	aws s3 cp Outpost.jar s3://${AWSBUCKET}/
 
 
 stageclient: OutpostClient.xml clientjava

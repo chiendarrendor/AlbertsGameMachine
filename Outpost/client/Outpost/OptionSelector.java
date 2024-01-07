@@ -12,7 +12,7 @@ import java.awt.event.ActionEvent;
 
 public class OptionSelector implements UserDefinedInterface,ActionVariableGenerator,ActionListener
 {
-  private JComboBox m_box;
+  private JComboBox<String> m_box;
   private JLabel m_label;
   private ActionTransferManager m_atm;
   private Vector<String> m_names;
@@ -43,7 +43,7 @@ public class OptionSelector implements UserDefinedInterface,ActionVariableGenera
     JLabel namelabel = new JLabel(m_varname + ": ");
     jp.add(namelabel);
 
-    m_box = new JComboBox();
+    m_box = new JComboBox<String>();
     jp.add(m_box);
     m_box.addActionListener(this);
 
