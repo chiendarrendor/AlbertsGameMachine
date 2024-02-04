@@ -68,15 +68,15 @@ public class FactoryWidget
   {
     switch(m_FactoryType)
     {
-    case 'O': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/Ore.PNG"); break;
-    case 'W': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/Water.PNG"); break;
-    case 'T': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/Titanium.PNG"); break;
-    case 'R': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/Research.PNG"); break;
-    case 'N': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/NewChemicals.PNG"); break;
-    case 'S': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/OrbitalMedicine.PNG"); break;
-    case 'P': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/RingOre.PNG"); break;
-    case 'M': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/MoonOre.PNG"); break;
-    default: m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "/Empty.PNG"); break;
+    case 'O': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "Ore.PNG"); break;
+    case 'W': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "Water.PNG"); break;
+    case 'T': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "Titanium.PNG"); break;
+    case 'R': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "Research.PNG"); break;
+    case 'N': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "NewChemicals.PNG"); break;
+    case 'S': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "OrbitalMedicine.PNG"); break;
+    case 'P': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "RingOre.PNG"); break;
+    case 'M': m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "MoonOre.PNG"); break;
+    default: m_factorylabel = ImageLoader.MakeImageLabel(this.getClass(), "Empty.PNG"); break;
     }
     m_panel.add(m_factorylabel);
     
@@ -86,9 +86,9 @@ public class FactoryWidget
   { 
     switch(m_ManType)
     {
-    case 'H': m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "/Man.PNG")); break;
-    case 'B': m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "/Robot.PNG")); break;
-    default: m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "/Empty.PNG")); break;
+    case 'H': m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "Man.PNG")); break;
+    case 'B': m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "Robot.PNG")); break;
+    default: m_manlabel.setIcon(ImageLoader.MakeImageIcon(this.getClass(), "Empty.PNG")); break;
     }
   }    
 
