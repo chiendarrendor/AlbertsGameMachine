@@ -4,7 +4,7 @@ SENGINE=../../stateengine
 
 #DEFINES=-DSTATEDEBUG
 
-JAVADIR=/c/Program\ Files/Java/jdk1.6.0_25
+JAVADIR=/c/Program\ Files/Java/jdk-19
 JAVAC=${JAVADIR}/bin/javac
 
 CLIENTJAVADIR=../client
