@@ -88,7 +88,7 @@
 </solarsystem>
 
 <solarsystem name="Interstellar Biosphere" ishabitable="y" x="979" y="584">
-	<space name="Smoke Ring" type="station" x="1080" y="438">
+	<space name="Smoke Ring" type="spacecity" x="1080" y="438">
 		<adjacent dest="ib_loop_1"/>
 		<adjacent dest="ib_loop_8"/>
 	</space>
@@ -133,7 +133,7 @@
 </line>
 
 <solarsystem name="Galactic Base" inhabited="y" x="1098" y="971">
-	<space name="Galactic Base" type="station" x="1108" y="877">
+	<space name="Galactic Base" type="spacecity" x="1108" y="877">
 		<adjacent dest="ib_gb_3"/>
 		<adjacent dest="cloud_body_8"/>
 		<adjacent dest="gb_cw_1"/>
@@ -327,7 +327,7 @@
 		<adjacent dest="cloud_body_1"/>
 		<adjacent dest="cloud_body_3"/>
 	</space>
-	<space name="cloud_body_3" type="station" x="1466" y="872">
+	<space name="cloud_body_3" type="spacecity" x="1466" y="872">
 		<adjacent dest="cloud_body_2"/>
 		<adjacent dest="cloud_body_4"/>
 		<adjacent dest="cloud_south_1"/>
@@ -605,7 +605,7 @@
 		<adjacent dest="MGS_loop_1"/>
 		<adjacent dest="MGS_loop_3"/>
 	</space>
-	<space name="MGS_loop_3" type="station" x="1926" y="1245">
+	<space name="MGS_loop_3" type="spacecity" x="1926" y="1245">
 		<adjacent dest="MGS_loop_2"/>
 		<adjacent dest="MGS_loop_4"/>
 	</space>
@@ -744,7 +744,7 @@
 		<adjacent dest="AS_3_3"/>
 		<adjacent dest="AS_3_4"/>
 	</space>
-	<space name="AS_3_1" type="station" x="1639" y="1556">
+	<space name="AS_3_1" type="spacecity" x="1639" y="1556">
 		<adjacent dest="AS_2_1"/>
 		<adjacent dest="AS_3_2"/>
 		<adjacent dest="AS_4_1"/>
@@ -813,7 +813,7 @@
 		<adjacent dest="AS_6_5"/>
 	</space>
 
-	<space name="AS_6_3" type="station" x="1414" y="1597">
+	<space name="AS_6_3" type="spacecity" x="1414" y="1597">
 		<adjacent dest="AS_5_2"/>
 		<adjacent dest="AS_5_3"/>
 		<adjacent dest="AS_6_4"/>

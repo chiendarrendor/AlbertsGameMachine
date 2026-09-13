@@ -47,6 +47,7 @@ namespace
     if (i_type == "penalty") return PENALTY;
     if (i_type == "city") return CITY;
     if (i_type == "station") return STATION;
+    if (i_type == "spacecity") return SPACECITY;
 
     THROW(std::runtime_error,"illegal type " << i_type);
   }
@@ -70,6 +71,7 @@ namespace
     case PENALTY: o <<  "penalty"; break;
     case CITY: o <<  "city"; break;
     case STATION: o <<  "station"; break;
+    case SPACECITY: o << "spacecity"; break;
     default: o <<  "???";
     }
     return o;
@@ -402,6 +404,7 @@ MapSpace* MapData::ProcessSpace(Region& i_region,pugi::xml_node spacenode)
   case QBOX:
   case ASTEROID:
   case STATION:
+  case SPACECITY:
     optattrs.clear();
     attrs = ParseAttributes(spacenode,reqattrs,optattrs);
     break;

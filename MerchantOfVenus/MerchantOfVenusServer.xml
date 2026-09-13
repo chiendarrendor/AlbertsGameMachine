@@ -650,7 +650,7 @@
         //      and give it to the acting player.
 
         if (GetTradeBases().RegionHasTradeBase(ms.first.m_regionname) &&
-            (ms.first.m_type == CITY || ms.first.m_type == STATION))
+            (ms.first.m_type == CITY || ms.first.m_type == STATION || ms.first.m_type == SPACECITY))
         {
           TradeBase& tb = GetTradeBases().GetTradeBaseBySolarSystemName(ms.first.m_regionname);
           if (!tb.GetSecret().IsPublic())
@@ -981,7 +981,8 @@
     <auto>
       <![CDATA[
       GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == CITY ||
-      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION ||
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == SPACECITY
       ]]>
     </auto>
     <body>
@@ -1005,6 +1006,7 @@
       <![CDATA[
       GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != CITY &&
       GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != STATION &&
+      GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != SPACECITY &&
       !GetMapOverlay().HasRelic(GetPlayers().GetCurPlayer().GetLocation())
       ]]>
     </auto>

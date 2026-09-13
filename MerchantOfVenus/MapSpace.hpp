@@ -4,7 +4,7 @@
 #include "Serialize.hpp"
 
 
-enum SpaceType { DOT,ASTEROID,QBOX,PENALTY,CITY,STATION,TELEGATE};
+enum SpaceType { DOT,ASTEROID,QBOX,PENALTY,CITY,STATION,TELEGATE,SPACECITY};
 enum Color { BLUE,RED,YELLOW};
 
 class Region
