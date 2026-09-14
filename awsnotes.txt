@@ -1,0 +1,15 @@
+
+# how to run the gui client-side
+curl --output Client.jar https://d1g3rnc919nzml.cloudfront.net/Client.jar
+java -classpath Client.jar OpenZorz.ClientApplication 3.14.13.50
+
+#how to upload a gui to S3
+# obsolete!  switching over to JAR with same name as GUI
+ aws s3 cp rooms.xml s3://albertsgamemachine/
+ xxx aws s3 cp --recursive --exclude '*' --include '*.class' ROOMGUI s3://albertsgamemachine/ROOMGUI
+ aws s3 cp ROOMGUI.jar s3://albertsgamemachine/
+
+
+# how to upload Client.jar to S3
+# (remember to invalidate cache in CloudFront)
+aws s3 cp Client.jar s3://albertsgamemachine/
