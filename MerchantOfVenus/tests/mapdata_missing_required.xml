@@ -1,0 +1,5 @@
+<board>
+<solarsystem name="TestSystem" x="0" y="0">
+<space name="Alpha" type="dot"/>
+</solarsystem>
+</board>

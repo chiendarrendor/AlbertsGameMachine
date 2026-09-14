@@ -1,0 +1,10 @@
+<board>
+<solarsystem name="TestSystem" x="0" y="0">
+<space name="Alpha" type="dot" x="0" y="0">
+<adjacent dest="Beta" flyable="y"/>
+</space>
+<space name="Beta" type="dot" x="1" y="1">
+<adjacent dest="Alpha" flyable="y"/>
+</space>
+</solarsystem>
+</board>

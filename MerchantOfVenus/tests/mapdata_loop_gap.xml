@@ -1,0 +1,6 @@
+<board>
+<solarsystem name="TestSystem" x="0" y="0">
+<space name="TestSystem_loop_1" type="dot" x="0" y="0"/>
+<space name="TestSystem_loop_3" type="dot" x="1" y="1"/>
+</solarsystem>
+</board>

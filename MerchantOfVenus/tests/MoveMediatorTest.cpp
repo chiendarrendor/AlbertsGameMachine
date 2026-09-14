@@ -4,7 +4,7 @@
 #include "MapOverlay.hpp"
 #include "Ship.hpp"
 
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE( TestStartMove )
 {

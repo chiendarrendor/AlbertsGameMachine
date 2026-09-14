@@ -17,6 +17,7 @@
 #include "pugiconfig.hpp"
 
 #ifndef PUGIXML_NO_STL
+#if defined(__SUNPRO_CC) || defined(__BORLANDC__) || defined(__DMC__)
 namespace std
 {
 	struct bidirectional_iterator_tag;
@@ -43,6 +44,18 @@ namespace std
 	template <> class char_traits<char>;
 #endif
 }
+#else
+// Modern compilers (GCC 5+'s dual C++11 ABI in particular) don't need or tolerate the
+// forward-declaration workaround above -- std::basic_string et al. live in a
+// versioned inline namespace there, so a bare forward declaration creates an
+// ambiguous, non-matching redeclaration. Just include the real headers instead.
+#include <string>
+#include <iosfwd>
+namespace std
+{
+	struct bidirectional_iterator_tag;
+}
+#endif
 #endif
 
 // Macro for deprecated features

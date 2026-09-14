@@ -2,6 +2,14 @@ GAMECOMMON=../../gamecommon
 COMMON=../../common
 SENGINE=../../stateengine
 
+ifeq (${OSTYPE},msys)
+BOOSTINC=/c/local/boost_1_92_0
+endif
+
+ifeq (${OSTYPE},linux)
+BOOSTINC=/usr/include
+endif
+
 #DEFINES=-DSTATEDEBUG
 
 JAVADIR=/c/Program\ Files/Java/jdk-19
@@ -19,7 +27,7 @@ OBJS= MerchantOfVenusState.o MerchantOfVenusSet.o Players.o Player.o \
 	Cup.o TradeBases.o TradeBase.o Advances.o Secret.o \
 	MoveMediator.o
 
-TESTOBJS=MoveMediatorTest.o
+TESTOBJS=MoveMediatorTest.o MapDataTest.o
 
 MAINTESTOBJ=testmain.o
 
