@@ -1,0 +1,20 @@
+---
+name: mapdata-pugixml-migration
+description: In-progress work — building MapData characterization tests, fixing pugixml to compile, before migrating MapData's XML parsing to boost::property_tree
+metadata:
+  type: project
+---
+
+Part of [[project-overview]] / [[component-game-dlls]]. This is active, in-progress work as of 2026-09-14 — not yet complete.
+
+**The goal:** `MerchantOfVenus/MapData.cpp`/`.hpp` currently parses `MerchantOfVenusMap.xml` using a vendored, ancient (copyright 2006-2010, version 1.0) pugixml, sitting directly in the `MerchantOfVenus/` directory (`pugixml.hpp`/`.cpp`, `pugiconfig.hpp`). Albert doesn't remember why he vendored a random XML parser instead of using something already available, and wants to replace it with `boost::property_tree`'s `read_xml()` instead — usage is narrow (pure reader: load file, walk tree via `first_child()`/`next_sibling()`, read attributes via an iterator; no XPath, no writing), confined entirely to `MapData.cpp`/`.hpp`.
+
+**Why tests first:** before rewriting `MapData`'s parsing internals onto property_tree, we're writing characterization tests (`MerchantOfVenus/tests/MapDataTest.cpp` + fixture XML files in `MerchantOfVenus/tests/mapdata_*.xml`) against the *current* pugixml-based implementation, so the same tests can be re-run after the property_tree rewrite to confirm behavioral parity (same validation errors on the same bad inputs, same parsed data on good input, same counts against the real production map).
+
+**Status so far:**
+1. `MapDataTest.cpp` is written: a happy-path fixture test, a smoke test against the real `MerchantOfVenusMap.xml` (checks qbox count=24, spacecity count=6, etc.), and 8 fixture-based tests each isolating one validation rule (unknown attribute, missing required attribute, illegal type, self-adjacency, nonexistent adjacency, asymmetric adjacency, flyable-non-city, loop-numbering gap, duplicate space name). Wired into `MerchantOfVenus/tca/Makefile`'s `TESTOBJS`.
+2. Hit a real compile bug in the vendored `pugixml.hpp`: it forward-declares `std::basic_string` (a workaround for defunct compilers — Sun CC/Borland/Digital Mars) which collides with GCC 5+'s dual-ABI `std::__cxx11::basic_string`. **Fixed** — see the git history for `MerchantOfVenus/pugixml.hpp` (restricted that forward-declaration block to the legacy compilers it was actually for; real compilers now just get a proper `#include <string>`). Confirmed this compiles clean now.
+3. **Currently blocked**, but by something unrelated to pugixml or the game code: `MapData.cpp` also pulls in `boost::regex` (for the `_loop_N` naming-convention check), and Boost.Regex 1.92 uses `std::mutex` internally — which fails outright because the installed MinGW (`MinGW.org GCC-6.3.0-1`) was configured with the `win32` thread model, not `posix`, so `std::mutex`/`std::thread` don't work at all on this toolchain (see [[build-environment]] for the fuller toolchain story, including the parallel Boost.Test incompatibility we also hit). This is a toolchain-level problem Albert owns, not something to fix in source.
+4. Given that toolchain gap, and the broader decision Albert is now leaning toward (deprioritizing Windows-local builds now that the AWS Lambda rewrite is on the roadmap — see [[roadmap-todo]] item 8 — and moving primary development to an EC2 dev VM reached via VS Code Remote-SSH), **the realistic next step is likely building/running this on Linux (EC2) rather than chasing the Windows toolchain further.**
+
+**How to apply:** Before doing more work here, check whether Albert has a working `posix`-thread toolchain available (Windows fixed, or — more likely — has moved to building on EC2 instead). Once `MapData.o`/`movtest.exe` actually build, the immediate next steps are: (a) get `MapDataTest.cpp`'s tests passing against the current pugixml implementation as the baseline, (b) rewrite `MapData.cpp`/`.hpp` to use `boost::property_tree::read_xml()` instead of pugixml, (c) re-run the same tests to confirm parity, (d) delete the vendored `pugixml.hpp`/`.cpp`/`pugiconfig.hpp`.

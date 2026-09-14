@@ -1,0 +1,14 @@
+- [User profile](user_profile.md) — Albert, senior SWE, personal budget, minimize cost/verbosity
+- [Project overview](project_overview.md) — "Game Machine" (né OpenZorz) architecture: C++ server, game DLLs, Perl compiler, Java GUIs
+- [C++ server component](component_cpp_server.md) — server/common/gamecommon/stateengine dirs, cross-platform libs, room mgmt
+- [Java client component](component_java_client.md) — client/ dir, legacy OpenZorz subdir, Applet-origin, TCP/IP to server
+- [Protocol terminology](protocol_terminology.md) — "Action" = client→server, "Event" = server→client, used project-wide
+- [Games overview](games_overview.md) — per-game dir layout convention; status: Outpost done, MoV 70%, AOR/RoadsAndBoats skeletons
+- [Game spec language](game_spec_language.md) — DSL core: game state (data) vs. FSM (turns/phases/steps gate Actions)
+- [Game DLL component](component_game_dlls.md) — per-piece .cpp/.hpp files; special <Game>Set (shared, read-only) vs <Game>State (per-playthrough)
+- [Game Server XML](game_server_xml.md) — <Game>Server.xml: FSM states, Event descriptors, Transitions (name/from-to/allowed/args/body)
+- [Perl compiler component](component_perl_compiler.md) — transitioncompiler dir; XML→C++ scaffolding, embedded C++ snippets not a real DSL
+- [Roadmap/TODO pointer](roadmap_todo.md) — top-level TODO.md exists; summary of 8 major pending initiatives, small→huge
+- [AWS deployment (current)](aws_deployment.md) — server runs on EC2, client jars on CloudFront; awsnotes.txt = notes from this, NOT the future serverless TODO item
+- [Build environment](build_environment.md) — project is intentionally dual-env (Windows/MSYS + Linux/EC2) via OSTYPE-conditioned BOOSTINC; preserve both, don't collapse to one
+- [MapData/pugixml migration (in progress)](mapdata_pugixml_migration.md) — writing MapData characterization tests before swapping pugixml for boost::property_tree; pugixml fixed, currently blocked on win32-thread-model toolchain gap
