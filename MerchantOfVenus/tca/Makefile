@@ -4,10 +4,21 @@ SENGINE=../../stateengine
 
 ifeq (${OSTYPE},msys)
 BOOSTINC=/c/local/boost_1_92_0
+BOOSTLIBDIR=${BOOSTINC}/lib
+BOOSTSERIALLIB=${BOOSTLIBDIR}/libboost_serialization-mgw45-mt-1_92_0.a
+BOOSTTESTLIB=${BOOSTLIBDIR}/libboost_unit_test_framework-mgw45-mt-1_92_0.a
+BOOSTREGEXLIB=${BOOSTLIBDIR}/libboost_regex-mgw45-mt-1_92_0.a
+BOOSTFSLIB=${BOOSTLIBDIR}/libboost_filesystem-mgw45-mt-1_92_0.a
+BOOSTSYSLIB=${BOOSTLIBDIR}/libboost_system-mgw45-mt-1_92_0.a
+EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB} ${BOOSTREGEXLIB} ${BOOSTFSLIB} ${BOOSTSYSLIB}
+BOOSTDEPS=${EXTLIBS}
 endif
 
 ifeq (${OSTYPE},linux)
 BOOSTINC=/usr/include
+BOOSTLIBDIR=/usr/lib64
+EXTLIBS=-L${BOOSTLIBDIR} -lboost_serialization -lboost_unit_test_framework -lboost_regex -lboost_filesystem -lboost_system
+BOOSTDEPS=
 endif
 
 #DEFINES=-DSTATEDEBUG
@@ -27,7 +38,7 @@ OBJS= MerchantOfVenusState.o MerchantOfVenusSet.o Players.o Player.o \
 	Cup.o TradeBases.o TradeBase.o Advances.o Secret.o \
 	MoveMediator.o
 
-TESTOBJS=MoveMediatorTest.o MapDataTest.o
+TESTOBJS=MoveMediatorTest.o MapDataTest.o AppendShuffleDrawsTest.o
 
 MAINTESTOBJ=testmain.o
 
@@ -46,17 +57,11 @@ LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
 GCC=g++ -g -Wall -Werror ${INCS} ${DEFINES}
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
-BOOSTSERIALLIB=${BOOSTINC}/lib/libboost_serialization-mgw45-mt-1_46.a
-BOOSTTESTLIB=${BOOSTINC}/lib/libboost_unit_test_framework-mgw45-mt-1_46.a
-BOOSTREGEXLIB=${BOOSTINC}/lib/libboost_regex-mgw45-mt-1_46.a
-BOOSTFSLIB=${BOOSTINC}/lib/libboost_filesystem-mgw45-mt-1_46.a
-BOOSTSYSLIB=${BOOSTINC}/lib/libboost_system-mgw45-mt-1_46.a
-EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB} ${BOOSTREGEXLIB} ${BOOSTFSLIB} ${BOOSTSYSLIB}
 
-MerchantOfVenus.dll: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
+MerchantOfVenus.dll: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTDEPS}
 	${GCCL} -shared -o $@ ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
 
-tests: movtest.exe
+tests: MoVunittests.exe
 
 tt: TestTokens.o ${OBJS}
 	${GCCL} -o $@ ${OBJS} TestTokens.o ${EXTLIBS} ${LOCLIBS}
@@ -65,7 +70,7 @@ tsm: TestStartMove.o ${OBJS}
 	${GCCL} -o $@ ${OBJS} TestStartMove.o ${EXTLIBS} ${LOCLIBS}
 
 
-movtest.exe: ${MAINTESTOBJ} ${TESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
+MoVunittests.exe: ${MAINTESTOBJ} ${TESTOBJS} ${ARTIFACTOBJS} ${OBJS} ${LOCLIBS}
 	${GCCL} -o $@ ${MAINTESTOBJ} ${TESTOBJS} ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS} 
 
 

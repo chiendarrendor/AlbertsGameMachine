@@ -204,8 +204,6 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
     m_pGame = NULL;
   }
 
-  srand(time(NULL));
-
   m_pGame = pGameBox->CreateGame(m_Connections);
 
   ROOMVALIDATE(m_pGame,"Unknown Error: could not create game!");

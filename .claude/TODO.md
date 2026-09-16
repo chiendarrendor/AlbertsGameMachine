@@ -9,6 +9,8 @@
 - [ ] Start work on "Interstellar" (a new game) once its boards and rules are supplied
 - [ ] Migrate server to AWS Lambda + API Gateway (serverless), storing game state in AWS DynamoDB instead of in-process. (Note: `awsnotes.txt` at the project root is NOT notes toward this — it documents the current EC2/CloudFront deployment, see [[aws_deployment]] memory. This serverless migration is unstarted.)
 
+- [ ] Rewrite `MerchantOfVenus/tests/MoveMediatorTest.cpp`'s 11 `srand(5)`/`srand(7)`-seeded test cases (`TestAddTelegatesJumpStartPilotless`, `TestAddTelegatesJumpStartPiloted`, `TestAddTelegatesTeleGate`, `TestAddTelegatesTeleGateJumpStart`, `TestRemoveBacktracks`, `TestCullByPilotNumberNoPilotNumbers`, `TestCullByPilotNumberWithPilotNumbers`, `TestApplyMPSimple`, `TestApplyMPToCity`, `TestApplyMPFromCity`, `TestApplyMPNextToColoredQBoxPenalty`) to use the new `FixedSequenceRandomFactory` + `AppendShuffleDraws` (`gamecommon/Random.hpp`/`RandomFactory.hpp`/`AppendShuffleDraws.hpp`) instead of hardcoded `srand()` seeds — see [[merchant-of-venus-random-refactor]] for why the old seeds no longer produce the expected outcomes and how `AppendShuffleDraws` removes the need to hand-derive draw sequences. Left alone for now at Albert's request; `MoVunittests.exe` currently has 15 known failures from these cases.
+
 ## MerchantOfVenus-specific
 
 - [ ] Validate behavior of relics (the asteroid/relic placement and pickup logic in `MapOverlay`'s constructor — see `MerchantOfVenus/IMPLEMENTATION_STATUS.md`)

@@ -1,14 +1,25 @@
 ---
 name: build-environment
-description: "The Game Machine's C++ build is intentionally dual-environment (Windows/MSYS local dev + Linux/EC2 deploy) — preserve both, don't collapse to one"
+description: "SUPERSEDED 2026-09-16: The Game Machine's C++ build was intentionally dual-environment (Windows/MSYS local dev + Linux/EC2 deploy); Albert has now decided to drop MSYS support and develop Linux-only going forward, since all future releases come out of AWS"
 metadata: 
   node_type: memory
   type: feedback
   originSessionId: 416ca727-2f1a-4082-9558-d306f19709ba
-  modified: 2026-09-13T22:00:48.096Z
+  modified: 2026-09-16T00:00:00.000Z
 ---
 
-Albert has a general professional dislike of legacy projects carrying build/deploy support for environments other than the single final deployment target — but explicitly prides himself that **this particular personal project is dual-environment-capable on purpose**: it builds both locally on Windows/MSYS and on the Linux EC2 deployment target (see [[aws-deployment]]).
+**UPDATE 2026-09-16:** Albert has decided to stop supporting MSYS/Windows builds — all future Game
+Machine development happens on Linux (this EC2 box), since all releases come out of AWS anyway. The
+dual-environment history below is kept for context (e.g. if old MSYS-era Makefile branches are seen
+elsewhere in the repo, this explains why they exist), but is no longer the guidance to follow: do
+**not** preserve/restore `OSTYPE`-conditioned dual-path Makefile branches going forward, and it's
+fine to simplify a Makefile to a single Linux path when touched. No project-wide sweep to strip
+existing MSYS branches has been done yet — that's an opportunistic cleanup as files get touched, not
+a dedicated pass, unless Albert asks for one.
+
+---
+
+Historical context (no longer current guidance): Albert used to have a general professional dislike of legacy projects carrying build/deploy support for environments other than the single final deployment target — but explicitly prided himself that **this particular personal project was dual-environment-capable on purpose**: it built both locally on Windows/MSYS and on the Linux EC2 deployment target (see [[aws-deployment]]).
 
 The mechanism (found in `server/Makefile`) is an `OSTYPE`-conditioned `BOOSTINC`:
 ```makefile

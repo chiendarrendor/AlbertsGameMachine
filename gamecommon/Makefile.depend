@@ -3,3 +3,8 @@ ActionParser.o: ActionParser.cpp ActionParser.hpp \
 Game.o: Game.cpp Game.hpp ServerGameInfo.hpp ../common/FileUtilities.hpp
 ServerGameInfo.o: ServerGameInfo.cpp ServerGameInfo.hpp \
  ../common/FileUtilities.hpp
+Random.o: Random.cpp Random.hpp RandomFactory.hpp SystemRandomFactory.hpp
+SystemRandomFactory.o: SystemRandomFactory.cpp SystemRandomFactory.hpp \
+ RandomFactory.hpp
+FixedSequenceRandomFactory.o: FixedSequenceRandomFactory.cpp \
+ FixedSequenceRandomFactory.hpp RandomFactory.hpp

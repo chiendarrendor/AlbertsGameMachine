@@ -10,5 +10,7 @@
 - [Perl compiler component](component_perl_compiler.md) — transitioncompiler dir; XML→C++ scaffolding, embedded C++ snippets not a real DSL
 - [Roadmap/TODO pointer](roadmap_todo.md) — top-level TODO.md exists; summary of 8 major pending initiatives, small→huge
 - [AWS deployment (current)](aws_deployment.md) — server runs on EC2, client jars on CloudFront; awsnotes.txt = notes from this, NOT the future serverless TODO item
-- [Build environment](build_environment.md) — project is intentionally dual-env (Windows/MSYS + Linux/EC2) via OSTYPE-conditioned BOOSTINC; preserve both, don't collapse to one
+- [Build environment](build_environment.md) — SUPERSEDED 2026-09-16: MSYS support dropped, Linux-only dev going forward (all releases come from AWS); dual-env history kept for context
 - [MapData/pugixml migration (in progress)](mapdata_pugixml_migration.md) — writing MapData characterization tests before swapping pugixml for boost::property_tree; pugixml fixed, currently blocked on win32-thread-model toolchain gap
+- [Untracked dirs explained](repo_untracked_dirs.md) — untracked `tca/*` content = build artifact; top-level `GameMachine/` = abandoned IntelliJ dev attempt
+- [MoV Random singleton refactor](merchant_of_venus_random_refactor.md) — replaced libc rand() with injectable Random/RandomFactory seam in gamecommon; MoveMediatorTest.cpp's 11 srand-based cases still need converting (follow-up)

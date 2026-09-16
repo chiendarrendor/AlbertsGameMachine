@@ -1,6 +1,6 @@
 
 COMMON=../common
-OBJS=ActionParser.o Game.o ServerGameInfo.o
+OBJS=ActionParser.o Game.o ServerGameInfo.o Random.o SystemRandomFactory.o FixedSequenceRandomFactory.o
 
 CFILES=$(OBJS:%.o=%.cpp)
 INCS=-I${COMMON}
