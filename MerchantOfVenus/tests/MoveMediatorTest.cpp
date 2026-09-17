@@ -278,17 +278,27 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPilotless )
   BOOST_CHECK(mm.GetCurrentDests() ==
               "ib_gb_3!walk!0/cloud_body_8!walk!0/gb_cw_1!walk!0");
 
-  //   jumpstart and first, some telegates
+  //   jumpstart and first, some telegates: before dice are visible, the
+  //   blind first-move list must be Telegates only, not walk options too
   mo.MakeSpacePublic("AS_3_4");
   mo.MakeSpacePublic("WTS_loop_2");
   mo.MakeSpacePublic("PP_loop_05");
   mm.AddAdjacents();
   mm.AddTelegates();
   BOOST_CHECK(mm.GetCurrentDests() ==
+              "AS_3_4!jump!0!1/WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
+
+  //   once dice become visible (e.g. after a rejected blind guess forces
+  //   PrepareForStep() to recompute), the walk options reappear alongside
+  //   the telegates -- not a filter of the blind list, a fresh recompute
+  mm.MakeDiceVisible();
+  mm.AddAdjacents();
+  mm.AddTelegates();
+  BOOST_CHECK(mm.GetCurrentDests() ==
               "ib_gb_3!walk!0!246/cloud_body_8!walk!0!246/gb_cw_1!walk!0!246/"
               "AS_3_4!jump!0!1/WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
 
-  //   jumpstart and first, all telegates
+  //   jumpstart and first, all telegates (dice already visible from above)
   mo.MakeSpacePublic("AS_7_6");
   mo.MakeSpacePublic("IM_loop_03");
   mo.MakeSpacePublic("jw_loop_8");
@@ -297,7 +307,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPilotless )
   BOOST_CHECK(mm.GetCurrentDests() ==
               "AS_3_4!jump!0!1/AS_7_6!jump!0!2/WTS_loop_2!jump!0!3/"
               "IM_loop_03!jump!0!4/PP_loop_05!jump!0!5/jw_loop_8!jump!0!6");
-  
+
 }
 
 BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPiloted )
@@ -353,11 +363,19 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPiloted )
   BOOST_CHECK(mo.GetTeleGate(5) != NULL);
   BOOST_CHECK(mo.GetTeleGate(6) == NULL);
 
+  // before dice are visible, the blind first-move list is Telegates only
+  BOOST_CHECK(mm.GetCurrentDests() ==
+              "AS_3_4!jump!0!1/WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
+
+  // once dice become visible, the walk options reappear alongside the telegates
+  mm.MakeDiceVisible();
+  mm.AddAdjacents();
+  mm.AddTelegates();
   BOOST_CHECK(mm.GetCurrentDests() ==
               "cloud_body_4!walk!0!46/Galactic Base!walk!0!2/"
               "AS_3_4!jump!0!1/WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
 
-  //   jumpstart and first, all telegates
+  //   jumpstart and first, all telegates (dice already visible from above)
   mo.MakeSpacePublic("AS_7_6");
   mo.MakeSpacePublic("IM_loop_03");
   mo.MakeSpacePublic("jw_loop_8");
@@ -468,10 +486,51 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGateJumpStart )
   mm.StartMove();
   mm.AddAdjacents();
   mm.AddTelegates();
-  
+
+  // before dice are visible, the blind first-move list is Telegates only --
+  // and even under Jump Start, the telegate the player is standing on
+  // (AS_3_4) is still excluded from its own jump list
+  BOOST_CHECK(mm.GetCurrentDests() ==
+              "WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
+
+  // once dice become visible, the walk options reappear alongside the telegates
+  mm.MakeDiceVisible();
+  mm.AddAdjacents();
+  mm.AddTelegates();
+
   BOOST_CHECK(mm.GetCurrentDests() ==
               "AS_2_3!walk!0!1246/AS_3_3!walk!0!1246/AS_4_4!walk!0!1246/"
               "WTS_loop_2!jump!0!3/PP_loop_05!jump!0!5");
+}
+
+// a Jump Start move to a telegate launched from a ground city costs 2 MP,
+// same as any other move out of a city -- but only 1 MP with Air Foil
+BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartFromCityMPCost )
+{
+  Players pls;
+  pls.add("Foo Bar");
+  pls[0].AddToken(Ship::GetShipOfClass(SCOUT));
+  pls.RandomizeTurnOrder();
+  MapData md("../MerchantOfVenusMap.xml");
+
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
+  MapOverlay mo(md);
+  MoveMediator mm(pls,mo);
+
+  pls[0].SetLocation("Rumble City");
+  pls[0].AddToken(Token::Relic("Jump Start",100));
+  pls[0].GetAdvances().SetSwitchables("JS");
+  mo.MakeSpacePublic("AS_3_4");
+
+  mm.StartMove();
+  mm.PrepareForStep();
+
+  BOOST_CHECK(mm.GetCurrentDests() == "AS_3_4!jump!2!1");
+
+  pls[0].AddToken(Token::Relic("Air Foil",200));
+  mm.PrepareForStep();
+
+  BOOST_CHECK(mm.GetCurrentDests() == "AS_3_4!jump!1!1");
 }
 
 BOOST_AUTO_TEST_CASE( TestRemoveBacktracks )

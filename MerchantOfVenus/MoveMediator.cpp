@@ -377,8 +377,21 @@ void MoveMediator::AddTelegates()
     jumpdests.push_back(d);
     compset.erase(pnum);
   }
-  // b') if we generated no jump dests, we're done
+  // b') if we generated no jump dests, we're done (this also means Jump
+  // Start quietly has no effect at all when no telegate is visible)
   if (jumpdests.size() == 0) return;
+
+  // b'') Jump Start's first move, before dice are visible, must be a
+  // Telegate and nothing else -- not a filtered-down version of the walk
+  // options, a wholesale replacement. Once dice become visible,
+  // PrepareForStep() re-runs AddAdjacents() from scratch before calling us
+  // again, so the normal combined walk+jump logic below naturally
+  // recomputes (not filters) the full set of options.
+  if (js && m_first && !AreDiceVisible())
+  {
+    m_dests = jumpdests;
+    return;
+  }
 
   // c) take the set of existing Dests, and either
   // 1) if it has pnums, intersect their pnums with the compset

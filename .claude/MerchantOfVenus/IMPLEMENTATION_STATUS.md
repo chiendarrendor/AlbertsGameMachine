@@ -192,6 +192,49 @@ correctly left as inert-but-present data (attack values, buyable weapons, relic 
 than half-wired combat logic. Revisit only if/when Albert decides to actually implement the
 optional combat rules.
 
+## Relics — full validation (2026-09-17)
+
+All 10 relics (`MapOverlay.cpp::MakeRelicList()`) individually validated against their specific
+rules, relic by relic, with Albert. One real bug found and fixed along the way (Jump Start); the
+other nine are confirmed correct as-is. Background mechanics this all rests on:
+
+- **Nav Circles / pilot numbers:** a space's `m_pilotdirs[7]` array (only meaningfully set on
+  plain, uncolored "blue dot" spaces — confirmed never on a Penalty oval or qbox) tags specific
+  adjacent directions with pilot numbers 1-6. `MoveMediator::AddAdjacents()` reads this to tag
+  `Dest`s; `CullByPilotNumber()` restricts destinations to the player's chosen/rolled pilot
+  number(s) once dice are visible. A destination with an empty `pnumbers` set is always kept
+  regardless of any pilot-number lock — free choice at ordinary (non-junction) dots is correctly
+  unaffected by pilot-number mechanics.
+- **Pilot-number "permanence":** once a player commits to a pilot number (`m_pnumber != 0`), it's
+  locked for the rest of the turn's movement (`IsPilotNumberPermanent()`), restricting further
+  Nav Circle choices to that same number — this is the mechanism Switch Switch (below) lifts.
+- **Telegates dynamically become a Nav Circle:** `MoveMediator::AddTelegates()` — when standing on
+  a telegate (or, for Jump Start, on the first move regardless of position), every visible
+  telegate elsewhere becomes a jump destination tagged with its own pilot number, and normal walk
+  destinations get retagged with whichever numbers aren't claimed by a telegate (dropped entirely
+  if none are left). The telegate a player is standing on is always excluded from its own jump
+  list, unconditionally, regardless of Jump Start.
+- **Blind first move (rulebook 5.3):** "the player must specify the first dot he will move to
+  before he rolls any dice" is implemented not by delaying `StartMove()`'s actual RNG call, but by
+  hiding the roll's *values* — `GetDiceString()` renders `"?"` per die until `MakeDiceVisible()`
+  fires (inside `SELECTDESTINATION`, the first time it's called that turn). If the player's blind
+  guess doesn't survive dice-based pilot-number culling once revealed, `REJECTDESTINATION`
+  auto-fires and bounces them back to `SelectMove` with a freshly recomputed, now dice-aware list.
+  Confirmed this is a correct implementation of 5.3, not a bug.
+
+Per-relic findings:
+
+| Relic | Confirmed behavior |
+|---|---|
+| **Shield / Laser / Yellow Drive** (equipment-type relics) | `Token::Drive/Shield/Laser`'s `i_isRelic` flag sets `SizeClass=RELIC_SIZE` ("always 0 units") instead of `EQUIPMENT_SIZE`/`DRIVE_SIZE`; `Player::GetStuffSize()` correctly counts `RELIC_SIZE` as 0 toward ship-hold capacity, and `GETRELIC` doesn't even check capacity. Defense/attack/skip-color values are identical to the purchasable versions — functionally equivalent, just free of hold space. Sell destination (`CULTURE`, not `NOWHERE`) and `m_isunlimited=false` also correctly modeled: a sold relic remains listed at that culture until someone else buys it (a unique physical piece changing hands), unlike unlimited manufactured equipment.
+| **Air Foil** | `AddAdjacents()`: unlocks `flyable`-tagged adjacencies (map convention: only ever between two cities on the same planet). `ApplyMovementPoints()`: removes the city entry/exit MP surcharge (`mpused` stays at the baseline 1 instead of jumping to 2). Without it, flyable links aren't hidden-but-costly — they don't appear as options at all.
+| **Auto Pilot** | `StartMove()`: forces one die to a guaranteed 4 (`m_dicerolled.push_back(4)`), rolling one fewer real die. Confirmed interaction with Mulligan Gear below.
+| **Mulligan Gear** | One reroll per turn, by *value* not position (`DoMulligan()` rerolls the first die matching the named value). Offered in the `Mulligan` FSM state, positioned specifically *before* `ProcessPilotNumber`'s validation of the player's blind first-move guess — meaning it can rescue a first guess that would otherwise get `REJECTDESTINATION`-bounced. Confirmed correct per rule text ("can choose any one of the dice ... including the Auto Pilot ... cannot choose to activate Auto Pilot as his reroll" — the Auto-Pilot-forced die is legitimately targetable, and `DoMulligan` always performs a genuine `DieRoll()`, never re-forces a 4).
+| **Spy Eye** | `EXECUTEMOVE` (fires every hop, not just once/turn): reveals an inhabited solar system's culture from any space in it (not just an orbit spot), and auto-reveals every not-yet-known adjacent qbox on arrival. Confirmed it also correctly lets a player redirect after peeking at a colored penalty dot they're only "skipping" (0 MP) via a matching drive — since `ApplyMovementPoints()`'s color-discount only ever changes cost, never removes a destination from the list, that dot was always a normal, fully choosable stop to begin with; no special Spy-Eye-specific code was needed or is missing.
+| **Switch Switch** | `IsPilotNumberPermanent()`/`CullByPilotNumber()`: lifts the pilot-number lock, so `activepnum` is the player's *full* rolled set at every subsequent Nav Circle, not just the one number they first committed to. Not a distinct player action — it's implicit in the normal per-hop destination list simply containing more options (each tagged with a different rolled value), and picking one naturally reassigns `m_pnumber` via the ordinary `SetPilotNumber()` flow.
+| **Gate Lock** | `AddTelegates()`'s gate (`curspace.m_type==TELEGATE && !gl`): suppresses the entire "telegate becomes a Nav Circle" mechanic while active — no jump options, and (since `gl` is a switchable, fixed for the whole turn and re-checked fresh every call) *every* telegate the player encounters that turn is inert, matching "a non-functioning telegate acts as a blue dot" without needing separate persistent state. `ManualStop()` already treats `TELEGATE` identically to `DOT` (both non-stoppable mid-move) independent of Gate Lock, which is already consistent with "acts as a blue dot."
+| **Jump Start** | **Bug found and fixed 2026-09-17.** Reuses the telegate-becomes-Nav-Circle logic for the turn's first move regardless of current position (`js && m_first`). Missing piece: per the rule, the first (pre-dice-visible) move must be restricted to Telegates only if any are visible (falling back to normal walking if none exist) — the code was instead including normal walk options in that blind list too. **Fixed** in `MoveMediator::AddTelegates()`: a new branch (`if (js && m_first && !AreDiceVisible()) { m_dests = jumpdests; return; }`) wholesale-replaces the destination list with telegates-only during the blind phase; once dice become visible, `PrepareForStep()` re-runs `AddAdjacents()` from scratch and the existing combined-list logic naturally recomputes (not filters) the full walk+jump set — matching "if you don't roll the pilot number for your chosen Telegate, but did roll one for another, you must prefer a Telegate over walking only up to the point dice are revealed, after which normal walking is a legal fallback." Confirmed self-exclusion (never a destination to itself) stays unconditional even under Jump Start. Also confirmed (new test `TestAddTelegatesJumpStartFromCityMPCost`) that a Jump Start telegate hop launched from a ground city already correctly cost 2 MP (1 with Air Foil) with zero code changes needed — `ApplyMovementPoints()`'s city surcharge already applies uniformly to jump destinations, not just walks.
+
 ## Open questions for Albert (surfaced, not guessed at)
 
 1. ~~`InitialState`/`TerminalState` undeclared~~ **RESOLVED:** these are auto-added by the

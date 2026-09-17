@@ -9,3 +9,6 @@ data/
 outposttest
 stochastictest
 gameserver
+*/tca/clientstage/
+*/tca/*DLL.cpp
+*/tca/*GameInfo.hpp
