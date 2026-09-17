@@ -45,22 +45,39 @@ FixedSequenceRandomFactory.o` (first `.cpp` files gamecommon ever needed — `Ut
 pure header-only). `Makefile.depend` was regenerated. No changes needed to the three games'
 Makefiles — they already link the whole `libGameCommon.a` archive.
 
-**Explicitly deferred (see `.claude/TODO.md`):** `MoveMediatorTest.cpp`'s 11 `srand(5)`/`srand(7)`-
-seeded test cases still hardcode the old approach and are left untouched — Albert wants them rewritten
-against `FixedSequenceRandomFactory` in a follow-up commit, one at a time, working out each test's
-actually-intended `Shuffle`/`DieRoll` sequence. Until that lands, `MoVunittests.exe` has 15 known failures
-in those cases (confirmed still 15 after this refactor, same as before — nothing new broken).
-`TestStartMove`'s two "retry until desired die roll" loops were NOT touched and don't need to be —
-they check variability/consistency across up to 10 tries rather than hardcoding an outcome, so they
-work fine against any factory.
+**Follow-up landed 2026-09-17:** `MoveMediatorTest.cpp`'s 11 `srand(5)`/`srand(7)`-seeded test cases
+have been converted to use `FixedSequenceRandomFactory`. `MoVunittests.exe` now passes all 31 cases,
+confirmed deterministic across repeated runs (not luck). Key findings from that conversion, worth
+knowing before touching this test file again:
+- `MapOverlay`'s qbox shuffle is a 36→24 draw, not a 24-item reorder: `MakeQBoxList()` builds 36
+  candidates (6 telegates, 3 open ports, 17 penalties, 10 asteroids), shuffles all 36, and only the
+  first 24 (post-shuffle) end up on the real board (`MerchantOfVenusMap.xml` has exactly 24
+  `type="qbox"` spaces) — the other 12 are discarded that game. Scripting this shuffle means
+  supplying a full 36-element target order, not just a 24-element one.
+- `qboxnames` (the real 24 positions) is populated by walking `std::map<std::string,MapSpace*>`, so
+  it's in sorted-by-name order — that order is now encoded as `g_QboxDeckOrder`/`g_QboxLayout` at the
+  top of `MoveMediatorTest.cpp`.
+- The relic shuffle (10 items, right after the qbox one in the same constructor) is untested by
+  anything in this file — scripted as an identity/no-op (10 zero draws).
+- 9 of the 11 tests never depend on the *specific* dice values `StartMove()` draws (their
+  `SpendMP(mm.GetMP()-N)` calls are self-normalizing to leave exactly `N` MP regardless of the
+  original roll, and nothing else checks `GetMP()` against a fixed threshold below the minimum
+  possible 3-die-Scout roll) — arbitrary draws work for those. Only
+  `TestCullByPilotNumberNoPilotNumbers`/`WithPilotNumbers` genuinely need the dice set `{1,4,3}`
+  (traced through `CullByPilotNumber()`'s set-intersection logic to confirm), matching the original
+  "causes the dice roll to be 143" comment.
+- `Random` is a process-wide singleton shared across every Boost test case in one binary, so each
+  test wraps its scripted factory in `gamecommon/ScopedFixedRandom.hpp` (RAII: resets to
+  `SystemRandomFactory` in its destructor) rather than calling `SetFactory`/`ResetToDefault` by hand —
+  otherwise one test's leftover script would leak into whichever test runs next.
 
-**Helper for the deferred test conversion:** `gamecommon/AppendShuffleDraws.hpp` (header-only
-template, added 2026-09-16) converts "the order I actually want" into the raw `FixedSequenceRandomFactory`
-draws `Random::Shuffle`'s Fisher-Yates needs to produce it — `AppendShuffleDraws(draws, originalOrder,
+**Helper used for the conversion:** `gamecommon/AppendShuffleDraws.hpp` (header-only template, added
+2026-09-16) converts "the order I actually want" into the raw `FixedSequenceRandomFactory` draws
+`Random::Shuffle`'s Fisher-Yates needs to produce it — `AppendShuffleDraws(draws, originalOrder,
 desiredOrder)` appends onto an existing `std::vector<int>`, so a test can build one flat script mixing
 shuffle draws with plain `DieRoll()`/other `Next()` values in call order (see the header's own
-extensive comment for the full derivation and a worked example). This is what the follow-up pass
-converting `MoveMediatorTest.cpp`'s 11 cases should use instead of hand-deriving sequences.
+extensive comment for the full derivation and a worked example). `gamecommon/ScopedFixedRandom.hpp`
+(also added 2026-09-17) is the RAII wrapper described above.
 
 **How to apply:** When adding new game randomness anywhere in MoV/Outpost/AOR, keep using
 `myrand`/`RandomBetween`/`DieRoll`/`myshuffle` as before (they're free — the forwarding is invisible

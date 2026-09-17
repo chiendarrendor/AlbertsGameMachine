@@ -13,4 +13,4 @@
 - [Build environment](build_environment.md) — SUPERSEDED 2026-09-16: MSYS support dropped, Linux-only dev going forward (all releases come from AWS); dual-env history kept for context
 - [MapData/pugixml migration (in progress)](mapdata_pugixml_migration.md) — writing MapData characterization tests before swapping pugixml for boost::property_tree; pugixml fixed, currently blocked on win32-thread-model toolchain gap
 - [Untracked dirs explained](repo_untracked_dirs.md) — untracked `tca/*` content = build artifact; top-level `GameMachine/` = abandoned IntelliJ dev attempt
-- [MoV Random singleton refactor](merchant_of_venus_random_refactor.md) — replaced libc rand() with injectable Random/RandomFactory seam in gamecommon; MoveMediatorTest.cpp's 11 srand-based cases still need converting (follow-up)
+- [MoV Random singleton refactor](merchant_of_venus_random_refactor.md) — replaced libc rand() with injectable Random/RandomFactory seam in gamecommon; MoveMediatorTest.cpp's 11 srand-based cases converted 2026-09-17, MoVunittests.exe passes all 31 cases

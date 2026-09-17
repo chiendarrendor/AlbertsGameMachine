@@ -4,7 +4,82 @@
 #include "MapOverlay.hpp"
 #include "Ship.hpp"
 
+#include "AppendShuffleDraws.hpp"
+#include "ScopedFixedRandom.hpp"
+
 #include <boost/test/unit_test.hpp>
+
+namespace
+{
+  // MakeQBoxList()'s exact push order (MerchantOfVenus/MapOverlay.cpp) --
+  // the "deck" of 36 qbox-content candidates its constructor shuffles and
+  // truncates to the 24 real qbox positions on the board.
+  const std::vector<std::string> g_QboxDeckOrder{
+    "telegate1","telegate2","telegate3","telegate4","telegate5","telegate6",
+    "openport1","openport2","openport3",
+    "red10","red20a","red20b","red30a","red30b","red40",
+    "yellow10","yellow20","yellow30","yellow40",
+    "blue10a","blue10b","blue20a","blue20b","blue30a","blue30b","blue40",
+    "asteroid1","asteroid2","asteroid3","asteroid4","asteroid5",
+    "asteroid6","asteroid7","asteroid8","asteroid9","asteroid10"
+  };
+
+  // What we want the deck to look like after the shuffle: the first 24
+  // entries are the real qbox space names in the same sorted order
+  // MapOverlay's constructor iterates them (std::map<std::string,MapSpace*>),
+  // followed by 12 "didn't make it onto the board this game" leftovers.
+  // Pins the 6 telegates onto the same named spaces the tests below were
+  // originally written against (documented, pre-refactor, as "srand seed 5
+  // has the following telegates"), plus cloud_body_2/cloud_body_4 onto a
+  // red/yellow penalty respectively (needed by
+  // TestApplyMPNextToColoredQBoxPenalty). Every other position is a "don't
+  // care" filler -- no test below references it by name.
+  const std::vector<std::string> g_QboxLayout{
+    /*AS_3_4*/        "telegate1",
+    /*AS_4_1*/        "openport1",
+    /*AS_5_5*/        "openport2",
+    /*AS_6_4*/        "openport3",
+    /*AS_7_6*/        "telegate2",
+    /*GP_loop_08*/    "red20a",
+    /*IM_loop_03*/    "telegate4",
+    /*IM_loop_10*/    "red20b",
+    /*PP_loop_05*/    "telegate5",
+    /*PP_loop_09*/    "red30a",
+    /*WTS_loop_2*/    "telegate3",
+    /*WTS_loop_5*/    "red30b",
+    /*WTS_loop_9*/    "red40",
+    /*WW_loop_08*/    "yellow20",
+    /*cloud_body_2*/  "red10",
+    /*cloud_body_4*/  "yellow10",
+    /*cloud_body_5*/  "yellow30",
+    /*cloud_north_1*/ "yellow40",
+    /*cloud_wing_3*/  "blue10a",
+    /*dw_loop_3*/     "blue10b",
+    /*ip_loop_4*/     "blue20a",
+    /*ip_loop_9*/     "blue20b",
+    /*jw_loop_5*/     "blue30a",
+    /*jw_loop_8*/     "telegate6",
+    // leftover -- not placed on the board this game
+    "blue30b","blue40",
+    "asteroid1","asteroid2","asteroid3","asteroid4","asteroid5",
+    "asteroid6","asteroid7","asteroid8","asteroid9","asteroid10"
+  };
+
+  // Builds the full draw script MapOverlay's constructor needs (the qbox
+  // shuffle above, immediately followed by its relic shuffle -- 10 relics,
+  // scripted as an identity/no-op since no test here checks relic
+  // placement), followed by whatever additional draws (e.g. dice rolls) the
+  // rest of a test needs, in the exact order the code under test will
+  // consume them.
+  std::vector<int> BuildDraws(const std::vector<int>& i_extraDraws = std::vector<int>())
+  {
+    std::vector<int> draws;
+    AppendShuffleDraws(draws,g_QboxDeckOrder,g_QboxLayout);
+    draws.insert(draws.end(),10,0);
+    draws.insert(draws.end(),i_extraDraws.begin(),i_extraDraws.end());
+    return draws;
+  }
+}
 
 BOOST_AUTO_TEST_CASE( TestStartMove )
 {
@@ -174,20 +249,12 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPilotless )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
   MapOverlay mo(md);
-  
+
   MoveMediator mm(pls,mo);
 
-  // cases: 
+  // cases:
   //   first, but no jumpstart
   mm.StartMove();
   mm.AddAdjacents();
@@ -243,7 +310,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPiloted )
 
   pls[0].SetLocation("cloud_body_8");
 
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
   MapOverlay mo(md);
 
   MoveMediator mm(pls,mo);
@@ -311,20 +378,12 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGate )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
-  
+
   MoveMediator mm(pls,mo);
 
-  // cases: 
+  // cases:
   //   not telegate
   mm.StartMove();
   mm.AddAdjacents();
@@ -396,15 +455,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGateJumpStart )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
@@ -431,15 +482,7 @@ BOOST_AUTO_TEST_CASE( TestRemoveBacktracks )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
@@ -478,24 +521,16 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberNoPilotNumbers)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  // dice = {1,4,3} -- see CullByPilotNumber() in MoveMediator.cpp: the tests
+  // below depend on the exact set of pilot numbers this roll produces.
+  ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
-  
+
   // test set 1. a set with only pilotless items should be unchanged.
   // start move leaves us with hidden dice
 
-  srand(7);
   mm.StartMove();
-  // this causes the dice roll to be 143
 
   mm.AddAdjacents();
   mm.AddTelegates();
@@ -546,15 +581,9 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberWithPilotNumbers)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  // dice = {1,4,3} -- see CullByPilotNumber() in MoveMediator.cpp: the tests
+  // below depend on the exact set of pilot numbers this roll produces.
+  ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
   pls[0].SetLocation("cloud_body_8");
@@ -562,9 +591,7 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberWithPilotNumbers)
   // test set 1. a set with only pilotless items should be unchanged.
   // start move leaves us with hidden dice
 
-  srand(7);
   mm.StartMove();
-  // this causes the dice roll to be 143
 
   mm.AddAdjacents();
   mm.AddTelegates();
@@ -615,15 +642,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPSimple)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
@@ -692,15 +711,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPToCity)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
@@ -739,15 +750,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPFromCity)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
@@ -775,15 +778,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPNextToColoredQBoxPenalty)
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
 
-  // srand seed 5 has the following telegates
-  // 1: AS_3_4
-  // 2: AS_7_6
-  // 3: WTS_loop_2
-  // 4: IM_loop_03
-  // 5: PP_loop_05
-  // 6: jw_loop_8
-
-  srand(5);
+  ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md);
   MoveMediator mm(pls,mo);
 
