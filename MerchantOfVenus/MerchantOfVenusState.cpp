@@ -2,17 +2,17 @@
 #include "MerchantOfVenusSet.hpp"
 
 MerchantOfVenusState::MerchantOfVenusState(const MerchantOfVenusSet &i_Set) :
-  m_winmoney(2000),
   m_Set(i_Set),
   m_Players(),
   m_cup(),
-  m_mapoverlay(m_Set.GetMapData()),
-  m_tradebases(m_Set.GetMapData()),
+  m_Options(),
+  m_mapoverlay(m_Set.GetMapData(),m_Options),
+  m_tradebases(m_Set.GetMapData(),m_Options),
   m_movemediator(m_Players,m_mapoverlay)
 {
 }
 
-const MerchantOfVenusSet &MerchantOfVenusState::GetMerchantOfVenusSet() const 
+const MerchantOfVenusSet &MerchantOfVenusState::GetMerchantOfVenusSet() const
 { return m_Set; }
 Players &MerchantOfVenusState::GetPlayers() { return m_Players; }
 const Players &MerchantOfVenusState::GetPlayers() const { return m_Players; }
@@ -20,7 +20,9 @@ Cup& MerchantOfVenusState::GetCup() { return m_cup; }
 MapOverlay& MerchantOfVenusState::GetMapOverlay() { return m_mapoverlay; }
 const MapOverlay& MerchantOfVenusState::GetMapOverlay() const { return m_mapoverlay; }
 TradeBases& MerchantOfVenusState::GetTradeBases() { return m_tradebases; }
-const TradeBases& MerchantOfVenusState::GetTradeBases() const { return m_tradebases; } 
+const TradeBases& MerchantOfVenusState::GetTradeBases() const { return m_tradebases; }
+const Options &MerchantOfVenusState::GetOptions() const { return m_Options; }
+Options &MerchantOfVenusState::GetOptions() { return m_Options; }
 MoveMediator& MerchantOfVenusState::GetMoveMediator() { return m_movemediator; }
 const MoveMediator& MerchantOfVenusState::GetMoveMediator() const { return m_movemediator; }
 

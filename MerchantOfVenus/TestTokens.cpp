@@ -2,18 +2,18 @@
 #include "Cup.hpp"
 #include "TradeBases.hpp"
 #include "MapOverlay.hpp"
+#include "Options.hpp"
 
 int main(int argc,char **argv)
 {
 
-  srand(time(NULL));
-
   try
   {
+    Options options;
     MapData md("../MerchantOfVenusMap.xml");
     Cup cup;
-    TradeBases tb(md);
-    MapOverlay mo(md);
+    TradeBases tb(md,options);
+    MapOverlay mo(md,options);
 
     std::cout << "Cup: " << std::endl;
     const std::vector<Token>& cuptokens = cup.GetContents();

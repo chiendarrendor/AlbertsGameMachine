@@ -36,9 +36,9 @@ TCOM=perl -I${TCOMDIR} ${TCOMDIR}/tcom.pl
 OBJS= MerchantOfVenusState.o MerchantOfVenusSet.o Players.o Player.o \
 	MapData.o pugixml.o MapSpace.o Token.o Ship.o MapOverlay.o \
 	Cup.o TradeBases.o TradeBase.o Advances.o Secret.o \
-	MoveMediator.o
+	MoveMediator.o Options.o
 
-TESTOBJS=MoveMediatorTest.o MapDataTest.o AppendShuffleDrawsTest.o
+TESTOBJS=MoveMediatorTest.o MapDataTest.o AppendShuffleDrawsTest.o TradeBasesTest.o
 
 MAINTESTOBJ=testmain.o
 
@@ -50,11 +50,11 @@ VJAVA=VoronoiTest.java VoronoiStep.java
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/MerchantOfVenus/%)
 VFILES=$(VJAVA:%=${CLIENTJAVADIR}/MerchantOfVenus/%)
 
-CFILES=$(OBJS:%.o=../%.cpp) $(ARTIFACTOBJS:%.o=%.cpp)
+ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} TestTokens.o TestStartMove.o
 
 INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I.
-LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a 
-GCC=g++ -g -Wall -Werror ${INCS} ${DEFINES}
+LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
+GCC=g++ -g -Wall -Werror ${INCS} ${DEFINES} -MMD -MP
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
 
@@ -116,13 +116,10 @@ voronoi:
 %.o:../tests/%.cpp
 	${GCC} -c $<
 
-depend: MerchantOfVenusDLL.cpp
-	${GCC} -MM ${CFILES} ${TESTCFILES} | tr -d '\015' | perl filterboost.pl  > makefile.depend
-	${CPP} -MM ../client/MerchantOfVenusClient.xml | tr -d '\015' | sed 's/MerchantOfVenusClient\.o/MerchantOfVenusClient\.xml/' >> makefile.depend
-
 clean:
 	@- rm -f ${OBJS} ${TESTOBJS} MerchantOfVenus.dll MerchantOfVenusDLL.cpp ${MAINTESTOBJ}
 	@- rm -f outposttest.exe MerchantOfVenusClient.xml MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp
+	@- rm -f ${ALLOBJS:.o=.d}
 
--include Makefile.depend
+-include $(ALLOBJS:.o=.d)
 

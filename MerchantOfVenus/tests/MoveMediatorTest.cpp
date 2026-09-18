@@ -2,6 +2,7 @@
 #include "Players.hpp"
 #include "MapData.hpp"
 #include "MapOverlay.hpp"
+#include "Options.hpp"
 #include "Ship.hpp"
 
 #include "AppendShuffleDraws.hpp"
@@ -11,6 +12,19 @@
 
 namespace
 {
+  // MapOverlay's constructor now needs an Options reference (see
+  // MerchantOfVenus/Options.hpp) to decide whether to hide the unused
+  // combat items -- these tests are about movement, not that option, so
+  // they pin it to false to keep the 10-relic/10-asteroid canonical layout
+  // below (g_QboxDeckOrder/g_QboxLayout) unchanged.
+  Options MakeTestOptions()
+  {
+    Options opts;
+    opts.SetHideUnusedWeapons(false);
+    return opts;
+  }
+  const Options g_TestOptions = MakeTestOptions();
+
   // MakeQBoxList()'s exact push order (MerchantOfVenus/MapOverlay.cpp) --
   // the "deck" of 36 qbox-content candidates its constructor shuffles and
   // truncates to the 24 real qbox positions on the board.
@@ -74,8 +88,11 @@ namespace
   std::vector<int> BuildDraws(const std::vector<int>& i_extraDraws = std::vector<int>())
   {
     std::vector<int> draws;
-    AppendShuffleDraws(draws,g_QboxDeckOrder,g_QboxLayout);
+    // MapOverlay's constructor shuffles relics before qboxes (so it knows
+    // how many asteroids to generate) -- the relic shuffle's draws come
+    // first, then the qbox shuffle's.
     draws.insert(draws.end(),10,0);
+    AppendShuffleDraws(draws,g_QboxDeckOrder,g_QboxLayout);
     draws.insert(draws.end(),i_extraDraws.begin(),i_extraDraws.end());
     return draws;
   }
@@ -88,7 +105,7 @@ BOOST_AUTO_TEST_CASE( TestStartMove )
   pls[0].AddToken(Ship::GetShipOfClass(SCOUT));
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
 
@@ -170,7 +187,7 @@ BOOST_AUTO_TEST_CASE( TestGetPenaltyCost )
   pls[0].AddToken(Ship::GetShipOfClass(SCOUT));
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
 
@@ -209,7 +226,7 @@ BOOST_AUTO_TEST_CASE( TestAddAdjacents )
   pls[0].AddToken(Ship::GetShipOfClass(SCOUT));
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
   mm.StartMove();
@@ -250,7 +267,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPilotless )
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
 
@@ -321,7 +338,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPiloted )
   pls[0].SetLocation("cloud_body_8");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
 
@@ -397,7 +414,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGate )
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
 
   MoveMediator mm(pls,mo);
 
@@ -474,7 +491,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGateJumpStart )
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   pls[0].AddToken(Token::Relic("Jump Start",100));
@@ -514,7 +531,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartFromCityMPCost )
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   pls[0].SetLocation("Rumble City");
@@ -542,7 +559,7 @@ BOOST_AUTO_TEST_CASE( TestRemoveBacktracks )
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   mo.MakeSpacePublic("AS_3_4");
@@ -583,7 +600,7 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberNoPilotNumbers)
   // dice = {1,4,3} -- see CullByPilotNumber() in MoveMediator.cpp: the tests
   // below depend on the exact set of pilot numbers this roll produces.
   ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   // test set 1. a set with only pilotless items should be unchanged.
@@ -643,7 +660,7 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberWithPilotNumbers)
   // dice = {1,4,3} -- see CullByPilotNumber() in MoveMediator.cpp: the tests
   // below depend on the exact set of pilot numbers this roll produces.
   ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
   pls[0].SetLocation("cloud_body_8");
 
@@ -702,7 +719,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPSimple)
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -771,7 +788,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPToCity)
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -810,7 +827,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPFromCity)
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -838,7 +855,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPNextToColoredQBoxPenalty)
   MapData md("../MerchantOfVenusMap.xml");
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
-  MapOverlay mo(md);
+  MapOverlay mo(md,g_TestOptions);
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -863,4 +880,39 @@ BOOST_AUTO_TEST_CASE(TestApplyMPNextToColoredQBoxPenalty)
   BOOST_CHECK(mm.GetCurrentDests() ==
               "cloud_body_2!walk!0/cloud_body_4!walk!0/cloud_south_1!walk!0");
 
+}
+
+// MapOverlay's constructor now sizes the asteroid pool off the relic list
+// (built first), so hiding the Laser relic should also drop the asteroid
+// count by one, keeping the two in lockstep.
+BOOST_AUTO_TEST_CASE( TestHideUnusedWeaponsRemovesLaserRelic )
+{
+  MapData md("../MerchantOfVenusMap.xml");
+
+  Options hiddenoptions;
+  hiddenoptions.SetHideUnusedWeapons(true);
+  MapOverlay mo(md,hiddenoptions);
+
+  BOOST_CHECK(mo.GetRelicList().size() == 9);
+  for (size_t i = 0 ; i < mo.GetRelicList().size() ; ++i)
+  {
+    BOOST_CHECK(mo.GetRelicList()[i].GetName() != "Laser 20");
+  }
+}
+
+BOOST_AUTO_TEST_CASE( TestShowUnusedWeaponsIncludesLaserRelic )
+{
+  MapData md("../MerchantOfVenusMap.xml");
+
+  Options shownoptions;
+  shownoptions.SetHideUnusedWeapons(false);
+  MapOverlay mo(md,shownoptions);
+
+  BOOST_CHECK(mo.GetRelicList().size() == 10);
+  bool foundlaser = false;
+  for (size_t i = 0 ; i < mo.GetRelicList().size() ; ++i)
+  {
+    if (mo.GetRelicList()[i].GetName() == "Laser 20") foundlaser = true;
+  }
+  BOOST_CHECK(foundlaser);
 }

@@ -12,3 +12,5 @@ gameserver
 */tca/clientstage/
 */tca/*DLL.cpp
 */tca/*GameInfo.hpp
+*/tca/*.d
+

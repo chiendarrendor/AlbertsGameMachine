@@ -7,11 +7,6 @@
 
 namespace
 {
-
-  enum Technology 
-    { PRIMITIVES,INDUSTRY,TECHNOLOGY,BIOENGINEERS,METAPHYSICS,GALACTICBASE };
-
-
   TradeBase MakeGalacticBase()
   {
     TradeBase result("base","Galactic Base");
@@ -21,70 +16,79 @@ namespace
     result.AddToken(Ship::GetShipOfClass(FREIGHTER));
     return result;
   }
-
-  TradeBase MakeBase(const std::string& i_id,const std::string& i_name,
-                     Technology i_tech,const std::string& i_buyers,
-                     int i_iou,int i_factorycost,
-                     int i_goodcount,const std::string& i_goodname,
-                     int i_goodbuy,int i_goodsell,
-                     const std::string& i_fgoodname,
-                     int i_fgoodbuy,int i_fgoodsell,
-                     const std::string& i_regionname,
-                     const std::map<std::string,MapSpace *>i_spaces)
-  {
-    TradeBase result(i_id,i_name);
-    
-    switch(i_tech)
-    {
-    case PRIMITIVES:
-    case GALACTICBASE:
-      break;
-    case INDUSTRY:
-      result.AddToken(Ship::GetShipOfClass(TRANSPORT));
-      result.AddToken(Ship::GetShipOfClass(FREIGHTER));
-      result.AddToken(Token::Drive(false,true,false,80));
-      result.AddToken(Token::Laser(false,100));
-      break;
-    case TECHNOLOGY:
-      result.AddToken(Ship::GetShipOfClass(SCOUT));
-      result.AddToken(Ship::GetShipOfClass(CLIPPER));
-      result.AddToken(Token::Drive(true,false,false,120));
-      result.AddToken(Token::NovaBall());
-      break;
-    case METAPHYSICS:
-      result.AddToken(Token::Drive(true,true,false,300));
-      break;
-    case BIOENGINEERS:
-      result.AddToken(Token::Shield(false,60));
-      break;
-    }
-
-    result.AddToken(Token::IOU(i_id,i_iou));
-
-    std::ostringstream fname;
-    fname << i_fgoodname << " ($" << i_fgoodbuy << "/$" << i_fgoodsell << ")";
-
-    result.AddToken(Token::Deed(fname.str(),FACTORY_DEED,i_factorycost,i_id));
-    Token good = Token::Good(i_goodname,i_id,i_buyers,i_goodbuy,i_goodsell,false);
-    for (int i = 0 ; i < i_goodcount ; ++i)
-    {
-      result.AddToken(good);
-    }
-    result.SetFactoryGood(Token::Good(i_fgoodname,i_id,i_buyers,i_fgoodbuy,i_fgoodsell,true));
-    
-    std::map<std::string,MapSpace *>::const_iterator spaceit;
-    for (spaceit = i_spaces.begin() ; spaceit != i_spaces.end() ; ++spaceit)
-    {
-      if (spaceit->second->m_regionname != i_regionname) continue;
-      if (spaceit->second->m_orbit.size() == 0) continue;
-      result.AddSpaceportDeed(Token::Deed(spaceit->second->m_orbit,SPACEPORT_DEED,200,""));
-    }
-
-    return result;
-  }
 }
 
-TradeBases::TradeBases(const MapData& i_mapdata)
+TradeBase TradeBases::MakeBase(const std::string& i_id,const std::string& i_name,
+                   Technology i_tech,const std::string& i_buyers,
+                   int i_iou,int i_factorycost,
+                   int i_goodcount,const std::string& i_goodname,
+                   int i_goodbuy,int i_goodsell,
+                   const std::string& i_fgoodname,
+                   int i_fgoodbuy,int i_fgoodsell,
+                   const std::string& i_regionname) const
+{
+  TradeBase result(i_id,i_name);
+
+  switch(i_tech)
+  {
+  case PRIMITIVES:
+  case GALACTICBASE:
+    break;
+  case INDUSTRY:
+    result.AddToken(Ship::GetShipOfClass(TRANSPORT));
+    result.AddToken(Ship::GetShipOfClass(FREIGHTER));
+    result.AddToken(Token::Drive(false,true,false,80));
+    // the Laser is mechanically inert without the (unimplemented) combat
+    // ruleset -- see .claude/MerchantOfVenus/IMPLEMENTATION_STATUS.md
+    if (!m_hideunusedweapons)
+    {
+      result.AddToken(Token::Laser(false,100));
+    }
+    break;
+  case TECHNOLOGY:
+    result.AddToken(Ship::GetShipOfClass(SCOUT));
+    result.AddToken(Ship::GetShipOfClass(CLIPPER));
+    result.AddToken(Token::Drive(true,false,false,120));
+    if (!m_hideunusedweapons)
+    {
+      result.AddToken(Token::NovaBall());
+    }
+    break;
+  case METAPHYSICS:
+    result.AddToken(Token::Drive(true,true,false,300));
+    break;
+  case BIOENGINEERS:
+    result.AddToken(Token::Shield(false,60));
+    break;
+  }
+
+  result.AddToken(Token::IOU(i_id,i_iou));
+
+  std::ostringstream fname;
+  fname << i_fgoodname << " ($" << i_fgoodbuy << "/$" << i_fgoodsell << ")";
+
+  result.AddToken(Token::Deed(fname.str(),FACTORY_DEED,i_factorycost,i_id));
+  Token good = Token::Good(i_goodname,i_id,i_buyers,i_goodbuy,i_goodsell,false);
+  for (int i = 0 ; i < i_goodcount ; ++i)
+  {
+    result.AddToken(good);
+  }
+  result.SetFactoryGood(Token::Good(i_fgoodname,i_id,i_buyers,i_fgoodbuy,i_fgoodsell,true));
+
+  std::map<std::string,MapSpace *>::const_iterator spaceit;
+  for (spaceit = m_mapdata.GetSpaceMap().begin() ; spaceit != m_mapdata.GetSpaceMap().end() ; ++spaceit)
+  {
+    if (spaceit->second->m_regionname != i_regionname) continue;
+    if (spaceit->second->m_orbit.size() == 0) continue;
+    result.AddSpaceportDeed(Token::Deed(spaceit->second->m_orbit,SPACEPORT_DEED,200,""));
+  }
+
+  return result;
+}
+
+TradeBases::TradeBases(const MapData& i_mapdata,const Options& i_options) :
+  m_mapdata(i_mapdata),
+  m_hideunusedweapons(i_options.GetHideUnusedWeapons())
 {
   std::vector<std::string> habitablenames;
   std::string galbasename;
@@ -116,85 +120,85 @@ TradeBases::TradeBases(const MapData& i_mapdata)
              80,100,
              5,"Bionic Perfume",80,140,
              "Guard Plants",60,160,
-             habitablenames[0],i_mapdata.GetSpaceMap());
+             habitablenames[0]);
   m_bases[habitablenames[1]] = 
     MakeBase("1b","Volois",METAPHYSICS,"2,3,4a,4b",
              120,200,
              6,"Voil Silk",140,220,
              "Canned Traits",120,240,
-             habitablenames[1],i_mapdata.GetSpaceMap());
+             habitablenames[1]);
   m_bases[habitablenames[2]] = 
     MakeBase("2","Graw",PRIMITIVES,"3,4a,4b,5",
              90,200,
              6,"Space Spice",30,80,
              "Glorious Junk",100,200,
-             habitablenames[2],i_mapdata.GetSpaceMap());
+             habitablenames[2]);
   m_bases[habitablenames[3]] = 
     MakeBase("3","Niks",BIOENGINEERS,"4a,4b,5,6",
              80,200,
              6,"Mulch Wine",20,60,
              "Living Toys",80,180,
-             habitablenames[3],i_mapdata.GetSpaceMap());
+             habitablenames[3]);
   m_bases[habitablenames[4]] = 
     MakeBase("4a","Dell",INDUSTRY,"5,6,7a,7b",
              60,200,
              6,"Finest Dust",10,50,
              "Dribble Glass",120,200,
-             habitablenames[4],i_mapdata.GetSpaceMap());
+             habitablenames[4]);
   m_bases[habitablenames[5]] = 
     MakeBase("4b","Humans",TECHNOLOGY,"5,6,7a,7b",
              90,100,
              5,"Rock Videos",120,200,
              "Primitive Art",60,160,
-             habitablenames[5],i_mapdata.GetSpaceMap());
+             habitablenames[5]);
   m_bases[habitablenames[6]] = 
     MakeBase("5","Shenna",PRIMITIVES,"6,7a,7b,8",
              90,100,
              6,"Melf Pelts",50,110,
              "Pet Monsters",80,150,
-             habitablenames[6],i_mapdata.GetSpaceMap());
+             habitablenames[6]);
   m_bases[habitablenames[7]] = 
     MakeBase("6","YXKLYX",TECHNOLOGY,"7a,7b,8,9a,9b",
              100,200,
              6,"Immortal Grease",50,100,
              "Shining Slime",100,200,
-             habitablenames[7],i_mapdata.GetSpaceMap());
+             habitablenames[7]);
   m_bases[habitablenames[8]] = 
     MakeBase("7a","Zum",INDUSTRY,"8,9a,9b,10",
              100,200,
              5,"Chicle Liquor",40,90,
              "Custom Hives",140,220,
-             habitablenames[8],i_mapdata.GetSpaceMap());
+             habitablenames[8]);
   m_bases[habitablenames[9]] =
     MakeBase("7b","EeepEeep",TECHNOLOGY,"8,9a,9b,10",
              100,100,
              4,"Servo Mechanism",200,300,
              "Pedigree Bolts",100,200,
-             habitablenames[9],i_mapdata.GetSpaceMap());
+             habitablenames[9]);
   m_bases[habitablenames[10]] =
     MakeBase("8","Whynoms",INDUSTRY,"9a,9b,10,1a,1b",
              80,100,
              4,"Impossible Furniture",110,180,
              "Other Shoes",80,160,
-             habitablenames[10],i_mapdata.GetSpaceMap());
+             habitablenames[10]);
   m_bases[habitablenames[11]] =
     MakeBase("9a","Cholos",BIOENGINEERS,"10,1a,1b,2",
              90,200,
              6,"Designer Genes",60,120,
              "Life Projects",160,240,
-             habitablenames[11],i_mapdata.GetSpaceMap());
+             habitablenames[11]);
   m_bases[habitablenames[12]] = 
     MakeBase("9b","Wollow",PRIMITIVES,"10,1a,1b,2",
              90,100,
              5,"Megalith Paperweight",90,160,
              "Portable Pipe Organ",80,160,
-             habitablenames[12],i_mapdata.GetSpaceMap());
+             habitablenames[12]);
   m_bases[habitablenames[13]] = 
     MakeBase("10","Qosssuth",METAPHYSICS,"1a,1b,2,3",
              120,200,
              4,"Psychotic Sculpture",160,250,
              "Infinite Puzzles",120,250,
-             habitablenames[13],i_mapdata.GetSpaceMap());
+             habitablenames[13]);
 
   std::map<std::string,TradeBase>::iterator tbit;
   for (tbit = m_bases.begin() ; tbit != m_bases.end() ; ++tbit)

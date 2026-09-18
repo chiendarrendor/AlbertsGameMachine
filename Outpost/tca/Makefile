@@ -32,11 +32,6 @@ TESTOBJS = \
 	StateMachineBidTest.o StateMachinePurchaseTest.o \
 	TransitionTestUtilities.o StateMachineTest.o 
 
-TESTCFILES= \
-	$(TESTOBJS:%.o=../tests/%.cpp) \
-	$(MAINTESTOBJ:%.o=../tests/%.cpp) \
-	$(STOCHASTICTESTOBJS:%.o=../tests/%.cpp) 
-
 OBJS= Commodity.o \
 	CommodityDeck.o CommodityManager.o \
 	Factories.o OwnedItems.o Player.o Players.o OutpostSet.o \
@@ -52,11 +47,11 @@ CLIENTJAVA=ItemCard.java CommodityCard.java CommodityHand.java Factories.java \
 
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/Outpost/%)
 
-CFILES=$(OBJS:%.o=../%.cpp) $(ARTIFACTOBJS:%.o=%.cpp)
+ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} ${STOCHASTICTESTOBJS}
 
 INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I. -DBOOST_TEST_DYN_LINK
-LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a 
-GCC=g++ -g -Wall -Werror ${INCS} -fPIC
+LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
+GCC=g++ -g -Wall -Werror ${INCS} -fPIC -MMD -MP
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
 BOOSTSERIALLIB=-lboost_serialization-mt
@@ -124,13 +119,10 @@ clientjava:
 %.o:../tests/%.cpp
 	${GCC} -c $<
 
-depend: OutpostDLL.cpp
-	 ${GCC} -MM ${CFILES} ${TESTCFILES} | tr -d '\015' | perl filterboost.pl > makefile.depend
-	 ${CPP} -MM ../client/OutpostClient.xml | tr -d '\015' | sed 's/OutpostClient\.o/OutpostClient\.xml/' >> makefile.depend
-
 clean:
 	@- rm -f ${OBJS} ${TESTOBJS} Outpost.dll OutpostDLL.cpp ${MAINTESTOBJ}
 	@- rm -f outposttest.exe OutpostClient.xml OutpostEventGenerator.hpp OutpostGameInfo.hpp
+	@- rm -f ${ALLOBJS:.o=.d}
 
--include Makefile.depend
+-include $(ALLOBJS:.o=.d)
 

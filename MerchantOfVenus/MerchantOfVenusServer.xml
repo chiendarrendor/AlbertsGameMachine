@@ -32,7 +32,7 @@
   </event>
 
   <event name="OPTIONS" type="global">
-    <var name="i_winmoney" type="int" source="m_winmoney"/>
+    <var name="i_winmoney" type="int" source="GetOptions().GetWinMoney()"/>
   </event>
 
   <event name="PLAYEROKSTARTUP" type="global">
@@ -452,7 +452,7 @@
       <var name="winmoney" type="int" min="1000"/>
     </action>
     <body>
-      m_winmoney = winmoney;
+      GetOptions().SetWinMoney(winmoney);
       BroadcastOPTIONS();
       return true;
     </body>
@@ -1444,7 +1444,7 @@
     <transit from="TurnEnd" to="StartTurn"/>
     <auto>
       <![CDATA[
-        GetPlayers().GetCurPlayer().GetNetWorth() < m_winmoney
+        GetPlayers().GetCurPlayer().GetNetWorth() < GetOptions().GetWinMoney()
       ]]>
     </auto>
     <body>
@@ -1458,7 +1458,7 @@
     <transit from="TurnEnd" to="TerminalState"/>
     <auto>
       <![CDATA[
-        GetPlayers().GetCurPlayer().GetNetWorth() >= m_winmoney
+        GetPlayers().GetCurPlayer().GetNetWorth() >= GetOptions().GetWinMoney()
       ]]>
     </auto>
     <body>

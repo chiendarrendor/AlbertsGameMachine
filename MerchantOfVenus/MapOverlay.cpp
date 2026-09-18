@@ -35,7 +35,7 @@ namespace
     return result;
   }
 
-  void MakeQBoxList(std::vector<MapSpace>& i_qboxes)
+  void MakeQBoxList(std::vector<MapSpace>& i_qboxes,size_t i_numasteroids)
   {
     i_qboxes.push_back(TeleGate(1));
     i_qboxes.push_back(TeleGate(2));
@@ -63,13 +63,13 @@ namespace
     i_qboxes.push_back(Penalty(BLUE,30));
     i_qboxes.push_back(Penalty(BLUE,30));
     i_qboxes.push_back(Penalty(BLUE,40));
-    for (int i = 0 ; i < 10 ; ++i)
+    for (size_t i = 0 ; i < i_numasteroids ; ++i)
     {
       i_qboxes.push_back(Asteroid());
     }
   }
 
-  void MakeRelicList(std::vector<Token>& i_reliclist)
+  void MakeRelicList(std::vector<Token>& i_reliclist,bool i_hideunusedweapons)
   {
     i_reliclist.push_back(Token::Relic("Jump Start",120));
     i_reliclist.push_back(Token::Relic("Gate Lock",100));
@@ -81,11 +81,16 @@ namespace
     i_reliclist.push_back(Token::Relic("Spy Eye",100));
     i_reliclist.push_back(Token::Relic("Air Foil",80));
     i_reliclist.push_back(Token::Relic("Mulligan Gear",120));
-    i_reliclist.push_back(Token::Laser(true,100));
+    // the Laser is mechanically inert without the (unimplemented) combat
+    // ruleset -- see .claude/MerchantOfVenus/IMPLEMENTATION_STATUS.md
+    if (!i_hideunusedweapons)
+    {
+      i_reliclist.push_back(Token::Laser(true,100));
+    }
   }
 }
 
-MapOverlay::MapOverlay(const MapData& i_mapdata) :
+MapOverlay::MapOverlay(const MapData& i_mapdata,const Options& i_options) :
   m_mapdata(i_mapdata),
   m_overrides(),
   m_relics(),
@@ -96,21 +101,22 @@ MapOverlay::MapOverlay(const MapData& i_mapdata) :
   // get list of all qbox names and orbit locations.
   std::map<std::string,MapSpace *>::const_iterator spaceit;
   std::vector<std::string> qboxnames;
-  for (spaceit = i_mapdata.GetSpaceMap().begin() ; 
+  for (spaceit = i_mapdata.GetSpaceMap().begin() ;
        spaceit != i_mapdata.GetSpaceMap().end() ; ++spaceit)
   {
     if (spaceit->second->m_type == QBOX) qboxnames.push_back(spaceit->first);
     if (spaceit->second->m_orbit != "") m_orbitlocations[spaceit->second->m_orbit] = spaceit->first;
   }
 
+  // make list of all relics (go on qbox asteroids) -- built first so we
+  // know exactly how many asteroid qboxes to generate to match
+  MakeRelicList(m_allrelics,i_options.GetHideUnusedWeapons());
+  myshuffle(m_allrelics.begin(),m_allrelics.end());
+
   // make list of all qbox objects.
   std::vector<MapSpace> qboxes;
-  MakeQBoxList(qboxes);
+  MakeQBoxList(qboxes,m_allrelics.size());
   myshuffle(qboxes.begin(),qboxes.end());
-
-  // make list of all relics (go on qbox asteroids)
-  MakeRelicList(m_allrelics);
-  myshuffle(m_allrelics.begin(),m_allrelics.end());
 
   size_t vecidx;
   size_t relicidx = 0;

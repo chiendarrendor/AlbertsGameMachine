@@ -5,6 +5,7 @@
 #include "MapOverlay.hpp"
 #include "TradeBases.hpp"
 #include "MoveMediator.hpp"
+#include "Options.hpp"
 
 
 class MerchantOfVenusSet;
@@ -29,7 +30,8 @@ public:
   TradeBases& GetTradeBases();
   const TradeBases& GetTradeBases() const;
 
-  int m_winmoney;
+  const Options &GetOptions() const;
+  Options &GetOptions();
 
   MoveMediator& GetMoveMediator();
   const MoveMediator& GetMoveMediator() const;
@@ -55,15 +57,16 @@ private:
 
   Players m_Players;
   Cup m_cup;
+  Options m_Options;
   MapOverlay m_mapoverlay;
   TradeBases m_tradebases;
   MoveMediator m_movemediator;
 
   SERIALIZE_FUNC
   {
-    SERIALIZE(m_winmoney);
     SERIALIZE(m_Players);
     SERIALIZE(m_cup);
+    SERIALIZE(m_Options);
     SERIALIZE(m_mapoverlay);
     SERIALIZE(m_tradebases);
     SERIALIZE(m_movemediator);

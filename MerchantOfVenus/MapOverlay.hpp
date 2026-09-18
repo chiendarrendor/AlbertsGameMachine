@@ -6,6 +6,7 @@
 #include "MapSpace.hpp"
 #include "Token.hpp"
 #include "Secret.hpp"
+#include "Options.hpp"
 
 // this class is the interface to the map, differing from MapData
 // in that it is aware of the game-state specific aspects of the map
@@ -19,7 +20,7 @@
 class MapOverlay
 {
 public:
-  MapOverlay(const MapData& i_mapdata);
+  MapOverlay(const MapData& i_mapdata,const Options& i_options);
 
   // argument is station name
   // return value is name of space station got placed on.
