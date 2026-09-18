@@ -8,7 +8,7 @@ metadata:
   modified: 2026-09-12T07:34:17.199Z
 ---
 
-Part of [[project-overview]]. This covers the C++ TCP/IP server component's internal directory structure, as described by Albert (not yet code-verified).
+Part of [[project-overview]]. This covers the C++ TCP/IP server component's internal directory structure, as described by Albert. All four directories below have since been fully code-verified: `server/` in [[server-directory-architecture]], `common/` in [[common-directory-architecture]], and `gamecommon/`/`stateengine/` in [[server-game-decoupling-investigation]].
 
 - **`server/`** — the main loop and control engine. Also owns creation/management of virtual "rooms" — the spaces in which games are actually played (matchmaking/session container concept).
 - **`common/`** — shared/general-purpose C++ utility code. Notably contains two libraries whose job is cross-platform abstraction: they encapsulate the differences between Windows and Linux so the rest of the codebase can compile/run on both without caring about platform specifics.
