@@ -14,3 +14,6 @@ gameserver
 */tca/*GameInfo.hpp
 */tca/*.d
 
+*/tca/*.dll
+*/tca/*.so
+.claude/worktrees

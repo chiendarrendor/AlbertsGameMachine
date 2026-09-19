@@ -3,7 +3,7 @@
 
 #include <string>
 #include <map>
-#include "pugixml.hpp"
+#include <boost/property_tree/ptree.hpp>
 
 class Region;
 class MapSpace;
@@ -21,12 +21,12 @@ private:
   std::map<std::string,Region *>m_regions;
   std::map<std::string,MapSpace *>m_spaces;
 
-  void ProcessLine(pugi::xml_node linenode);
-  void ProcessSolarSystem(pugi::xml_node solnode);
-  std::string ProcessTerminal(pugi::xml_node termnode);
-  MapSpace *ProcessSpace(Region& i_region,pugi::xml_node spacenode);
-  void ProcessAdjacent(MapSpace& ms,pugi::xml_node adjacent);
-  void ProcessOrbit(MapSpace& ms,pugi::xml_node orbit);
+  void ProcessLine(const boost::property_tree::ptree& linenode);
+  void ProcessSolarSystem(const boost::property_tree::ptree& solnode);
+  std::string ProcessTerminal(const std::string& tagname, const boost::property_tree::ptree& termnode);
+  MapSpace *ProcessSpace(Region& i_region,const boost::property_tree::ptree& spacenode);
+  void ProcessAdjacent(MapSpace& ms,const boost::property_tree::ptree& adjacent);
+  void ProcessOrbit(MapSpace& ms,const boost::property_tree::ptree& orbit);
 
 
 };

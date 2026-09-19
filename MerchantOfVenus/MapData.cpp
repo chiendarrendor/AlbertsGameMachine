@@ -7,25 +7,33 @@
 #include <boost/regex.hpp>
 #include "MerchantOfVenus.hpp"
 #include <boost/algorithm/string.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
+namespace pt = boost::property_tree;
 
 namespace
 {
-  std::map<std::string,std::string> ParseAttributes(pugi::xml_node node,
+  std::map<std::string,std::string> ParseAttributes(const pt::ptree& node,
+                                                    const std::string& nodename,
                                                     const std::set<std::string>& reqattrs,
                                                     const std::set<std::string>&  optattrs)
   {
     std::map<std::string,std::string> result;
-    pugi::xml_node::attribute_iterator ait;
-    for (ait = node.attributes_begin() ; ait != node.attributes_end() ; ++ait)
+
+    boost::optional<const pt::ptree&> attrsNode = node.get_child_optional("<xmlattr>");
+    if (attrsNode)
     {
-      pugi::xml_attribute curattr = *ait;
-      if (reqattrs.find(curattr.name()) == reqattrs.end() &&
-          optattrs.find(curattr.name()) == optattrs.end())
+      pt::ptree::const_iterator ait;
+      for (ait = attrsNode->begin() ; ait != attrsNode->end() ; ++ait)
       {
-        THROW(std::runtime_error,"unknown attr " << curattr.name() << " in " << node.name());
+        const std::string& attrname = ait->first;
+        if (reqattrs.find(attrname) == reqattrs.end() &&
+            optattrs.find(attrname) == optattrs.end())
+        {
+          THROW(std::runtime_error,"unknown attr " << attrname << " in " << nodename);
+        }
+        result[attrname] = ait->second.data();
       }
-      result[curattr.name()] = curattr.value();
     }
 
     std::set<std::string>::const_iterator reqitr;
@@ -33,7 +41,7 @@ namespace
     {
       if (result.find(*reqitr) == result.end())
       {
-        THROW(std::runtime_error,"missing required attr " << *reqitr << " in " << node.name());
+        THROW(std::runtime_error,"missing required attr " << *reqitr << " in " << nodename);
       }
     }
     return result;
@@ -80,32 +88,27 @@ namespace
 
 MapData::MapData(const std::string &i_fname)
 {
-  pugi::xml_document doc;
-  pugi::xml_parse_result status = doc.load_file(i_fname.c_str());
+  pt::ptree doc;
+  pt::read_xml(i_fname, doc, pt::xml_parser::trim_whitespace);
 
-  if (!status)
+  const pt::ptree& root = doc.get_child("board");
+
+  pt::ptree::const_iterator rootit;
+  for (rootit = root.begin() ; rootit != root.end() ; ++rootit)
   {
-    throw std::runtime_error("pugi xml load failure");
-  }
-
-  pugi::xml_node root = doc.document_element();
-  if (std::string(root.name()) != "board") throw std::runtime_error("root not 'board'");
-
-  for(pugi::xml_node child = root.first_child() ; child ; child=child.next_sibling())
-  {
-    if (std::string(child.name()) == "line") ProcessLine(child);
-    else if (std::string(child.name()) == "solarsystem") ProcessSolarSystem(child);
-    else 
+    if (rootit->first == "line") ProcessLine(rootit->second);
+    else if (rootit->first == "solarsystem") ProcessSolarSystem(rootit->second);
+    else
     {
-      THROW(std::out_of_range,"Unknown Region Type " << child.name());
+      THROW(std::out_of_range,"Unknown Region Type " << rootit->first);
     }
   }
 
   // at this point, its all been loaded into memory.
   // we need to validate the following things:
-  // a) every adjacency of every space points to a space that is 
+  // a) every adjacency of every space points to a space that is
   //    i) different
-  //    ii) extant 
+  //    ii) extant
   // b) every adjacency of every space must also have an inverse adjacency from the other space
   // c) every flyable adjacency must
   //    i) start in a city
@@ -144,7 +147,7 @@ MapData::MapData(const std::string &i_fname)
         THROW(std::runtime_error,"space " << origSpace->m_name << " points to itself!");
 
       std::map<std::string,MapSpace *>::iterator otherit = m_spaces.find(origAdj.first);
-      // a,ii 
+      // a,ii
       if (otherit == m_spaces.end())
         THROW(std::runtime_error,"space " << origSpace->m_name << " has nonexistent adjacency " << origAdj.first);
       MapSpace* otherSpace = otherit->second;
@@ -190,27 +193,27 @@ MapData::MapData(const std::string &i_fname)
       for (size_t j = i+1 ; j < cities.size() ; ++j)
       {
         const std::string& oname = cities[j]->m_name;
-        
+
         std::vector<std::pair<std::string,bool> >::iterator adjit;
         for (adjit = curcity->m_adjacentnames.begin() ; adjit != curcity->m_adjacentnames.end() ; ++adjit)
         {
           if (adjit->first == oname) break;
         }
-        
+
         if (adjit == curcity->m_adjacentnames.end())
-          THROW(std::runtime_error,"cities " << curcity->m_name << " and " << 
+          THROW(std::runtime_error,"cities " << curcity->m_name << " and " <<
                 cities[j]->m_name << " are not linked!");
       }
     }
   }
 }
 
-void MapData::ProcessLine(pugi::xml_node linenode)
+void MapData::ProcessLine(const pt::ptree& linenode)
 {
   std::set<std::string> optattrs;
   std::set<std::string> reqattrs;
   reqattrs.insert("name");
-  std::map<std::string,std::string> attrs = ParseAttributes(linenode,reqattrs,optattrs);
+  std::map<std::string,std::string> attrs = ParseAttributes(linenode,"line",reqattrs,optattrs);
 
   Region *reg = new Region(attrs["name"],false,false);
 
@@ -225,13 +228,16 @@ void MapData::ProcessLine(pugi::xml_node linenode)
   std::string end;
   std::vector<MapSpace *> spaces;
 
-  for(pugi::xml_node child = linenode.first_child() ; child ; child=child.next_sibling())
+  pt::ptree::const_iterator childit;
+  for(childit = linenode.begin() ; childit != linenode.end() ; ++childit)
   {
-    if (std::string(child.name()) == "begin") begin = ProcessTerminal(child);
-    else if (std::string(child.name()) == "end") end = ProcessTerminal(child);
-    else if (std::string(child.name()) == "space") 
+    if (childit->first == "<xmlattr>") continue;
+
+    if (childit->first == "begin") begin = ProcessTerminal("begin",childit->second);
+    else if (childit->first == "end") end = ProcessTerminal("end",childit->second);
+    else if (childit->first == "space")
     {
-      MapSpace *newspace = ProcessSpace(*reg,child);
+      MapSpace *newspace = ProcessSpace(*reg,childit->second);
 
       if (newspace->m_type != DOT)
         THROW(std::runtime_error,"illegal space type " << newspace->m_type << " for line: " << newspace->m_name);
@@ -239,12 +245,12 @@ void MapData::ProcessLine(pugi::xml_node linenode)
       spaces.push_back(newspace); // need these to work on the line-joins.
 
     }
-    else THROW(std::runtime_error,"line node has unknown child " << child.name());
+    else THROW(std::runtime_error,"line node has unknown child " << childit->first);
   }
 
   for (size_t i = 0 ; i < spaces.size() ; ++i)
   {
-    if (i == 0) 
+    if (i == 0)
     {
       spaces[i]->AddAdjacency(begin);
     }
@@ -264,7 +270,7 @@ void MapData::ProcessLine(pugi::xml_node linenode)
   }
 }
 
-void MapData::ProcessSolarSystem(pugi::xml_node solnode)
+void MapData::ProcessSolarSystem(const pt::ptree& solnode)
 {
   std::set<std::string> optattrs;
   std::set<std::string> reqattrs;
@@ -274,7 +280,7 @@ void MapData::ProcessSolarSystem(pugi::xml_node solnode)
   optattrs.insert("inhabited");
   optattrs.insert("ishabitable");
   optattrs.insert("alpha");
-  std::map<std::string,std::string> attrs = ParseAttributes(solnode,reqattrs,optattrs);
+  std::map<std::string,std::string> attrs = ParseAttributes(solnode,"solarsystem",reqattrs,optattrs);
 
   bool habit = false;
   bool inhabit = false;
@@ -299,19 +305,21 @@ void MapData::ProcessSolarSystem(pugi::xml_node solnode)
   std::string loopprefix("");
   size_t maxloop = 0;
 
-  for(pugi::xml_node child = solnode.first_child() ; child ; child=child.next_sibling())
+  pt::ptree::const_iterator childit;
+  for(childit = solnode.begin() ; childit != solnode.end() ; ++childit)
   {
-    if (std::string(child.name()) == "icon") continue;
+    if (childit->first == "<xmlattr>") continue;
+    if (childit->first == "icon") continue;
 
-    if (std::string(child.name()) != "space") 
-      THROW(std::runtime_error,"unknown child " << child.name() << " of solarsystem");
+    if (childit->first != "space")
+      THROW(std::runtime_error,"unknown child " << childit->first << " of solarsystem");
 
-    MapSpace *newspace = ProcessSpace(*reg,child);
+    MapSpace *newspace = ProcessSpace(*reg,childit->second);
 
     boost::smatch what;
     if (boost::regex_match(newspace->m_name,what,r))
     {
-      if (loopprefix == "") 
+      if (loopprefix == "")
       {
         loopprefix = what[1];
       }
@@ -332,11 +340,11 @@ void MapData::ProcessSolarSystem(pugi::xml_node solnode)
     }
   }
   // ok...now we've processed all spaces, and found all loops;
-  // all loop spaces 
+  // all loop spaces
   // a) have the same prefix
   // b) have unique numbers
   // c) the smallest legal number is 1
-  
+
   // before we start, lets make sure that we have the right number
   // since we know the largest number, and the smallest number can
   // be no smaller than 1, a simple count will suffice to provide assurance.
@@ -367,22 +375,22 @@ void MapData::ProcessSolarSystem(pugi::xml_node solnode)
 }
 
 
-// processes a node that should be of the form 
+// processes a node that should be of the form
 // <begin name="terminal"/>
-// or 
+// or
 // <end name="terminal"/>
 // returns terminal or throws exception
 
-std::string MapData::ProcessTerminal(pugi::xml_node termnode)
+std::string MapData::ProcessTerminal(const std::string& tagname, const pt::ptree& termnode)
 {
   std::set<std::string> optattrs;
   std::set<std::string> reqattrs;
   reqattrs.insert("name");
-  std::map<std::string,std::string> attrs = ParseAttributes(termnode,reqattrs,optattrs);
+  std::map<std::string,std::string> attrs = ParseAttributes(termnode,tagname,reqattrs,optattrs);
   return attrs["name"];
 }
 
-MapSpace* MapData::ProcessSpace(Region& i_region,pugi::xml_node spacenode)
+MapSpace* MapData::ProcessSpace(Region& i_region,const pt::ptree& spacenode)
 {
   std::set<std::string> optattrs;
   std::set<std::string> reqattrs;
@@ -392,8 +400,8 @@ MapSpace* MapData::ProcessSpace(Region& i_region,pugi::xml_node spacenode)
   reqattrs.insert("y");
   optattrs.insert("color");
   optattrs.insert("cost");
-  
-  std::map<std::string,std::string> attrs = ParseAttributes(spacenode,reqattrs,optattrs);
+
+  std::map<std::string,std::string> attrs = ParseAttributes(spacenode,"space",reqattrs,optattrs);
   SpaceType type = ParseType(attrs["type"]);
 
   MapSpace *result = new MapSpace(i_region.m_name,attrs["name"],type);
@@ -406,19 +414,19 @@ MapSpace* MapData::ProcessSpace(Region& i_region,pugi::xml_node spacenode)
   case STATION:
   case SPACECITY:
     optattrs.clear();
-    attrs = ParseAttributes(spacenode,reqattrs,optattrs);
+    attrs = ParseAttributes(spacenode,"space",reqattrs,optattrs);
     break;
   case DOT:
     optattrs.clear();
     optattrs.insert("color");
-    attrs = ParseAttributes(spacenode,reqattrs,optattrs);
+    attrs = ParseAttributes(spacenode,"space",reqattrs,optattrs);
     if (attrs.find("color") != attrs.end()) result->m_color = ParseColor(attrs["color"]);
     break;
   case PENALTY:
     reqattrs.insert("cost");
     optattrs.clear();
     optattrs.insert("color");
-    attrs = ParseAttributes(spacenode,reqattrs,optattrs);
+    attrs = ParseAttributes(spacenode,"space",reqattrs,optattrs);
     result->m_cost = boost::lexical_cast<int>(attrs["cost"]);
     if (attrs.find("color") != attrs.end()) result->m_color = ParseColor(attrs["color"]);
     break;
@@ -426,21 +434,24 @@ MapSpace* MapData::ProcessSpace(Region& i_region,pugi::xml_node spacenode)
     THROW(std::runtime_error,"Unprocessable type " << type);
   }
 
-  if (m_spaces.find(result->m_name) != m_spaces.end()) 
+  if (m_spaces.find(result->m_name) != m_spaces.end())
     THROW(std::runtime_error,"duplicated space name " << result->m_name);
   m_spaces[result->m_name] = result;
-    
-  for(pugi::xml_node child = spacenode.first_child() ; child ; child=child.next_sibling())
+
+  pt::ptree::const_iterator childit;
+  for(childit = spacenode.begin() ; childit != spacenode.end() ; ++childit)
   {
-    if (std::string(child.name()) == "adjacent") ProcessAdjacent(*result,child);
-    else if (std::string(child.name()) == "orbit") ProcessOrbit(*result,child);
+    if (childit->first == "<xmlattr>") continue;
+
+    if (childit->first == "adjacent") ProcessAdjacent(*result,childit->second);
+    else if (childit->first == "orbit") ProcessOrbit(*result,childit->second);
     else THROW(std::runtime_error,"illegal child of " << result->m_name);
   }
-  
+
   return result;
 }
 
-void MapData::ProcessAdjacent(MapSpace& ms,pugi::xml_node adj)
+void MapData::ProcessAdjacent(MapSpace& ms,const pt::ptree& adj)
 {
   std::set<std::string> adjreq;
   std::set<std::string> adjopt;
@@ -448,8 +459,8 @@ void MapData::ProcessAdjacent(MapSpace& ms,pugi::xml_node adj)
   adjopt.insert("flyable");
   adjopt.insert("pnumbers");
   adjopt.insert("invisible");
-  std::map<std::string,std::string> adjattrs = ParseAttributes(adj,adjreq,adjopt);
-  
+  std::map<std::string,std::string> adjattrs = ParseAttributes(adj,"adjacent",adjreq,adjopt);
+
   bool flyable = (adjattrs.find("flyable") != adjattrs.end()) && (adjattrs["flyable"] == "y");
   std::set<int> pnumbers;
 
@@ -462,17 +473,17 @@ void MapData::ProcessAdjacent(MapSpace& ms,pugi::xml_node adj)
       pnumbers.insert(boost::lexical_cast<int>(*vit));
     }
   }
-  
+
   ms.AddAdjacency(adjattrs["dest"],flyable,pnumbers);
 }
 
-void MapData::ProcessOrbit(MapSpace& ms,pugi::xml_node orbit)
+void MapData::ProcessOrbit(MapSpace& ms,const pt::ptree& orbit)
 {
   std::set<std::string> reqattrs;
   std::set<std::string> optattrs;
   reqattrs.insert("name");
   optattrs.insert("orient");
-  std::map<std::string,std::string> attrs = ParseAttributes(orbit,reqattrs,optattrs);
+  std::map<std::string,std::string> attrs = ParseAttributes(orbit,"orbit",reqattrs,optattrs);
   ms.m_orbit = attrs["name"];
 }
 
@@ -485,4 +496,3 @@ const std::map<std::string,MapSpace *>& MapData::GetSpaceMap() const
 {
   return m_spaces;
 }
-

@@ -3,9 +3,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-// These tests characterize MapData's current (pugixml-based) parsing behavior
-// before it gets rewritten onto boost::property_tree, so the rewrite can be
-// checked against the same expectations.
+// These tests characterize MapData's XML parsing behavior (boost::property_tree-based).
 
 BOOST_AUTO_TEST_CASE( TestMapDataGood )
 {
