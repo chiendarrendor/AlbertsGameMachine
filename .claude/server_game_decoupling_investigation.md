@@ -363,3 +363,11 @@ is pursued on top of this does a new
 implementation need its own `StateWalker`-equivalent and hand-ported game rules, per the
 `transitioncompiler` findings above — that cost is unrelated to and unlocked independently of the
 process-decoupling step.
+
+**Update 2026-09-19: items (1)-(3) above are now resolved — see [[server-game-interface-spec]]**
+for the concrete wire protocol (stdio pipes, newline-delimited JSON-RPC-ish messages) and a
+code-verified correction to this memory's `ServerGameInfo`/`OutputPort`/`VariCast` claims (VariCast
+turned out to have exactly one real call site in the whole codebase, and it's generic engine code,
+not any game's). That spec also works through how per-player legal-action-list generation gets reimplemented without
+`VariCast` — resolved as an inline `roster` param on the `handleAction` request rather than pushed
+membership-change notifications, so the game process never needs standing roster state at all.
