@@ -17,3 +17,7 @@ gameserver
 */tca/*.dll
 */tca/*.so
 .claude/worktrees
+server/tests/.venv
+__pycache__/
+*.pyc
+.pytest_cache/
