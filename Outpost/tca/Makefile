@@ -54,9 +54,10 @@ LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
 GCC=g++ -g -Wall -Werror ${INCS} -fPIC -MMD -MP
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
-BOOSTSERIALLIB=-lboost_serialization-mt
-BOOSTTESTLIB=-lboost_unit_test_framework-mt
-EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB} 
+BOOSTLIBDIR=/usr/lib64
+BOOSTSERIALLIB=-L${BOOSTLIBDIR} -lboost_serialization
+BOOSTTESTLIB=-L${BOOSTLIBDIR} -lboost_unit_test_framework
+EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB}
 
 Outpost${LIBSUFFIX}: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS}
 	${GCCL} -shared -o $@ ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTSERIALLIB} 
