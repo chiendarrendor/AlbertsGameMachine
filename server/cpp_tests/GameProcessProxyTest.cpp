@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <set>
 #include <string>
 
 namespace
@@ -52,7 +53,9 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
   ActionParser join("JOIN");
-  proxy.HandleAction("alice", join);
+  std::set<std::string> roster;
+  roster.insert("alice");
+  proxy.HandleAction("alice", join, roster);
 
   BOOST_REQUIRE_EQUAL(port.m_UniCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].first, "alice");
@@ -60,6 +63,29 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
   BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_BroadCasts[0], "TURNORDER,alice");
   BOOST_CHECK(!port.m_VariCastCalled);
+}
+
+BOOST_AUTO_TEST_CASE( HandleActionForwardsRosterOverTheWire )
+{
+  // The room roster (every current room occupant, not just recognized game
+  // players) travels with handleAction so the game process can evaluate a
+  // transition's <allowed> condition against names it never learned any
+  // other way -- see .claude/server_game_interface_spec.md's VariCast
+  // replacement design. Room::m_Inhabitants is a std::set, so the wire
+  // array always comes out sorted regardless of insertion order.
+  std::string dir = MakeGameDir(
+    "[{\"expect\":{\"method\":\"handleAction\","
+    "\"params\":{\"action\":\"JOIN\",\"roster\":[\"alice\",\"bob\"]}},"
+    "\"then\":{\"result\":{}}}]");
+  ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
+  RecordingOutputPort port;
+  GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
+
+  ActionParser join("JOIN");
+  std::set<std::string> roster;
+  roster.insert("bob");
+  roster.insert("alice");
+  BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join, roster));
 }
 
 BOOST_AUTO_TEST_CASE( HandleActionErrorBecomesSenderOnlyUnicast )
@@ -72,7 +98,9 @@ BOOST_AUTO_TEST_CASE( HandleActionErrorBecomesSenderOnlyUnicast )
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
   ActionParser move("MOVE,99");
-  proxy.HandleAction("alice", move);
+  std::set<std::string> roster;
+  roster.insert("alice");
+  proxy.HandleAction("alice", move, roster);
 
   BOOST_REQUIRE_EQUAL(port.m_UniCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].first, "alice");
@@ -137,7 +165,9 @@ BOOST_AUTO_TEST_CASE( CrashMidRoundTripTerminatesGameAndNotifiesRoom )
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
   ActionParser join("JOIN");
-  BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join));
+  std::set<std::string> roster;
+  roster.insert("alice");
+  BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join, roster));
 
   BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_BroadCasts[0].find("ERROR,"), 0u);

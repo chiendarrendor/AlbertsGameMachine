@@ -184,7 +184,7 @@ void Room::HandleAction(const std::string &i_Name,const ActionParser &i_ap)
   {
     if (m_pGame)
     {
-      m_pGame->HandleAction(i_Name,i_ap);
+      m_pGame->HandleAction(i_Name,i_ap,m_Inhabitants);
     }
   }
 }

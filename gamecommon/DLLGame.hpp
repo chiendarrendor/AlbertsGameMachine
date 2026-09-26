@@ -2,6 +2,7 @@
 #include "StateWalker.hpp"
 #include <fstream>
 #include <iostream>
+#include <set>
 #include "ServerGameInfo.hpp"
 #include "OutputPort.hpp"
 #include "ActionParser.hpp"
@@ -21,7 +22,8 @@ public:
   virtual std::string GetStatusString() const;
   virtual bool IsDone() const;
   virtual void SendFullState(const std::string &i_Name) const;
-  virtual void HandleAction(const std::string &i_Name,const ActionParser &i_ap);
+  virtual void HandleAction(const std::string &i_Name,const ActionParser &i_ap,
+                             const std::set<std::string> &i_Roster);
 
   virtual bool LoadFile(const std::string &i_FileName);
   virtual bool SaveFile(const std::string &i_FileName) const;
@@ -182,8 +184,15 @@ private:
 
 template<class T_GameSet,class T_DLLGameInfo>
 void DLLGame<T_GameSet,T_DLLGameInfo>::HandleAction
-(const std::string &i_Name,const ActionParser &i_ap)
+(const std::string &i_Name,const ActionParser &i_ap,
+ const std::set<std::string> &/*i_Roster*/)
 {
+  // i_Roster is unused here for now: the LEGALACTION loop below still goes
+  // through VaricastLEGALACTION/OutputPort::VariCast exactly as before this
+  // parameter was added. Replacing that loop with one that iterates
+  // i_Roster directly (and retiring VariCast/NameBoolean entirely) is
+  // GameServerMain.hpp work, not done yet -- see
+  // .claude/server_game_interface_spec.md.
 
   m_GameInfo.ResetERRORCount();
 

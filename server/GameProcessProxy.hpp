@@ -6,6 +6,7 @@
 #include <boost/optional.hpp>
 #include <ext/stdio_filebuf.h>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <sys/types.h>
@@ -41,7 +42,8 @@ public:
   virtual std::string GetName() const;
   virtual bool IsDone() const;
   virtual void SendFullState(const std::string &i_Name) const;
-  virtual void HandleAction(const std::string &i_Name,const ActionParser &i_ap);
+  virtual void HandleAction(const std::string &i_Name,const ActionParser &i_ap,
+                             const std::set<std::string> &i_Roster);
 
   virtual bool LoadFile(const std::string &i_FileName);
   virtual bool SaveFile(const std::string &i_FileName) const;

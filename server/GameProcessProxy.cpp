@@ -172,11 +172,19 @@ void GameProcessProxy::DispatchEvent(const boost::json::object &i_Params) const
   // not reachable from any phase-1 game, so not handled here yet.
 }
 
-void GameProcessProxy::HandleAction(const std::string &i_Name,const ActionParser &i_ap)
+void GameProcessProxy::HandleAction(const std::string &i_Name,const ActionParser &i_ap,
+                                     const std::set<std::string> &i_Roster)
 {
   boost::json::object params;
   params["player"] = i_Name;
   params["action"] = i_ap.GetRawLine();
+
+  boost::json::array roster;
+  for (std::set<std::string>::const_iterator it = i_Roster.begin(); it != i_Roster.end(); ++it)
+  {
+    roster.push_back(boost::json::value(*it));
+  }
+  params["roster"] = std::move(roster);
 
   boost::optional<boost::json::value> response = SafeSendRequest("handleAction", params);
   if (!response)
