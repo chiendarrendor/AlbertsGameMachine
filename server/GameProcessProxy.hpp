@@ -3,6 +3,7 @@
 
 #include "Game.hpp"
 #include <boost/json.hpp>
+#include <boost/optional.hpp>
 #include <ext/stdio_filebuf.h>
 #include <memory>
 #include <stdexcept>
@@ -54,8 +55,24 @@ private:
                                   boost::json::object i_Params) const;
   void DispatchEvent(const boost::json::object &i_Params) const;
 
-  pid_t m_ChildPid;
+  // Wraps SendRequest: any ProtocolError (dead pipe, malformed message,
+  // mismatched id -- i.e. the game process violated the protocol) is
+  // treated as fatal for this game instance. GameProcessProxy is the final
+  // arbiter of protocol correctness -- the game is killed, everyone in the
+  // room is told, and boost::none is returned so the caller can fall back
+  // to a safe default instead of letting the exception reach RoomManager
+  // (which has no per-room recovery and would otherwise take the whole
+  // server down -- see .claude/server_game_interface_spec.md).
+  boost::optional<boost::json::value> SafeSendRequest(const std::string &i_Method,
+                                                        boost::json::object i_Params) const;
+
+  // Idempotent: broadcasts one ERROR line to the room, kills and reaps the
+  // child if still alive, and marks this instance done for good.
+  void Terminate(const std::string &i_Reason) const;
+
+  mutable pid_t m_ChildPid;
   mutable int m_NextId;
+  mutable bool m_Terminated;
 
   // unique_ptr's own constness doesn't propagate to the pointed-to stream,
   // so these don't need to be mutable even though several Game methods that

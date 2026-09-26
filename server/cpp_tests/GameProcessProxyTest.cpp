@@ -123,8 +123,12 @@ BOOST_AUTO_TEST_CASE( StatusStringAndIsDoneReflectMockedValues )
   BOOST_CHECK_EQUAL(proxy.IsDone(), true);
 }
 
-BOOST_AUTO_TEST_CASE( CrashMidRoundTripThrowsProtocolError )
+BOOST_AUTO_TEST_CASE( CrashMidRoundTripTerminatesGameAndNotifiesRoom )
 {
+  // GameProcessProxy is the final arbiter of protocol correctness: a dead or
+  // misbehaving child must never let a ProtocolError escape to RoomManager
+  // (which has no per-room recovery and would take the whole server down).
+  // Instead it broadcasts one ERROR line to the room and marks itself done.
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\"}},"
     "\"then\":{\"crash\":true}}]");
@@ -133,5 +137,9 @@ BOOST_AUTO_TEST_CASE( CrashMidRoundTripThrowsProtocolError )
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
   ActionParser join("JOIN");
-  BOOST_CHECK_THROW(proxy.HandleAction("alice", join), GameProcessProxy::ProtocolError);
+  BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join));
+
+  BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
+  BOOST_CHECK_EQUAL(port.m_BroadCasts[0].find("ERROR,"), 0u);
+  BOOST_CHECK_EQUAL(proxy.IsDone(), true);
 }

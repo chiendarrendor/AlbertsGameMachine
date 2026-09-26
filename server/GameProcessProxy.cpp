@@ -7,6 +7,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 GameProcessProxy::GameProcessProxy(const ServerGameInfo &i_rServerGameInfo,
                                     OutputPort &i_rOutputPort,
@@ -14,7 +15,8 @@ GameProcessProxy::GameProcessProxy(const ServerGameInfo &i_rServerGameInfo,
                                     const std::string &i_DataDir) :
   Game(i_rServerGameInfo, i_rOutputPort),
   m_ChildPid(-1),
-  m_NextId(1)
+  m_NextId(1),
+  m_Terminated(false)
 {
   int toChild[2];
   int fromChild[2];
@@ -112,6 +114,44 @@ boost::json::value GameProcessProxy::SendRequest(const std::string &i_Method,
   }
 }
 
+boost::optional<boost::json::value> GameProcessProxy::SafeSendRequest(const std::string &i_Method,
+                                                                        boost::json::object i_Params) const
+{
+  if (m_Terminated)
+  {
+    return boost::none;
+  }
+
+  try
+  {
+    return SendRequest(i_Method, std::move(i_Params));
+  }
+  catch (ProtocolError &e)
+  {
+    Terminate(e.what());
+    return boost::none;
+  }
+}
+
+void GameProcessProxy::Terminate(const std::string &i_Reason) const
+{
+  if (m_Terminated)
+  {
+    return;
+  }
+  m_Terminated = true;
+
+  GetOutputPort().BroadCast("ERROR," + UnComma("Game process failed: " + i_Reason));
+
+  if (m_ChildPid > 0)
+  {
+    kill(m_ChildPid, SIGKILL);
+    int status = 0;
+    waitpid(m_ChildPid, &status, 0);
+    m_ChildPid = -1;
+  }
+}
+
 void GameProcessProxy::DispatchEvent(const boost::json::object &i_Params) const
 {
   std::string message(i_Params.at("message").as_string().c_str());
@@ -138,8 +178,12 @@ void GameProcessProxy::HandleAction(const std::string &i_Name,const ActionParser
   params["player"] = i_Name;
   params["action"] = i_ap.GetRawLine();
 
-  boost::json::value response = SendRequest("handleAction", params);
-  const boost::json::object &obj = response.as_object();
+  boost::optional<boost::json::value> response = SafeSendRequest("handleAction", params);
+  if (!response)
+  {
+    return; // Terminate() already told the room; nothing left to do.
+  }
+  const boost::json::object &obj = response->as_object();
 
   if (obj.contains("error"))
   {
@@ -152,22 +196,25 @@ bool GameProcessProxy::LoadFile(const std::string &i_FileName)
 {
   boost::json::object params;
   params["filename"] = i_FileName;
-  boost::json::value response = SendRequest("load", params);
-  return response.at("result").at("success").as_bool();
+  boost::optional<boost::json::value> response = SafeSendRequest("load", params);
+  if (!response) return false;
+  return response->at("result").at("success").as_bool();
 }
 
 bool GameProcessProxy::SaveFile(const std::string &i_FileName) const
 {
   boost::json::object params;
   params["filename"] = i_FileName;
-  boost::json::value response = SendRequest("save", params);
-  return response.at("result").at("success").as_bool();
+  boost::optional<boost::json::value> response = SafeSendRequest("save", params);
+  if (!response) return false;
+  return response->at("result").at("success").as_bool();
 }
 
 std::string GameProcessProxy::GetStatusString() const
 {
-  boost::json::value response = SendRequest("getStatusString", boost::json::object());
-  return std::string(response.at("result").at("status").as_string().c_str());
+  boost::optional<boost::json::value> response = SafeSendRequest("getStatusString", boost::json::object());
+  if (!response) return "Game process terminated.";
+  return std::string(response->at("result").at("status").as_string().c_str());
 }
 
 std::string GameProcessProxy::GetName() const
@@ -177,13 +224,14 @@ std::string GameProcessProxy::GetName() const
 
 bool GameProcessProxy::IsDone() const
 {
-  boost::json::value response = SendRequest("isDone", boost::json::object());
-  return response.at("result").at("done").as_bool();
+  boost::optional<boost::json::value> response = SafeSendRequest("isDone", boost::json::object());
+  if (!response) return true; // terminated (or just now detected broken) counts as done
+  return response->at("result").at("done").as_bool();
 }
 
 void GameProcessProxy::SendFullState(const std::string &i_Name) const
 {
   boost::json::object params;
   params["player"] = i_Name;
-  SendRequest("sendFullState", params);
+  SafeSendRequest("sendFullState", params);
 }
