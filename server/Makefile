@@ -15,19 +15,22 @@ GAMECOMMON=../gamecommon
 
 OBJS=ServerMain.o GameServerConnectionHandler.o \
      LogManager.o LoginManager.o RoomManager.o GameCloset.o \
-     ServerSocket.o RoomOutputPort.o GameBox.o
+     ServerSocket.o RoomOutputPort.o GameBox.o GameProcessProxy.o
 
-CFILES=$(OBJS:%.o=%.cpp) 
-INCS=-I${GAMECOMMON} -I${COMMON} -I${BOOSTINC}
-GCC=g++ -g -Wall -Werror ${INCS} -D${OSTYPE}
+CFILES=$(OBJS:%.o=%.cpp)
+INCS=-I${GAMECOMMON} -I${COMMON} -I${BOOSTINC} -DBOOST_TEST_DYN_LINK
+GCC=g++ -g -Wall -Werror ${INCS} -D${OSTYPE} -MMD -MP
 LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
 
-
+TESTOBJS=cpp_tests/testmain.o cpp_tests/GameProcessProxyTest.o
 
 LIBS=${OSLIBS} ${LOCLIBS}
 
 gameserver: ${OBJS} ${INTOBJS} ${LOCLIBS}
-	${GCC} -o $@ ${OBJS} ${INTOBJS} ${LIBS} 
+	${GCC} -o $@ ${OBJS} ${INTOBJS} ${LIBS}
+
+servertest: ${TESTOBJS} GameProcessProxy.o ${LOCLIBS}
+	${GCC} -o $@ ${TESTOBJS} GameProcessProxy.o ${LIBS} -lboost_unit_test_framework
 
 ${COMMON}/libCommon.a:
 	- (cd ${COMMON} ; ${MAKE})
@@ -37,15 +40,14 @@ ${GAMECOMMON}/libGameCommon.a:
 %.o:%.cpp
 	${GCC} -c $<
 
-depend:
-	@ ${GCC} -MM ${CFILES} | tr -d '\015' >> Makefile.depend
+cpp_tests/%.o:cpp_tests/%.cpp
+	${GCC} -I. -c $< -o $@
 
 clean:
 	@- (cd ${COMMON} ; ${MAKE} clean)
 	@- (cd ${GAMECOMMON} ; ${MAKE} clean)
-	@- rm -f ${OBJS} gameserver
+	@- rm -f ${OBJS} ${TESTOBJS} gameserver servertest $(OBJS:.o=.d) $(TESTOBJS:.o=.d)
 
-
-# <MAKE DEPEND TARGETS BELOW>
--include "Makefile.depend"
+-include $(OBJS:.o=.d)
+-include $(TESTOBJS:.o=.d)
 

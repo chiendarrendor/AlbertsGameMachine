@@ -15,6 +15,7 @@ public:
   virtual ~ServerGameInfo();
 
   const std::string &GetName() const;
+  const std::string &GetDataDir() const;
   const std::string &GetSaveDir() const;
   const std::string &GetXMLLoc() const;
   const std::string &GetXMLFile() const;
@@ -23,6 +24,7 @@ public:
 
 private:
   std::string m_Name;
+  std::string m_DataDir;
   std::string m_SaveDir;
   std::string m_XMLLoc;
   std::string m_XMLFile;

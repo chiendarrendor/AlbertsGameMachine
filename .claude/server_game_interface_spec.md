@@ -1,6 +1,6 @@
 ---
 name: server-game-interface-spec
-description: Concrete wire-protocol spec for out-of-process game instances (stdio + newline-delimited JSON-RPC-ish) — transport, message catalog, VariCast dropped via player/spectator split, staged migration toward one per-viewer full-state JSON blob replacing individual Events, plus the Python-based mock-game-process test infrastructure this needs
+description: Concrete wire-protocol spec for out-of-process game instances (stdio + newline-delimited JSON-RPC-ish) — transport, message catalog, VariCast dropped via player/spectator split; three-phase rollout (process decoupling, then client-facing JSON re-encoding, then per-viewer full-state JSON blob), plus the Python-based mock-game-process test infrastructure this needs
 metadata:
   type: project
 ---
@@ -202,13 +202,16 @@ already established as load-bearing.
   literally everyone, players and spectators alike (replaces `BroadCast`), or the reserved sentinel
   **`SPECTATOR`** — every current room occupant who isn't a recognized player, delivered via the
   same stateless per-batch inference rule described under "Full per-viewer state" below (no roster,
-  no persistent tracking). `SPECTATOR` is a Stage-2-only value (see "Full per-viewer state"'s
-  "Staging" note) — Stage 1 only ever uses a specific name or `"*"`. **`SPECTATOR` must be a login
-  name no real player can ever hold** — see `TODO.md` for the `LoginManager`-side guard this
-  requires; the reserved string alone isn't a real guarantee, just a reduction in accidental-collision
-  risk. **`message`'s payload is JSON, not today's `UnComma`-escaped comma line** — see "Full
-  per-viewer state" below; this is a real, acknowledged (if "modest") change to the Java client, not
-  a zero-translation carryover of the legacy wire format as an earlier draft of this spec assumed.
+  no persistent tracking). `SPECTATOR` is a **phase-3-only** value (see "Full per-viewer state"'s
+  "Staging" note, revised 2026-09-24 to three phases) — phases 1-2 only ever use a specific name or
+  `"*"`. **`SPECTATOR` must be a login name no real player can ever hold** — see `TODO.md` for the
+  `LoginManager`-side guard this requires; the reserved string alone isn't a real guarantee, just a
+  reduction in accidental-collision risk. **`message`'s payload format tracks which phase is live,
+  not this spec's own framing** — in phase 1 it's still today's `UnComma`-escaped comma line
+  (the game process builds it exactly like today's `MakeXXXMessage` functions do, and the server
+  relays it to the still-unmodified Java client verbatim); from phase 2 onward, once the
+  client↔server wire itself has moved to JSON (see "Full per-viewer state"'s "Staging" note), it
+  becomes a JSON value instead, still just relayed verbatim by the server either way.
 
 **No handshake message at all, corrected 2026-09-23 — a `describe {name, xmlLoc, xmlFile}`
 notification was here in an earlier draft, dropped entirely.** It existed to let the game process
@@ -229,7 +232,7 @@ takes their first action (typically *how* they join a game, e.g. a `JOINGAME`-st
 gets `sendFullState`'d, the game has everything it needs to `event {target: <name>}` them from then
 on. Before that point, the only traffic that can reach them is a broadcast-shaped `event` (fanned
 out by the server to every live connection in the room, without the game needing to know who they
-are), the `SPECTATOR`-targeted `event` (Stage 2 only — same idea, still no names involved, see
+are), the `SPECTATOR`-targeted `event` (phase 3 only — same idea, still no names involved, see
 "Full per-viewer state" below), or a `sendFullState` response (self-contained per name, no prior
 introduction needed either).
 
@@ -296,16 +299,17 @@ at all — it's game/engine-side work this interface design assumes will exist, 
 less wire surface than either superseded pass above, not more.
 
 **Revisited (Albert, 2026-09-22): the `BROADCAST`-for-`open`-transitions approach two paragraphs up
-is cosmetically inaccurate, not dangerous — and that's an acceptable, deliberately-scoped-to-Stage-1
-tradeoff, not a bug to design around yet.** Broadcasting an `open` transition's availability to
-*everyone*, players included, does mean an already-joined player's client can be told `JOIN` is
-still "legal" for them, which isn't true — `JOIN`'s own legality logic denies it to existing players.
-But that's only a display inaccuracy, not a correctness hazard, **as long as the `JOIN`-style
-transition itself defensively handles being attempted by an existing player** — either rejecting it
-outright (an ordinary `ERROR`) or treating it as a harmless no-op/idempotent re-confirmation. Either
-approach means no real state can ever be corrupted by this, so Stage 1 keeps plain `BROADCAST` for
-`open`-transition `LEGALACTION`s (no `SPECTATOR`-targeted routing needed yet — see "Full per-viewer
-state"'s "Staging" note). The per-viewer full-state design below fully fixes the *cosmetic* part too
+is cosmetically inaccurate, not dangerous — and that's an acceptable, deliberately-scoped-to-phase-1
+(and phase 2) tradeoff, not a bug to design around yet.** Broadcasting an `open` transition's
+availability to *everyone*, players included, does mean an already-joined player's client can be told
+`JOIN` is still "legal" for them, which isn't true — `JOIN`'s own legality logic denies it to existing
+players. But that's only a display inaccuracy, not a correctness hazard, **as long as the
+`JOIN`-style transition itself defensively handles being attempted by an existing player** — either
+rejecting it outright (an ordinary `ERROR`) or treating it as a harmless no-op/idempotent
+re-confirmation. Either approach means no real state can ever be corrupted by this, so phases 1-2
+keep plain `BROADCAST` for `open`-transition `LEGALACTION`s (no `SPECTATOR`-targeted routing needed
+yet — see "Full per-viewer state"'s "Staging" note). The per-viewer full-state design below (phase 3)
+fully fixes the *cosmetic* part too
 (each player's own individually-computed state correctly omits `JOIN` once they're a known player,
 so their client stops being told it's available at all) — at which point the defensive guard on
 `JOIN` becomes dead code, safe to leave in place rather than needing removal.
@@ -365,8 +369,8 @@ their own individually-computed state; `SPECTATOR` reaches only room occupants t
 (yet) recognize as players. This is what fully (not just cosmetically) fixes the `JOIN`-visibility
 issue raised above: since each player's own state is computed separately, it correctly omits `JOIN`
 once they're a player, while `SPECTATOR` correctly still shows it as available to whoever hasn't
-joined yet — but this is a Stage 2 property specifically (see "Staging" below), not something Stage
-1 gets for free.
+joined yet — but this is a phase 3 property specifically (see "Staging" below), not something
+phases 1-2 get for free.
 
 **Naming (Albert, 2026-09-22): the sentinel needs a name no real login could ever collide with, not
 the plain word "default"** — `LoginManager`'s flat-file store auto-creates an account for *any* name
@@ -391,20 +395,75 @@ nothing left over from Pass 2 above needs reviving. (`sendFullState`'s response 
 to this routing rule — see its catalog entry above: it's always addressed to the specific asker by
 name, never to `SPECTATOR`, even when its content was computed via the `SPECTATOR` view.)
 
-**Staging (Albert, 2026-09-22): this is a second, later phase — the process-decoupling work in the
-rest of this spec ships first, still carrying today's granular per-field Events, not yet this
-unified per-viewer blob, and not yet the `SPECTATOR`-targeted routing above either.** Stage 1 keeps
-plain `BROADCAST` for `open`-transition `LEGALACTION`s (see the "Revisited" note above — acceptable
-given a defensive guard on the transition itself, not a gap Stage 1 needs to close). What *does*
-land alongside process-decoupling: replacing the hand-crafted comma-escaped wire encoding
-(`UnCommaStringify`/`UnComma`/`ReComma`, `MakeXXXMessage`) with JSON for each individual event's
-payload — still today's many typed messages for now, just JSON-encoded instead of custom-escaped
-strings. Albert is explicit this requires "at least a modest change" to the Java client (parsing
-JSON instead of comma lines) — a real, near-term, in-scope piece of client work, distinct from and
-much smaller than the separately-tracked full front-end rewrite. The move to one unified per-viewer
-JSON state blob (replacing the many typed events entirely, and introducing `SPECTATOR`-targeted
-routing) is the *next* phase after that, built on top of the now-JSON wire rather than delivered in
-the same step.
+**Idea for phase 3, recorded but not yet designed in (Albert, 2026-09-25): retire `GUIIAM`/`IAM` by
+having the server silently stamp `"Name": "<name>"` onto every packet it delivers to a connection.**
+Today there are two separate "remind the GUI who it is" mechanisms, for two separate reasons: the
+room/lobby layer sends `GUIIAM,<name>` once at login because it has no structural link to
+game-handling code at all; a game itself sends `IAM,<index>` once you join because it tracks players
+by small integer index, not name. Both exist only because nothing downstream of login carries
+identity forward automatically. Once messages are structured JSON (phase 2+) rather than opaque
+comma lines, the server can fix this generically instead of per-event-type: at the point it writes
+to one specific socket — which happens identically whether the payload is a normal state update, an
+`ERROR`, or one copy of a `SPECTATOR` fan-out to several sockets — it already knows which login name
+owns that connection, so it can add a `"Name"` field unconditionally, with zero game-side involvement
+and no per-message-type special-casing. **Bonus possibility, not decided:** if phase 3's per-viewer
+state ends up keyed by player name rather than by a game's internal integer index (natural in JSON,
+awkward in flat comma-lines — probably why games use indices today), knowing your own `"Name"` might
+be enough to find yourself in that structure directly, retiring the game-specific numeric `IAM` too,
+not just `GUIIAM`. Left for whoever designs phase 3's exact JSON shape to decide.
+
+**Staging — revised to three explicit phases (Albert, 2026-09-24), each independently shippable and
+validatable, one variable changed at a time:**
+
+1. **Process decoupling** (the bulk of this spec) — games become separate processes, talking
+   stdio + JSON-RPC-ish to the server. The *client*↔server wire is deliberately untouched here,
+   still today's hand-rolled comma-escaped lines, exactly as today's Java client already speaks. This
+   is what let this session's test infrastructure (`server/tests/`) be built and validated against
+   `mock_game.py` without needing any client-side change at all. `open`-transition `LEGALACTION`s
+   stay plain `BROADCAST` at this phase (see the "Revisited" note above — a defensive guard on the
+   transition itself is enough, not a real gap). **Split into two sub-parts (Albert, 2026-09-26):**
+   - **Phase 1A — server side. Done and committed as of 2026-09-26**: `common/JsonLineProtocol`,
+     `server/GameProcessProxy`, spawn-based `GameBox`/`GameCloset`, the `RoomManager`/build-hygiene/
+     port-configurability fixes this work surfaced, and the full `server/tests/` pytest suite
+     validating all of it against `mock_game.py` and the real compiled `gameserver` binary.
+   - **Phase 1B — game side, not yet started.** `GameServerMain.hpp`: the glue that lets an
+     existing game's `DLLGame`-based code (Outpost, MoV), currently compiled into a `.so` and
+     `dlopen`'d, instead become a standalone executable speaking the same protocol Phase 1A's
+     server side already expects — the generic wrapper + driver loop described in
+     [[server-game-decoupling-investigation]]'s "interim step" section. Nothing built so far has
+     been validated against a *real* game process yet, only `mock_game.py`.
+2. **JSON re-encoding of the client↔server wire — its own standalone phase, not bundled into either
+   neighbor.** Same message *types* and semantics as today, just JSON payloads instead of
+   `UnCommaStringify`/`UnComma`/`ReComma`/`MakeXXXMessage` hand-rolled escaping. Deliberately *not*
+   folded into phase 1 (which was scoped to leave the client boundary alone entirely, and bundling
+   would double what needs validating at once) nor phase 3 (which bundles a wire-format change with
+   a much bigger message-*shape* change; re-encoding today's existing messages is a fully separable,
+   smaller, independently-valuable step). Concretely motivated, not just theoretical: investigating
+   a real discovered bug (`Room::AddPlayerToRoom`'s `GAMES,` list gets `UnComma`'d once per game name
+   *and* once again for the whole joined string, escaping the `,` separators themselves into `%C`,
+   e.g. observed as `GAMES,MerchantOfVenus%COutpost` in a live smoke test) surfaced exactly the kind
+   of latent fragility a hand-rolled escaping scheme invites — safe today only because no game name
+   ever contains a comma or `%`, not provably safe in general. Requires a real Java-client change
+   (parsing JSON instead of comma lines) — "modest," per Albert, and distinct from the much larger,
+   separately-tracked full front-end rewrite. Also requires updating `server/tests/client.py` (still
+   speaking legacy lines as of this writing) to the new encoding.
+3. **Full per-viewer state** (see above) — the many-typed-events-to-one-blob redesign, plus
+   `SPECTATOR`-targeted routing, built on top of phase 2's now-JSON wire rather than needing to
+   introduce JSON itself at the same time.
+
+**Confirmed 2026-09-26: phase 2 wraps today's messages, it does not genuinely restructure them —
+deliberately, to avoid replumbing the same code twice.** Phase 2 could, in principle, re-encode each
+action/event as real per-field JSON (`{"method":"MOVE","params":{"piece":3,"dest":7}}`) rather than
+an opaque comma-string carried as one JSON field's value (`{"action":"MOVE,3,7"}`). Albert's call: if
+phase 2 were the final destination, genuine restructuring would be worth it — but phase 3 is coming
+regardless, and it requires touching essentially the same client/server code paths again, more
+deeply, to actually split state into per-field JSON. Doing the "real" restructuring once, in phase 3,
+rather than a shallow pass in phase 2 and a deeper one in phase 3, avoids replumbing the same places
+twice. Concrete consequence: `ActionParser` (see `gamecommon/ActionParser.hpp`) needs no changes at
+all across phase 2 — its `GetRawLine()` accessor (added for `GameProcessProxy`'s forwarding needs,
+phase 1) stays exactly as useful once actions arrive JSON-wrapped instead of as bare socket lines,
+since `ActionParser` never knew or cared where its input string came from in the first place; only
+whoever constructs it (parsing the outer JSON envelope first, under phase 2) changes.
 
 **Scoping note:** this section (and the rest of this spec) governs the *game↔server* wire. The
 *server↔client* leg either carries translated legacy lines (if the Java client is left alone for
@@ -518,7 +577,7 @@ what it actually needs to prove works:
 - Basic single-player round trip: login, `NEWROOM`/`CHANGEROOM`, `NEWGAME` (spawns the mock),
   one `handleAction`, verify event delivery and the completion response.
 - Player + spectator routing: a scripted transition that emits distinct per-player `event`s plus a
-  `SPECTATOR` one; verify each connected user gets exactly the right one (Stage 2 only, once built).
+  `SPECTATOR` one; verify each connected user gets exactly the right one (phase 3 only, once built).
 - `LOADGAME` both ways: no live instance (spawn-then-`load`) vs. a live instance (`load` directly,
   replacing in-progress state) — see "`NEWGAME` vs. `LOADGAME` stay distinct" above.
 - Crash-and-recover: mock scripted to "crash" mid-round-trip; verify the server detects it
@@ -531,3 +590,8 @@ what it actually needs to prove works:
 - Disconnect doesn't reach the game process: a player disconnects mid-game; verify the mock never
   receives any notification of it (per the "Confirmed invariant" above) and other players are
   unaffected.
+- (Phase 2, once built) JSON re-encoding round-trips every existing message type correctly,
+  including ones a hand-rolled comma-escaping bug could hide: a list-valued field (like today's
+  `GAMES,` list) with more than one entry, and a field value containing a literal comma or `%` —
+  exactly the case the discovered `Room::AddPlayerToRoom` double-`UnComma` bug never got exercised
+  by, since no game name today contains either character.

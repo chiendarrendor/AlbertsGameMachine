@@ -3,7 +3,8 @@
 #include <stdexcept>
 #include <iostream>
 
-ActionParser::ActionParser(const std::string &i_InString)
+ActionParser::ActionParser(const std::string &i_InString) :
+	m_RawLine(i_InString)
 {
 	Tokenize(m_Arguments,i_InString,",",true);
 
@@ -19,9 +20,14 @@ ActionParser::ActionParser(const std::string &i_InString)
 	m_Arguments.erase(m_Arguments.begin());
 }
 
-const std::string &ActionParser::GetActionName() const 
+const std::string &ActionParser::GetActionName() const
 {
 	return m_ActionName;
+}
+
+const std::string &ActionParser::GetRawLine() const
+{
+	return m_RawLine;
 }
 
 int ActionParser::GetNumArguments() const

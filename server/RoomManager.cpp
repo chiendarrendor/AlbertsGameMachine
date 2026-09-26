@@ -322,13 +322,11 @@ void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_a
 
     // disseminate new room state ROOMSTATE
     std::set<std::string>::iterator setit;
-    int ctr;
     for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
     {
-      SENDLINE(i_Name, "GUIROOM," << UnComma(pRoom->GetName())
+      SENDLINE(*setit, "GUIROOM," << UnComma(pRoom->GetName())
                << "," << UnComma(pRoom->GetGameName())
                << "," << UnComma(pRoom->GetGameStatus()));
-      ctr++;
     }
   }
 }

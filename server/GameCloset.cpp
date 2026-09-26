@@ -30,12 +30,12 @@ GameCloset::GameCloset(const std::string &i_rDataFile,const std::string &i_rData
     std::string dir = i_rDataDir + DIR_SEP + name;
     std::string XMLloc = tokens[1];
     std::string XMLfile = tokens[2];
-    std::string DLLfile = tokens[3];
+    std::string launchCommand = tokens[3];
 
-    GameBox *pNewGameBox = new GameBox(name,dir,XMLloc,XMLfile,DLLfile); 
+    GameBox *pNewGameBox = new GameBox(name,dir,XMLloc,XMLfile,launchCommand);
     if (!pNewGameBox->IsValid())
     {
-      std::cout << "Couldn't load External Library " << DLLfile << " for GameBox " << name << ": " << pNewGameBox->GetErrorString() << std::endl;
+      std::cout << "Couldn't set up game process " << launchCommand << " for GameBox " << name << ": " << pNewGameBox->GetErrorString() << std::endl;
       delete pNewGameBox;
       continue;
     }

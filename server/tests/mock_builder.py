@@ -24,8 +24,11 @@ class Rule:
         self._emits = []
         self._then = None
 
-    def emit(self, target, message):
-        self._emits.append({"target": target, "message": message})
+    def emit(self, message, target=None):
+        event = {"message": message}
+        if target is not None:
+            event["target"] = target
+        self._emits.append(event)
         return self
 
     def respond_ok(self, result=None):

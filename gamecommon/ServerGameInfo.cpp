@@ -8,6 +8,7 @@ ServerGameInfo::ServerGameInfo(const std::string &i_Name,
                                const std::string &i_XMLLoc,
                                const std::string &i_XMLFile) :
   m_Name(i_Name),
+  m_DataDir(i_DataDir),
   m_XMLLoc(i_XMLLoc),
   m_XMLFile(i_XMLFile),
   m_IsValid(false)
@@ -43,6 +44,11 @@ ServerGameInfo::~ServerGameInfo()
 const std::string &ServerGameInfo::GetName() const
 {
   return m_Name;
+}
+
+const std::string &ServerGameInfo::GetDataDir() const
+{
+  return m_DataDir;
 }
 
 const std::string &ServerGameInfo::GetSaveDir() const

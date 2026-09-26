@@ -11,8 +11,9 @@
 
 #include <fstream>
 #include <stdio.h>
+#include <boost/lexical_cast.hpp>
 
-
+const int DEFAULT_PORT = 4356;
 
 class ServerLogger : public Logger
 {
@@ -31,10 +32,24 @@ private:
 
 int main(int argc,char **argv)
 {
-	if (argc != 2)
+	if (argc != 2 && argc != 3)
 	{
-		std::cout << "Bad Command Line" << std::endl;
+		std::cout << "Usage: gameserver <dataDir> [port]" << std::endl;
 		exit(1);
+	}
+
+	int port = DEFAULT_PORT;
+	if (argc == 3)
+	{
+		try
+		{
+			port = boost::lexical_cast<int>(argv[2]);
+		}
+		catch (boost::bad_lexical_cast &)
+		{
+			std::cout << "Bad port argument: " << argv[2] << std::endl;
+			exit(1);
+		}
 	}
 
 	std::string logname = argv[1];
@@ -88,7 +103,7 @@ int main(int argc,char **argv)
 	RoomManager rmanager(loc,fname,gamecloset);
 
 	GameServerConnectionHandlerFactory gschf(lmgr,rmanager);
-	ServerSocket ssocket(4356,gschf);
+	ServerSocket ssocket(port,gschf);
 
 	try
 	{

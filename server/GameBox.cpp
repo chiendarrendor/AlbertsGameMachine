@@ -1,47 +1,21 @@
 #include "GameBox.hpp"
+#include "GameProcessProxy.hpp"
 #include <iostream>
-#include "SystemSpecificDynamicLoading.hpp"
-
-typedef bool (*InitializePointer)(std::string);
-
+#include <unistd.h>
 
 GameBox::GameBox(const std::string &i_Name,
                  const std::string &i_DataDir,
                  const std::string &i_XMLLoc,
                  const std::string &i_XMLFile,
-                 const std::string &i_DLLFile) :
+                 const std::string &i_LaunchCommand) :
   ServerGameInfo(i_Name,i_DataDir,i_XMLLoc,i_XMLFile),
-  m_DLLFile(i_DLLFile),
-  m_IsValid(false),
-  m_ploader(NULL),
-  m_pCreateGameFunc(NULL)
+  m_LaunchCommand(i_LaunchCommand),
+  m_IsValid(false)
 {
-  m_ploader = new GenericLibraryLoader(i_DLLFile);
-
-  if (!m_ploader->IsOk())
+  if (access(i_LaunchCommand.c_str(), X_OK) != 0)
   {
-    std::cout << "Invalid Library " << i_Name << std::endl;
-    return;
-  }
-
-  InitializePointer pInitFunc = (InitializePointer)m_ploader->GetFunctionAddress("Initialize");
-  if (!pInitFunc)
-  {
-    std::cout << "No Initialize Function for " << i_Name << std::endl;
-    return;
-  }
-    
-  if (!pInitFunc(i_DataDir))
-  {
-    std::cout << "Initialize Function Failed for " << i_Name << std::endl;
-    return;
-  }
-
-  m_pCreateGameFunc = (CreateGamePointer)m_ploader->GetFunctionAddress("CreateGame");
-  
-  if (!m_pCreateGameFunc)
-  {
-    std::cout << "No Create Game Function for " << i_Name << std::endl;
+    m_ErrorString = "Launch command not found or not executable: " + i_LaunchCommand;
+    std::cout << "Invalid Launch Command " << i_Name << std::endl;
     return;
   }
 
@@ -54,14 +28,8 @@ GameBox::~GameBox()
 
 Game *GameBox::CreateGame(OutputPort &i_rConnections) const
 {
-  return m_pCreateGameFunc(*this,i_rConnections);
+  return new GameProcessProxy(*this, i_rConnections, m_LaunchCommand, GetDataDir());
 }
-
-const std::string &GameBox::GetDLLFile() const
-{
-  return m_DLLFile;
-}
-
 
 bool GameBox::IsValid() const
 {
@@ -70,7 +38,5 @@ bool GameBox::IsValid() const
 
 std::string GameBox::GetErrorString() const
 {
-  if (m_ploader == NULL) return ("no loader");
-  return m_ploader->GetErrorString();
+  return m_ErrorString;
 }
-

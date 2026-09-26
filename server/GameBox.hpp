@@ -6,10 +6,12 @@
 
 class Game;
 class OutputPort;
-class GenericLibraryLoader;
 
-typedef Game *(*CreateGamePointer)(const ServerGameInfo &,OutputPort &);
-
+// Per-game-type launch spec + the server's residual static config for that
+// type (Name/XMLLoc/XMLFile, inherited from ServerGameInfo) -- see
+// .claude/server_game_interface_spec.md's "Server's residual per-game-type
+// knowledge" section. CreateGame() spawns a GameProcessProxy instead of
+// dlopen-ing a .so; this class no longer loads anything itself.
 class GameBox : public ServerGameInfo
 {
 public:
@@ -17,9 +19,8 @@ public:
           const std::string &i_DataDir,
           const std::string &i_XMLLoc,
           const std::string &i_XMLFile,
-          const std::string &i_DLLFile);
+          const std::string &i_LaunchCommand);
   virtual ~GameBox();
-  const std::string &GetDLLFile() const;
 
   bool IsValid() const;
   std::string GetErrorString() const;
@@ -27,10 +28,9 @@ public:
   Game *CreateGame(OutputPort &i_rConnections) const;
 
 private:
-  std::string m_DLLFile;
+  std::string m_LaunchCommand;
   bool m_IsValid;
-  GenericLibraryLoader *m_ploader;
-  CreateGamePointer m_pCreateGameFunc;
+  std::string m_ErrorString;
 };
 
 #endif

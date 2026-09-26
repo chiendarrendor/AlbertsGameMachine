@@ -1,5 +1,6 @@
 *.class
 *.o
+*.d
 *.iml
 *.exe
 *.jar
@@ -9,6 +10,8 @@ data/
 outposttest
 stochastictest
 gameserver
+common/commontest
+server/servertest
 */tca/clientstage/
 */tca/*DLL.cpp
 */tca/*GameInfo.hpp
