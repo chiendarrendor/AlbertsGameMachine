@@ -18,12 +18,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPurchaseDualTransitions )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -75,12 +70,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -419,12 +409,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -670,12 +655,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -850,12 +830,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASS )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -964,12 +939,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("DONE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);

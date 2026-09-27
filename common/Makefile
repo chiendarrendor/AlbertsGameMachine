@@ -1,7 +1,7 @@
 
 BOOSTINC?=/usr/include
 
-OBJS=FileUtilities.o StringUtilities.o SystemSpecificDynamicLoading.o JsonLineProtocol.o
+OBJS=FileUtilities.o StringUtilities.o JsonLineProtocol.o
 
 CFILES=$(OBJS:%.o=%.cpp)
 INCS=-DBOOST_TEST_DYN_LINK -I${BOOSTINC}

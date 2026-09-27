@@ -12,7 +12,6 @@ BOOSTFSLIB=${BOOSTLIBDIR}/libboost_filesystem-mgw45-mt-1_92_0.a
 BOOSTSYSLIB=${BOOSTLIBDIR}/libboost_system-mgw45-mt-1_92_0.a
 EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB} ${BOOSTREGEXLIB} ${BOOSTFSLIB} ${BOOSTSYSLIB}
 BOOSTDEPS=${EXTLIBS}
-SHLIBEXT=dll
 endif
 
 ifeq (${OSTYPE},linux)
@@ -20,8 +19,6 @@ BOOSTINC=/usr/include
 BOOSTLIBDIR=/usr/lib64
 EXTLIBS=-L${BOOSTLIBDIR} -lboost_serialization -lboost_unit_test_framework -lboost_regex -lboost_filesystem -lboost_system
 BOOSTDEPS=
-PICFLAG=-fPIC
-SHLIBEXT=so
 endif
 
 #DEFINES=-DSTATEDEBUG
@@ -53,16 +50,16 @@ VJAVA=VoronoiTest.java VoronoiStep.java
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/MerchantOfVenus/%)
 VFILES=$(VJAVA:%=${CLIENTJAVADIR}/MerchantOfVenus/%)
 
-ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} TestTokens.o TestStartMove.o
+ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} TestTokens.o TestStartMove.o MerchantOfVenusServerMain.o
 
 INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I.
 LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
-GCC=g++ -g -Wall -Werror ${PICFLAG} ${INCS} ${DEFINES} -MMD -MP
+GCC=g++ -g -Wall -Werror ${INCS} ${DEFINES} -MMD -MP
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
 
-MerchantOfVenus.${SHLIBEXT}: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTDEPS}
-	${GCCL} -shared -o $@ ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
+MerchantOfVenus: MerchantOfVenusServerMain.o ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTDEPS}
+	${GCCL} -o $@ MerchantOfVenusServerMain.o ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${EXTLIBS}
 
 tests: MoVunittests.exe
 
@@ -88,8 +85,8 @@ MerchantOfVenusDLL.cpp MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo
 
 install: serverinstall clientinstall
 
-serverinstall: MerchantOfVenus.${SHLIBEXT} ../MerchantOfVenusMap.xml
-	cp -f MerchantOfVenus.${SHLIBEXT} ${SERVERINSTALL}
+serverinstall: MerchantOfVenus ../MerchantOfVenusMap.xml
+	cp -f MerchantOfVenus ${SERVERINSTALL}
 	cp -f ../MerchantOfVenusMap.xml ${SERVERINSTALL}
 
 clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
@@ -120,8 +117,9 @@ voronoi:
 	${GCC} -c $<
 
 clean:
-	@- rm -f ${OBJS} ${TESTOBJS} MerchantOfVenus.dll MerchantOfVenus.so MerchantOfVenusDLL.cpp ${MAINTESTOBJ}
+	@- rm -f ${OBJS} ${TESTOBJS} MerchantOfVenusDLL.cpp ${MAINTESTOBJ}
 	@- rm -f outposttest.exe MerchantOfVenusClient.xml MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp
+	@- rm -f MerchantOfVenus
 	@- rm -f ${ALLOBJS:.o=.d}
 
 -include $(ALLOBJS:.o=.d)

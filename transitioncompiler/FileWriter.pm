@@ -38,7 +38,6 @@ sub WriteFiles
 {
     my ($tcom) = @_;
     my $name = $tcom->{NAME};
-    my $autolimit = $tcom->{AUTOLIMIT};
 
     # we will open two files. the GameInfo .hpp, and
     # the DLL.cpp
@@ -52,12 +51,16 @@ sub WriteFiles
     print GIHPP "#ifndef $hname\n";
     print GIHPP "#define $hname\n";
 
+    # Must come before GameInfo.hpp: this file's own UnCommaStringify()
+    # template method calls the non-template UnComma(), and GCC's two-phase
+    # template lookup needs that declaration visible when the template is
+    # first *parsed*, not just when it's instantiated -- whether that's true
+    # depends on this file's own include order, not the includer's.
+    print GIHPP "#include \"StringUtilities.hpp\"\n";
     print GIHPP "#include \"GameInfo.hpp\"\n";
     print GIHPP "#include \"${name}Set.hpp\"\n";
     print GIHPP "#include \"${name}State.hpp\"\n";
     print GIHPP "#include \"StateMachine.hpp\"\n";
-    print GIHPP "\n";
-    print GIHPP "class NameBoolean;\n";
     print GIHPP "\n";
     
 
@@ -66,7 +69,6 @@ sub WriteFiles
     print DLLCPP "#include <stdexcept>\n";
     print DLLCPP "#include <boost/lexical_cast.hpp>\n";
     print DLLCPP "#include \"StringUtilities.hpp\"\n";
-    print DLLCPP "#include \"GameBoxDLL.hpp\"\n";
     print DLLCPP "#include \"${name}GameInfo.hpp\"\n";
     print DLLCPP "#include \"DLLGame.hpp\"\n";
     print DLLCPP "\n";
@@ -336,26 +338,6 @@ sub WriteFiles
     print GIHPP "\n#endif\n\n";
 
     print DLLCPP "\n";
-    print DLLCPP "${name}Set *pGameSet;\n";
-    print DLLCPP "${name}StateMachine *pStateMachine;\n";
-    print DLLCPP "\n";
-    print DLLCPP "bool Initialize(const std::string &i_DataDir)\n";
-    print DLLCPP "{\n";
-    print DLLCPP "  pStateMachine = new ${name}StateMachine;\n";
-    print DLLCPP "  pGameSet = new ${name}Set(i_DataDir);\n";
-    print DLLCPP "  if (!pGameSet || !pGameSet->IsValid())\n";
-    print DLLCPP "  {\n";
-    print DLLCPP "    return false;\n";
-    print DLLCPP "  }\n";
-    print DLLCPP "  return true;\n";
-    print DLLCPP "}\n";
-    print DLLCPP "\n";
-    print DLLCPP "Game *CreateGame(const ServerGameInfo &i_rServerGameInfo,OutputPort &i_rOutputPort)\n";
-    print DLLCPP "{\n";
-    print DLLCPP "  ${name}Game *pNewGame = new ${name}Game(i_rServerGameInfo,i_rOutputPort,\n";
-    print DLLCPP "                                   *pGameSet,*pStateMachine,$autolimit);\n";
-    print DLLCPP "  return pNewGame;\n";
-    print DLLCPP "}\n";
 
     close DLLCPP;
 }

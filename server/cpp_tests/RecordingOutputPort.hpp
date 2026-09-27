@@ -19,14 +19,9 @@ public:
   {
     m_BroadCasts.push_back(i_Message);
   }
-  virtual void VariCast(const NameBoolean &, const std::string &) const
-  {
-    m_VariCastCalled = true;
-  }
 
   mutable std::vector<std::pair<std::string, std::string> > m_UniCasts;
   mutable std::vector<std::string> m_BroadCasts;
-  mutable bool m_VariCastCalled = false;
 };
 
 #endif

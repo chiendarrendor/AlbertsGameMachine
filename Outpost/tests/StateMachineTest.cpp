@@ -625,12 +625,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
@@ -716,12 +711,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Turn1 )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
@@ -808,12 +798,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Refineries )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
@@ -969,12 +954,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"PromptMegaResources","REQUESTMEGA","MegaResources",3);
@@ -1092,12 +1072,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD1 )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   const TransitionType *pSD = GetTransition(osm,"StartDiscard","STARTDISCARD","DoDiscard",1);
@@ -1169,12 +1144,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD2 )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1318,12 +1288,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1421,12 +1386,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1535,12 +1495,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTMANNING )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1606,12 +1561,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONEMANNING )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1736,12 +1686,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDMANNING )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -1821,12 +1766,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   ActionParser ap("");
 
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
@@ -2060,12 +2000,7 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  std::vector<std::string> vcs;
-  vcs.push_back("Player1");
-  vcs.push_back("Player2");
-  vcs.push_back("Player3");
-
-  TestOutputPort top(vcs);
+  TestOutputPort top;
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
 

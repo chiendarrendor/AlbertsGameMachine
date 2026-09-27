@@ -20,7 +20,6 @@ sub GetPublicHeaders
     my $ename = $this->{NAME};
 
     $result .= "  void Unicast${ename}(const std::string &i_PlayerName".$chdrs.") const;\n";
-    $result .= "  void Varicast${ename}(const NameBoolean &i_Variator".$chdrs.") const;\n";
     $result .= "  void Broadcast${ename}(".$hdrs.") const;\n";
     $result .= "\n";
 
@@ -44,11 +43,6 @@ sub GetPublicCodeBody
 	$result .= "  ++m_errorcount;\n";
     }
     $result .= "  m_OutputPort.UniCast(i_PlayerName,Make${ename}Message(${args}));\n";
-    $result .= "}\n";
-	
-    $result .= "void ${cname}Varicast${ename}(const NameBoolean &i_Variator".$chdrs.") const\n";
-    $result .= "{\n";
-    $result .= "  m_OutputPort.VariCast(i_Variator,Make${ename}Message(${args}));\n";
     $result .= "}\n";
 
     $result .= "void ${cname}Broadcast${ename}(".$hdrs.") const\n";

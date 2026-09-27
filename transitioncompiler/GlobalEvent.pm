@@ -17,7 +17,6 @@ sub GetPublicHeaders
     my $ename = $this->{NAME};
 
     $result .= "  void Unicast${ename}(const std::string &i_PlayerName) const;\n";
-    $result .= "  void Varicast${ename}(const NameBoolean &i_Variator) const;\n";
     $result .= "  void Broadcast${ename}() const;\n";
 
     my $namesuffix = "";
@@ -36,7 +35,6 @@ sub GetPublicHeaders
 	$arglist .= "const " . $iter->{TYPE} . "& " . $iter->{NAME};
 
 	$result .= "  void UnicastUpdate${ename}${namesuffix}(const std::string &i_PlayerName,\n        ${arglist}) const;\n";
-	$result .= "  void VaricastUpdate${ename}${namesuffix}(const NameBoolean &i_Variator,\n        ${arglist}) const;\n";
 	$result .= "  void BroadcastUpdate${ename}${namesuffix}(\n        ${arglist}) const;\n";
     }
 
@@ -128,19 +126,6 @@ sub GetPublicCodeBody
 	    $result .= "  }\n";
 	}
 
-	$result .= "}\n";
-	$result .= "void ${cname}Varicast${fname}(const NameBoolean &i_Variator${cargs}) const\n";
-	$result .= "{\n";
-	if ($islast)
-	{
-	    $result .= "  m_OutputPort.VariCast(i_Variator,Make${ename}Message($aargs));\n";
-	}	    
-	else
-	{
-	    $result .= "  " . $iterstring . "\n";
-	    $result .= "    VaricastUpdate${ename}" . $namesuffixvec[$i+1] . "(i_Variator${nextcaargs});\n";
-	    $result .= "  }\n";
-	}
 	$result .= "}\n";
 	$result .= "void ${cname}Broadcast${fname}(${args}) const\n";
 	$result .= "{\n";

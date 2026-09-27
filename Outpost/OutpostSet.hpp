@@ -1,6 +1,9 @@
+#ifndef OUTPOSTSETHPP
+#define OUTPOSTSETHPP
+
 #include <string>
 
-// this class contains game information that 
+// this class contains game information that
 // is const.
 
 class OutpostSet
@@ -13,3 +16,5 @@ public:
 
 private:
 };
+
+#endif

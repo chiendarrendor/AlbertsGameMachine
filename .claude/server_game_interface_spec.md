@@ -426,12 +426,99 @@ validatable, one variable changed at a time:**
      `server/GameProcessProxy`, spawn-based `GameBox`/`GameCloset`, the `RoomManager`/build-hygiene/
      port-configurability fixes this work surfaced, and the full `server/tests/` pytest suite
      validating all of it against `mock_game.py` and the real compiled `gameserver` binary.
-   - **Phase 1B — game side, not yet started.** `GameServerMain.hpp`: the glue that lets an
-     existing game's `DLLGame`-based code (Outpost, MoV), currently compiled into a `.so` and
-     `dlopen`'d, instead become a standalone executable speaking the same protocol Phase 1A's
-     server side already expects — the generic wrapper + driver loop described in
-     [[server-game-decoupling-investigation]]'s "interim step" section. Nothing built so far has
-     been validated against a *real* game process yet, only `mock_game.py`.
+   - **Phase 1B — game side, in progress as of 2026-09-27.** `gamecommon/GameServerMain.hpp`: the
+     glue that lets an existing game's `DLLGame`-based code become a standalone executable speaking
+     the same protocol Phase 1A's server side already expects. **Statically linked, not `dlopen`'d
+     (Albert, 2026-09-27):** once every game is its own spawned process (one `launchCommand` per
+     game-type, decided before the process even starts), nothing needs runtime dynamic loading
+     anymore — confirmed by grepping the actual codebase, not just architecturally: `common/
+     SystemSpecificDynamicLoading`/`GenericLibraryLoader` already had zero callers (`server/GameBox.cpp`
+     stopped using it in Phase 1A), and nothing outside `Outpost/tca/Makefile`/`MerchantOfVenus/tca/
+     Makefile`'s own `.so` targets referenced either `.so` anymore. **Fully removed, not just left
+     unused (Albert, 2026-09-27):** both games' `.so`/`LIBSUFFIX`/`SHLIBEXT`/`PICFLAG` Makefile
+     machinery deleted (the executable targets are now just named `Outpost`/`MerchantOfVenus` — bare
+     game names, no suffix — matching the launch-command convention already live in the real, gitignored
+     `data/gameconfig.txt`, which Albert had already updated ahead of this work); `transitioncompiler`'s
+     `FileWriter.pm` no longer generates the `extern "C" Initialize`/`CreateGame` functions or the
+     `GameBoxDLL.hpp` include at all (this *did* require touching `transitioncompiler`'s codegen,
+     unlike the Varicast removal above — a narrow, mechanical deletion of dead output, not the "Phase 4"
+     architectural question); `gamecommon/GameBoxDLL.hpp` deleted entirely (`git rm`); `common/
+     SystemSpecificDynamicLoading.{hpp,cpp}` deleted entirely too (`git rm`, per Albert: "it's not that
+     it's wrong code, it just doesn't belong in this project any more" — not a soft/commented-out
+     deprecation). `AOR/AORDLL.cpp` (the one other `GameBoxDLL.hpp` includer, frozen since this repo's
+     first commit, no `tca/` directory or live regeneration path — confirmed via `git log`) is left
+     broken by this; consistent with Albert's own framing of AOR as an abandoned early prototype, not
+     a design reference, not worth protecting. Regenerated and reverified after this change: both
+     games' `<Game>DLL.cpp`/`<Game>GameInfo.hpp` have zero remaining `Varicast`/`NameBoolean`
+     references (confirmed by grep on the fresh output), MoV's 36-case Boost.Test suite passes, and
+     the full `server/tests/` pytest suite (12 cases, including the real-game e2e tests below) passes
+     against the renamed executables. This means the game side's own long-term fate (the "Phase 4"
+     reframing in `TODO.md`'s XML/`transitioncompiler`-replacement item: C++ templates, or a
+     non-C++ reimplementation of the same Pattern) is still genuinely undecided and untouched — only
+     the dead dlopen-era output was removed, nothing about the codegen's actual approach changed. So Phase 1B
+     doesn't invest in reshaping its codegen. `AOR/AORDLL.cpp` is the one remaining `GameBoxDLL.hpp`
+     includer — an abandoned early prototype (predates Outpost, never updated to the current system's
+     shape), explicitly not a design reference for anything here.
+
+     **The roster-based `VariCast` replacement (see "VariCast is dropped" below) is actually
+     implemented, not just designed:** `DLLGame::HandleAction`'s `LEGALACTION` loop now iterates the
+     server-supplied roster directly, calling each transition's `IsLegal` per candidate name and
+     `UnicastLEGALACTION` on a hit — `TransitionBoolean`/`VaricastLEGALACTION` deleted from
+     `DLLGame.hpp`. Verified end-to-end against the *real*, statically-linked `outpostserver` binary
+     (not `mock_game.py`): a player who has already joined correctly stops seeing `JOIN` as legal,
+     while a roster name that hasn't joined yet correctly sees only `JOIN` — full original fidelity,
+     no heuristic, no cosmetic bug, closing the "never validated against a real game process" gap
+     this section used to flag.
+
+     **Flagged, not resolved differently — a real discrepancy between this spec and 25-year-old code,
+     preserved as-is (Albert confirmed, 2026-09-27):** `DLLGame::HandleAction`'s existing error path
+     (`UnicastERROR`/`BroadcastERROR`) has always been a plain `event`, never the native-RPC-error
+     shape "`ERROR` is a special case" (below) describes. `GameServerMain.hpp` preserves this real
+     behavior rather than reinterpreting it — client-visible behavior is identical either way, since
+     `GameProcessProxy` dispatches any interleaved `event` (error or not) before ever inspecting the
+     final response for an `"error"` field.
+
+     **File placement convention:** a game's `<Game>ServerMain.cpp` lives alongside `<Game>Set.cpp`
+     in the game's own source directory (e.g. `Outpost/OutpostServerMain.cpp`), never in `tca/` —
+     `tca/` holds only each game's `Makefile` and compiled/generated artifacts (Albert, 2026-09-27).
+
+     **A preprocessor pattern worth remembering, found jointly with Albert 2026-09-27 (recorded here
+     since it's genuinely reusable, not just a `GameServerMain.hpp`-specific detail):** a per-game
+     `<Game>ServerMain.cpp` needs to name one thing — the game's name — and have everything else
+     (which header to `#include`, which C++ type names to instantiate templates with) derived from
+     it, not separately spelled out. Two obstacles stood in the way, both resolved:
+     - **Plain object-like macro + `##` token-pasting cannot build a computed `#include` containing a
+       literal `.`** — tested directly: `#define NAME a` then pasting `NAME` with `Set.hpp` fails
+       with `pasting "a" and "." does not give a valid preprocessing token`, because `##` requires
+       both operands to combine into one *valid* token, and an identifier immediately followed by a
+       `.` never can. A GCC-manual-style "adjacent string literals get concatenated for `#include`"
+       idiom (`#include SOMEMACRO ".hpp"`) was also tested and does **not** work on this toolchain —
+       GCC treats the second literal as an "extra token" and errors.
+     - **The fix: make the name macro a zero-argument *function-like* macro** (`#define
+       GAME_SERVER_NAME() Outpost`), not an object-like one. Its explicit `()` is a real token
+       boundary the preprocessor recognizes as ending the macro invocation — so `GAME_SERVER_NAME()`
+       immediately followed, with *no* intervening whitespace, by literal `GameInfo.hpp` tokenizes as
+       the macro call *plus* three separate literal tokens (`GameInfo`, `.`, `hpp`), not one attempted
+       (and invalid) paste. Stringizing that whole sequence via the standard two-level `#`/`##`
+       indirection trick (`STR2(x) #x` / `STR(x) STR2(x)`, and the analogous `PASTE2(a,b) a##b` /
+       `PASTE(a,b) PASTE2(a,b)` for building C++ type names) then works correctly for *both* needs —
+       `#include GAME_SERVER_STR(GAME_SERVER_NAME()GameInfo.hpp)` resolves and includes the real file,
+       and `GAME_SERVER_PASTE(GAME_SERVER_NAME(),Set)` correctly yields the token `OutpostSet` —
+       confirmed via `g++ -E` showing the exact resolved filename/token in each case, then via a real
+       successful build and a real spawned-process smoke test. (An initial suggestion from Gemini,
+       when Albert asked it whether this was possible, proposed a plain object-like macro plus `##`
+       across a `.` — its own example, `xVERSION_MAJOR_##VERSION_MINOR` claiming to yield `"v2_5"`,
+       was checked directly with `g++ -E` and does not do that at all; `##`'s operands are never
+       macro-expanded before pasting, so it actually yields the literal, meaningless text
+       `"VERSION_MAJOR_VERSION_MINOR"` — a hallucinated result, not a real mechanism. Worth remembering
+       specifically as a reminder to verify any AI-suggested preprocessor trick with `-E` before
+       trusting it, not just this one.)
+     - Net effect: a real per-game file is just three lines — `#define GAME_SERVER_NAME() Outpost`,
+       `#define GAME_SERVER_MAIN`, `#include "GameServerMain.hpp"` — see
+       `Outpost/OutpostServerMain.cpp`/`MerchantOfVenus/MerchantOfVenusServerMain.cpp` for the real
+       examples. `GAME_SERVER_AUTORECURSION_DEPTH` defaults to 60 inside `GameServerMain.hpp` (the
+       common case) and is only overridden (`#define` before the `#include`) when a game genuinely
+       needs a deeper bound (MoV needs 100, matching today's hardcoded `CreateGame()` literal).
 2. **JSON re-encoding of the client↔server wire — its own standalone phase, not bundled into either
    neighbor.** Same message *types* and semantics as today, just JSON payloads instead of
    `UnCommaStringify`/`UnComma`/`ReComma`/`MakeXXXMessage` hand-rolled escaping. Deliberately *not*

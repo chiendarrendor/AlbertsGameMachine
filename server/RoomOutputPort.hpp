@@ -14,7 +14,6 @@ public:
 
   virtual void UniCast(const std::string &i_Name,const std::string &i_Message) const;
   virtual void BroadCast(const std::string &i_Message) const;
-  virtual void VariCast(const NameBoolean &i_Variator,const std::string &i_Message) const;
 private:
   std::set<std::string> m_BroadcastTargets;
   GameServerConnectionHandlerFactory &m_rConnections;

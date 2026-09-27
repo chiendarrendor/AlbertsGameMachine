@@ -12,13 +12,14 @@ stochastictest
 gameserver
 common/commontest
 server/servertest
+Outpost/tca/Outpost
+MerchantOfVenus/tca/MerchantOfVenus
+a.out
 */tca/clientstage/
 */tca/*DLL.cpp
 */tca/*GameInfo.hpp
 */tca/*.d
 
-*/tca/*.dll
-*/tca/*.so
 .claude/worktrees
 server/tests/.venv
 __pycache__/

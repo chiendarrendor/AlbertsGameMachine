@@ -62,7 +62,6 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].second, "NEWSTATE,Playing,desc");
   BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_BroadCasts[0], "TURNORDER,alice");
-  BOOST_CHECK(!port.m_VariCastCalled);
 }
 
 BOOST_AUTO_TEST_CASE( HandleActionForwardsRosterOverTheWire )

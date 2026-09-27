@@ -5,11 +5,6 @@ GAMECOMMON=../../gamecommon
 COMMON=../../common
 SENGINE=../../stateengine
 
-LIBSUFFIX=.so
-ifeq (${OSTYPE},msys)
-LIBSUFFIX=.dll
-endif
-
 JAVAC=javac -Xlint:unchecked
 
 CLIENTJAVADIR=../client
@@ -47,11 +42,11 @@ CLIENTJAVA=ItemCard.java CommodityCard.java CommodityHand.java Factories.java \
 
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/Outpost/%)
 
-ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} ${STOCHASTICTESTOBJS}
+ALLOBJS=${OBJS} ${ARTIFACTOBJS} ${TESTOBJS} ${MAINTESTOBJ} ${STOCHASTICTESTOBJS} OutpostServerMain.o
 
 INCS=-I${GAMECOMMON} -I${COMMON} -I${SENGINE} -I${BOOSTINC} -I.. -I. -DBOOST_TEST_DYN_LINK
 LOCLIBS=${GAMECOMMON}/libGameCommon.a ${COMMON}/libCommon.a
-GCC=g++ -g -Wall -Werror ${INCS} -fPIC -MMD -MP
+GCC=g++ -g -Wall -Werror ${INCS} -MMD -MP
 GCCL=g++ -g -Wall -Werror
 CPP=cpp
 BOOSTLIBDIR=/usr/lib64
@@ -59,8 +54,8 @@ BOOSTSERIALLIB=-L${BOOSTLIBDIR} -lboost_serialization
 BOOSTTESTLIB=-L${BOOSTLIBDIR} -lboost_unit_test_framework
 EXTLIBS=${BOOSTSERIALLIB} ${BOOSTTESTLIB}
 
-Outpost${LIBSUFFIX}: ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS}
-	${GCCL} -shared -o $@ ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTSERIALLIB} 
+Outpost: OutpostServerMain.o ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS}
+	${GCCL} -o $@ OutpostServerMain.o ${OBJS} ${ARTIFACTOBJS} ${LOCLIBS} ${BOOSTSERIALLIB}
 
 tests: stochastictest outposttest
 
@@ -81,8 +76,8 @@ OutpostDLL.cpp OutpostEventGenerator.hpp OutpostGameInfo.hpp: ../OutpostServer.x
 
 install: serverinstall clientinstall
 
-serverinstall: Outpost${LIBSUFFIX}
-	cp -f Outpost${LIBSUFFIX} ${SERVERINSTALL}
+serverinstall: Outpost
+	cp -f Outpost ${SERVERINSTALL}
 
 # I'm sure there are cleaner ways to do this, but I'm lazy.
 clientinstall: OutpostClient.xml clientjava
@@ -121,8 +116,9 @@ clientjava:
 	${GCC} -c $<
 
 clean:
-	@- rm -f ${OBJS} ${TESTOBJS} Outpost.dll OutpostDLL.cpp ${MAINTESTOBJ}
+	@- rm -f ${OBJS} ${TESTOBJS} OutpostDLL.cpp ${MAINTESTOBJ}
 	@- rm -f outposttest.exe OutpostClient.xml OutpostEventGenerator.hpp OutpostGameInfo.hpp
+	@- rm -f Outpost
 	@- rm -f ${ALLOBJS:.o=.d}
 
 -include $(ALLOBJS:.o=.d)

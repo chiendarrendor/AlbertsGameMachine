@@ -37,15 +37,3 @@ void RoomOutputPort::BroadCast(const std::string &i_Message) const
   }
 }
 
-void RoomOutputPort::VariCast(const NameBoolean &i_Variator,const std::string &i_Message) const
-{
-  std::set<std::string>::iterator nameit = m_BroadcastTargets.begin();
-
-  for (; nameit != m_BroadcastTargets.end() ; ++nameit)
-  {
-    if (i_Variator(*nameit))
-    {
-      m_rConnections.SendLineToName(*nameit,i_Message);
-    }
-  }
-}
