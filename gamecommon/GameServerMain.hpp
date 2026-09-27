@@ -115,21 +115,32 @@ template <class T_GameSet,class T_StateMachine,class T_DLLGameInfo>
 int RunGameServerMain(int argc,char **argv,int i_AutoRecursionDepth,
                        std::istream &i_rIn,std::ostream &o_rOut)
 {
-  if (argc != 2)
+  if (argc != 5)
   {
-    std::cerr << "usage: " << argv[0] << " <dataDir>" << std::endl;
+    std::cerr << "usage: " << argv[0] << " <dataDir> <name> <xmlLoc> <xmlFile>" << std::endl;
     return 1;
   }
 
   std::string dataDir = argv[1];
-
-  // Name/XMLLoc/XMLFile are pure server-side deployment config, relayed to
-  // clients uninterpreted -- the game process never consults them (see
-  // .claude/server_game_interface_spec.md's "Server's residual per-game-type
-  // knowledge"). Only DataDir (and the SaveDir ServerGameInfo derives from
-  // it) is ever used game-side -- confirmed against gamecommon/Game.cpp's
-  // Load/Save, the only generic callers.
-  ServerGameInfo sgi("",dataDir,"","");
+  // Name is the front-end/GUI identity from gameconfig.txt (what the client
+  // sees via NEWGUI/GAMES) -- distinct from GAME_SERVER_NAME, which is the
+  // back-end source-code identity driving which types this executable was
+  // compiled from. They're allowed to differ by design (Albert, 2026-09-27)
+  // even though they're the same string for Outpost/MoV today, so Name has
+  // to come from the server (argv), never be derived from GAME_SERVER_NAME.
+  // It's load-bearing, not cosmetic: some generated per-game events (e.g.
+  // RESET) embed it directly in their wire payload -- an empty Name here
+  // produced a literal "RESET," with nothing after the comma, found live.
+  std::string name = argv[2];
+  // XMLLoc/XMLFile: nothing game-side is known to consume these (they're
+  // resolved entirely at the Room level, server-side) -- passed through
+  // anyway so this ServerGameInfo is a faithful reconstruction of the one
+  // object server and game used to share before process decoupling split
+  // it into two copies, not a partial one built only from what's been
+  // discovered necessary so far.
+  std::string xmlLoc = argv[3];
+  std::string xmlFile = argv[4];
+  ServerGameInfo sgi(name,dataDir,xmlLoc,xmlFile);
   GameServerMainOutputPort outputPort(o_rOut);
   T_GameSet gameSet(dataDir);
   T_StateMachine stateMachine;

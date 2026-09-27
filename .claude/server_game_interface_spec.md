@@ -243,6 +243,28 @@ its own private read-only data, like MoV's map file, from). Loading a save — w
 mid-session — always goes over the wire as a `load` request rather than a spawn-time parameter; one
 mechanism for both cases instead of two.
 
+**Amended 2026-09-27 (found live, during Albert's first real end-to-end GUI test of Phase 1B):
+argv also carries Name/XMLLoc/XMLFile, appended after DataDir — `execlp(launchCommand, DataDir,
+Name, XMLLoc, XMLFile)`.** Root cause of what this fixes: `RESET`'s generated wire payload embeds
+`ServerGameInfo::GetName()` directly (`MakeRESETMessage()` in every `<Game>DLL.cpp`) — with
+`GameServerMain.hpp` constructing an empty-Name `ServerGameInfo` (per this section's original,
+too-strong reading of "the game process never needs to self-report its name"), this produced a
+literal `RESET,` with nothing after the comma. **Important distinction this surfaced (Albert,
+2026-09-27), easy to conflate and worth keeping straight:** the C++-source-code identity a game's
+`GAME_SERVER_NAME()` macro carries (which types/files this executable was compiled from) and the
+front-end/GUI identity `gameconfig.txt`'s Name column carries (what the client sees via
+`NEWGUI`/`GAMES`) are deliberately allowed to be different strings — they happen to be identical
+for Outpost/MoV today, but a fix that derived RESET's Name from `GAME_SERVER_NAME()` instead of
+the real front-end name would be building on that coincidence, not the actual design. Since the
+front-end Name is exactly as fully-known-before-spawn as DataDir already was (same `GameBox`/
+`ServerGameInfo` object, same moment), argv is the right mechanism for it too — not a new
+handshake message, which would reopen the "no handshake needed" decision above rather than extend
+what's already there. XMLLoc/XMLFile came along for the same reason as Name: no known game-side
+consumer exists for them (they're resolved entirely at the `Room` level, server-side), but passing
+them anyway makes the game-side `ServerGameInfo` a faithful reconstruction of the one object
+server and game used to share before decoupling split it into two independently-constructed
+copies, rather than a partial one built only from whatever's been discovered necessary so far.
+
 ## VariCast is dropped from the interface entirely, via a player/spectator identity split — resolved
 
 **Two epiphanies from Albert (2026-09-19/2026-09-22) that fully resolve what was previously an open

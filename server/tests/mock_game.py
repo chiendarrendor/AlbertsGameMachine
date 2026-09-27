@@ -103,8 +103,11 @@ def run(data_dir, in_stream, out_stream):
 
 
 def main():
-    if len(sys.argv) != 2:
-        fail("usage: mock_game.py <dataDir>")
+    # argv is dataDir, name, xmlLoc, xmlFile -- same launch convention as
+    # any real GameServerMain-based game (see GameProcessProxy.cpp). The
+    # mock only ever needs dataDir; the rest are accepted and ignored.
+    if len(sys.argv) != 5:
+        fail("usage: mock_game.py <dataDir> <name> <xmlLoc> <xmlFile>")
     run(sys.argv[1], sys.stdin, sys.stdout)
 
 

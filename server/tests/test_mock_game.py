@@ -15,8 +15,10 @@ MOCK_GAME = os.path.join(os.path.dirname(__file__), "mock_game.py")
 
 def spawn_mock(tmp_path, mock):
     mock.write_script(str(tmp_path / "script.json"))
+    # dataDir, name, xmlLoc, xmlFile -- same launch convention GameProcessProxy
+    # uses for any real game; the mock only cares about dataDir.
     return subprocess.Popen(
-        [sys.executable, MOCK_GAME, str(tmp_path)],
+        [sys.executable, MOCK_GAME, str(tmp_path), "TestGame", "https://example.invalid/", "TestGameClient.xml"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

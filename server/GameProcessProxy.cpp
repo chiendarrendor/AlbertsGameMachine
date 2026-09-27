@@ -42,7 +42,19 @@ GameProcessProxy::GameProcessProxy(const ServerGameInfo &i_rServerGameInfo,
     close(fromChild[0]);
     close(fromChild[1]);
 
-    execlp(i_LaunchCommand.c_str(), i_LaunchCommand.c_str(), i_DataDir.c_str(), (char *)NULL);
+    // DataDir is the one argument every game genuinely uses; Name/XMLLoc/
+    // XMLFile are appended after it so the game process can reconstruct a
+    // real, faithful ServerGameInfo rather than a partial one -- matching
+    // what used to be one shared object in-process, before decoupling
+    // split it into a server-side and a game-side copy. Name specifically
+    // is load-bearing: some generated per-game events (e.g. RESET) embed
+    // it directly in their wire payload (found live, 2026-09-27).
+    execlp(i_LaunchCommand.c_str(), i_LaunchCommand.c_str(),
+           i_DataDir.c_str(),
+           i_rServerGameInfo.GetName().c_str(),
+           i_rServerGameInfo.GetXMLLoc().c_str(),
+           i_rServerGameInfo.GetXMLFile().c_str(),
+           (char *)NULL);
     // execlp only returns on failure. There's no parent left to tell
     // synchronously; the parent finds out via EOF on its first read.
     _exit(127);
