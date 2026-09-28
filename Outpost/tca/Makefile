@@ -8,7 +8,8 @@ SENGINE=../../stateengine
 JAVAC=javac -Xlint:unchecked
 
 CLIENTJAVADIR=../client
-CLIENTJAVALIB=../../client
+CLIENTJAVALIB=../../client/classes
+CLIENTCLASSDIR=classes
 CLIENTINSTALL=./clientstage
 SERVERINSTALL=../../data/Outpost
 TCOMDIR=../../transitioncompiler
@@ -87,7 +88,7 @@ clientinstall: OutpostClient.xml clientjava
 
 	cp -f ../client/*.JPG ${CLIENTINSTALL}
 	cp -f ../client/*.PNG ${CLIENTINSTALL}
-	cp -f ../client/Outpost/*.class ${CLIENTINSTALL}/Outpost
+	cp -f ${CLIENTCLASSDIR}/Outpost/*.class ${CLIENTINSTALL}/Outpost
 	cd ${CLIENTINSTALL} ; jar -cf ../Outpost.jar *
 	aws s3 cp OutpostClient.xml s3://${AWSBUCKET}/
 	aws s3 cp Outpost.jar s3://${AWSBUCKET}/
@@ -102,8 +103,10 @@ OutpostClient.xml: ../client/OutpostClient.xml
 	${CPP} -I../client -P ../client/OutpostClient.xml > OutpostClient.xml
 
 clientjava:
-	- rm ${CLIENTJAVADIR}/Outpost/*.class
-	${JAVAC} -d ${CLIENTJAVADIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
+	- rm -f ${CLIENTJAVADIR}/Outpost/*.class
+	- rm -rf ${CLIENTCLASSDIR}
+	- mkdir -p ${CLIENTCLASSDIR}
+	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
 
 
 %.o:%.cpp

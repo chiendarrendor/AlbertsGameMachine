@@ -1,7 +1,7 @@
-OpenZorz!  Client Documentation
+The Game Machine - Client Documentation
 
-The OpenZorz! client is a Java applet that is designed to allow
-a user to connect to the OpenZorz! server and play any of the games
+The Game Machine client is a Java applet that is designed to allow
+a user to connect to The Game Machine server and play any of the games
 installed there.   When a user enters a room that contains a game,
 the server will send a URL to two entities: the first is a location
 of the Configuration XML document for that particular game, and the other

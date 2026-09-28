@@ -27,7 +27,8 @@ JAVADIR=/c/Program\ Files/Java/jdk-19
 JAVAC=${JAVADIR}/bin/javac
 
 CLIENTJAVADIR=../client
-CLIENTJAVALIB=../../client
+CLIENTJAVALIB=../../client/classes
+CLIENTCLASSDIR=classes
 CLIENTINSTALL=C:/apache/htdocs/client/MerchantOfVenus
 SERVERINSTALL=../../data/MerchantOfVenus
 TCOMDIR=../../transitioncompiler
@@ -91,7 +92,7 @@ serverinstall: MerchantOfVenus ../MerchantOfVenusMap.xml
 
 clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
 	cp -f ${CLIENTJAVADIR}/MerchantOfVenusClient.xml ${CLIENTINSTALL}
-	cp -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class ${CLIENTINSTALL}
+	cp -f ${CLIENTCLASSDIR}/MerchantOfVenus/*.class ${CLIENTINSTALL}
 	cp -f ../MerchantOfVenusMap.xml ${CLIENTINSTALL}
 	cp -f ${CLIENTJAVADIR}/*.JPG ${CLIENTINSTALL}
 	cp -f ${CLIENTJAVADIR}/*.png ${CLIENTINSTALL}
@@ -100,12 +101,16 @@ MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml
 	${CPP} -I../client -P ../client/MerchantOfVenusClient.xml > MerchantOfVenusClient.xml
 
 clientjava:
-	@- rm ${CLIENTJAVADIR}/MerchantOfVenus/*.class
-	${JAVAC} -d ${CLIENTJAVADIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
+	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
+	@- rm -rf ${CLIENTCLASSDIR}
+	@- mkdir -p ${CLIENTCLASSDIR}
+	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
 
 voronoi:
-	@- rm ${CLIENTJAVADIR}/MerchantOfVenus/*.class
-	${JAVAC} -d ${CLIENTJAVADIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${VFILES}
+	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
+	@- rm -rf ${CLIENTCLASSDIR}
+	@- mkdir -p ${CLIENTCLASSDIR}
+	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${VFILES}
 
 %.o:%.cpp
 	${GCC} -c $<

@@ -7,15 +7,19 @@ JAR=jar cvf
 
 INSTALLDIR=/c/apache/htdocs/client/ROOMGUI
 
+CLASSDIR=classes
+
 JAVAS=MainPage.java RoomPage.java
 
 JAVALOCS=$(JAVAS:%=ROOMGUI/%)
 
 
 java:
-	- rm ROOMGUI/*.class
-	${JAVAC} -d . -sourcepath . -classpath ../client ${JAVALOCS}
-	${JAR} ROOMGUI.jar ROOMGUI/*.class
+	- rm -f ROOMGUI/*.class
+	- rm -rf ${CLASSDIR}
+	- mkdir -p ${CLASSDIR}
+	${JAVAC} -d ${CLASSDIR} -sourcepath . -classpath ../client/classes ${JAVALOCS}
+	${JAR} ROOMGUI.jar -C ${CLASSDIR} .
 
 
 

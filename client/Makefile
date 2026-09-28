@@ -5,25 +5,27 @@ AWSBUCKET = albertsgamemachine
 JAVAC=javac
 JAVAJAR=jar
 
-JCMD=${JAVAC} -classpath . -Xlint:unchecked -Xlint:deprecation
+CLASSDIR=classes
 
-SUBDIRS = OpenZorz NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi
-SUBCLASS = $(SUBDIRS:%=%/*.class)
+JCMD=${JAVAC} -d ${CLASSDIR} -classpath . -Xlint:unchecked -Xlint:deprecation
+
+SUBDIRS = TheGameMachine NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi
 SUBJAVA = $(SUBDIRS:%=%/*.java)
 
 all:
-	- rm ${SUBCLASS}
-	${JCMD} OpenZorz/GameClient.java
-	${JCMD} OpenZorz/GUITester.java
-	${JCMD} OpenZorz/ClientApplet.java
-	${JCMD} OpenZorz/ClientApplication.java
-	${JCMD} OpenZorz/TestResource.java
+	- rm -rf ${CLASSDIR}
+	- mkdir -p ${CLASSDIR}
+	${JCMD} TheGameMachine/GameClient.java
+	${JCMD} TheGameMachine/GUITester.java
+	${JCMD} TheGameMachine/ClientApplet.java
+	${JCMD} TheGameMachine/ClientApplication.java
+	${JCMD} TheGameMachine/TestResource.java
 	${JCMD} MySwing/*.java
 	${JCMD} Voronoi/*.java
 
 jar: all
-	${JAVAJAR} cf Client.jar ${SUBCLASS}
-	
+	${JAVAJAR} cf Client.jar -C ${CLASSDIR} .
+
 
 install: jar
 	cp Client.jar ${INSTALLTARGET}

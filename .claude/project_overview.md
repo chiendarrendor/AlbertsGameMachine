@@ -8,7 +8,7 @@ metadata:
   modified: 2026-09-12T09:22:03.283Z
 ---
 
-"The Game Machine" is Albert's personal project embodying a custom-designed programming/spec language that lets a developer specify the rules of board games, then play those games with other people over the internet. Formerly named "OpenZorz" — Albert now considers that name bad, but remnants of it may still appear in old code/files/comments.
+"The Game Machine" is Albert's personal project embodying a custom-designed programming/spec language that lets a developer specify the rules of board games, then play those games with other people over the internet. Formerly named "OpenZorz" — Albert considered that name bad, tracked as a TODO item for a long time. **Resolved 2026-09-28**: the last real code trace, the Java client's `client/OpenZorz/` package, was renamed to `client/TheGameMachine/` (see [[component-java-client]] for the details) — no remnants of the old name are expected to remain in code going forward.
 
 Major components (each a different language/tech, kept as separate memories — see [[component-cpp-server]], [[component-game-dlls]], [[component-perl-compiler]], [[component-java-gui]], [[component-java-game-guis]] as they're filled in):
 

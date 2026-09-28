@@ -434,6 +434,125 @@ awkward in flat comma-lines — probably why games use indices today), knowing y
 be enough to find yourself in that structure directly, retiring the game-specific numeric `IAM` too,
 not just `GUIIAM`. Left for whoever designs phase 3's exact JSON shape to decide.
 
+**Client-side consumption design for the per-viewer blob — resolved 2026-09-27, after reading the
+real Java client together (see [[component-java-client]] for the wire-dispatch/widget architecture
+this builds on).** Initial worry going in: today's widgets (`ActionNode`, `CommodityHand`,
+`ShipList`, `BidItemWatcher`, `StateSensitiveTextBox`, etc.) are all built around reacting to a
+*stream* of small, individually-typed deltas, so swapping in one big per-transition JSON blob looked
+like it might force rewriting every widget's internal model, not just the wire format. **Albert's
+correction: overstated.** The existing GUI already has to handle "apply the complete current state
+all at once" as a normal, exercised code path — `sendFullState`, fired whenever a player (re)joins a
+room with a live game — and it already produces correct output doing that. Widgets aren't purely
+differential; they're already built to be fully re-appliable from a clean slate. That shrinks the
+real client-side task for Phase 3 down to: build the layer that unpacks `GetClientState`'s JSON into
+the same *kind* of per-widget calls the full-refresh path already produces correctly today — not a
+rewrite of every widget's own logic.
+
+**Chosen design (Albert, 2026-09-27): minimize blast radius by changing what gets read, not how the
+walk works.** `GameNode`'s existing recursive tree-walk (self via `MyHandleEvent`, then every child,
+same order, same `<eventhandler>` show/hide/pass/block machinery) stays structurally unchanged. The
+only thing that changes is what's threaded through it: today, one `GameEvent` object representing a
+single wire message; under Phase 3, the current whole-state JSON blob. Each widget's own logic moves
+from "is this the event named X I'm watching for, and if so what are its vars" to "read field X
+directly out of the JSON I was just handed." **Deliberately no attempt to manufacture a synthetic
+legacy-event-ordering/dispatch layer on top of the JSON** — walk the tree once per refresh, same
+order as today, let each node pull what it needs. Exceptions are handled per-widget as they're
+actually discovered to need one, not designed for upfront.
+
+`LEGALACTION` is the concrete resolved example, and it was a special case on the server side too
+(see "VariCast is dropped" above): today's `ActionNode` hides on every `NEWSTATE` and re-shows only
+when a matching `LEGALACTION` arrives, purely because there's never been a "no longer legal" event to
+hide it symmetrically. Under Phase 3 this collapses to a plain membership check against an explicit
+current-legal-actions list field in the incoming state — present in the list, legal; absent, not —
+with nothing to reset between refreshes. (This is also what fully resolves `ActionNode`'s
+`STATEDALWAYSHIDDEN`-vs-`ALWAYSHIDDEN` distinction, which only exists today because legality has to
+be explicitly re-armed to `false` on `NEWSTATE` for some `VisibilityType`s but not others — once
+legality is a fresh membership check every refresh, there's nothing left to re-arm.)
+
+**The `<eventhandler>` show/hide/pass/block DSL survives this shape change almost for free**, and
+turns out to be low-blast-radius anyway. Structurally: it already just matches attribute name/value
+pairs against "whatever the currently-dispatched thing's vars are" — swapping the data source from
+an event's declared vars to the whole-state JSON's fields is the same kind of change as everywhere
+else, no DSL redesign needed. Empirically: real usage turns out to be light. Grepped both real games'
+actual client XML — MoV: zero uses of `<eventhandler>`/`showif`/`hideif` at all (consistent with MoV
+being almost entirely one hand-written `javaclass`, see [[component-java-client]]); Outpost: a modest
+11 total across `actions.xml` (4), `Players.xml` (1), and `Options.xml` (6), concentrated in a few
+specific spots, not pervasive. Matches Albert's own account: an early design idea (static images
+turned on/off purely by events passing by) that turned out "deeply clunky" in practice, and one he
+doesn't think he leaned on much in either real game once hand-written `UserDefinedInterface` widgets
+became the norm.
+
+**One specific semantic risk flagged, deliberately not designed around now (per the same "don't
+solve until it's a real problem" philosophy as the widget-flicker note below) — a candidate
+exception to watch for, not a known bug. Corrected after actually reading `GameEventHandler.java`
+(the "back of mind" version of this note, above, had the mechanism wrong even though the practical
+conclusion mostly still holds):** `GameEventHandler.ParseEvent` runs on **every single event that
+reaches a node**, not just ones relevant to it, and resets its show/hide/block flags at the top of
+every call — there's no "skip, this event isn't mine" short-circuit anywhere. Each `HandlerUnit.
+Matches` treats a var that's simply absent from the current event's vars as a non-match (`evval ==
+null → return false`), same as a var that's present with the wrong value — no distinction between
+"this event doesn't carry an opinion" and "this event actively disagrees." For one-directional units
+(`showif`/`hideif`/`showifnot`/`hideifnot`), a non-match produces no verdict at all, and
+`GameNode.HandleEvent`'s `if (IsVisible()) ... else if (IsInvisible()) ...` then does nothing,
+leaving whatever visibility was last set standing — so the *practical effect* really is "irrelevant
+event → visibility untouched," it's just achieved by "re-evaluate to no-verdict every time," not by
+skipping evaluation. **But `showhide`/`hideshow` (the two-directional units) have a real `else`
+branch that fires on any non-match** — meaning, already true today, not a future risk: a `showhide`
+matched on some var that a given event simply doesn't declare (e.g. matching on a game-specific var
+against a `NEWSTATE` event that doesn't carry it) actively flips to the opposite visibility on
+*every* such event, not just ones that share that var name at all. If the new whole-state JSON is a
+genuinely complete snapshot every refresh (every declared field always present, never absent), that
+specific "absent counts as a real non-match" behavior for `showhide`/`hideshow` types would still
+technically evaluate every walk, but the field would now virtually always be *present* going forward
+— collapsing "genuinely absent" and "present but not matching" into one case going forward, which is
+only actually a behavior change for the small number of `showhide`/`hideshow` units, if any, that
+today rely on a var being *entirely absent* from most event types rather than present-with-a-specific
+value. Given how lightly this DSL is used at all (above), and how few of its uses (if any) are the
+two-directional forms in the first place, this is a small, contained thing to check for specifically
+if/when eventhandler-based widgets are actually ported — not something to design a general solution
+for now.
+
+**Widget-level "memory" to avoid flicker across refreshes — flagged (Albert, 2026-09-27), explicitly
+not designed for pre-emptively.** Some widget collections may need to remember something across a
+full-state reapplication that isn't itself part of the state (to avoid visibly flickering off/on
+where the old incremental model never would have). Treat this as something to watch for empirically
+once real Phase 3 client work is underway, not a problem to solve in the abstract — only act on it if
+it turns out to be a systemic issue, not per-widget as a matter of course.
+
+**Layered JSON composition — the actual shape of `GetClientState`'s output, resolved 2026-09-27
+(Albert: "I don't know if we stated this, but I was always envisioning it").** Each architectural
+layer produces its own JSON object and includes the *next inner layer's* JSON as one field of its
+own — not one function flattening everything into a single merged blob. Innermost to outermost:
+1. The game developer's `GetClientState`-equivalent function (the `<refresh>` analogue) — game-
+   specific content only. Deliberately does **not** include the current FSM state name/description
+   or the legal-action list — neither is the game's own concern.
+2. The generic statewalker/FSM layer — wraps the game's JSON as a field of its own, and is the one
+   that adds current-state and the legal-action list, since it already knows both generically with
+   zero game-specific knowledge (this is the layer `LEGALACTION`'s list, above, actually comes from).
+3. Possibly an intermediate generic-game-code layer — floated as a maybe, not yet decided; left open.
+4. The server's room layer, wrapping again.
+5. The outermost server layer, at the point it's actually writing to one specific socket — the
+   natural home for the `"Name"` field from the `IAM`/`GUIIAM`-retirement idea recorded above, since
+   that's the one layer that actually knows which login name owns which connection.
+
+Each outer layer's job is to wrap the inner layer's JSON **opaquely** — never inspect or transform
+it — matching the same never-hold-inner-layer's-knowledge principle already established everywhere
+else in this redesign (see "Server's residual per-game-type knowledge" above).
+
+**LOGIN/LOGOUTOTHER traffic — scope corrected 2026-09-28, superseding the note below (kept for the
+history, not as current guidance).** ~~Confirmed out of scope for Phase 2 (Albert, 2026-09-27): this
+exchange is already its own separate island on both sides — client-side, `ClientManager.
+SendLoginLikeString` never goes anywhere near `GameGui`/`ActionTransferManager`, the mechanism Phase
+2's "wrap actions in JSON" plan actually targets. JSON-wrapping it too would be nice for consistency
+eventually, but it's explicitly not part of the current Phase 2 scope — stays a separate,
+lower-priority item.~~ **Reversed (Albert, 2026-09-28): explicitly in scope after all** — the
+governing rule is now simply "every client→server message becomes JSON in phase 2," with no
+per-message-category carve-outs, so `LOGIN`/`LOGOUTOTHER` (and whatever room-navigation traffic the
+client sends — source not yet located, see the "Staging" note below) are included on exactly the same
+footing as in-game actions. `ClientManager.SendLoginLikeString` never going near `GameGui`/
+`ActionTransferManager` is still true structurally (it's a separate code path), it just no longer
+means "separate scope" — both paths get the identical JSON-wrap treatment, independently.
+
 **Staging — revised to three explicit phases (Albert, 2026-09-24), each independently shippable and
 validatable, one variable changed at a time:**
 
@@ -542,42 +661,159 @@ validatable, one variable changed at a time:**
        common case) and is only overridden (`#define` before the `#include`) when a game genuinely
        needs a deeper bound (MoV needs 100, matching today's hardcoded `CreateGame()` literal).
 2. **JSON re-encoding of the client↔server wire — its own standalone phase, not bundled into either
-   neighbor.** Same message *types* and semantics as today, just JSON payloads instead of
-   `UnCommaStringify`/`UnComma`/`ReComma`/`MakeXXXMessage` hand-rolled escaping. Deliberately *not*
-   folded into phase 1 (which was scoped to leave the client boundary alone entirely, and bundling
-   would double what needs validating at once) nor phase 3 (which bundles a wire-format change with
-   a much bigger message-*shape* change; re-encoding today's existing messages is a fully separable,
-   smaller, independently-valuable step). Concretely motivated, not just theoretical: investigating
-   a real discovered bug (`Room::AddPlayerToRoom`'s `GAMES,` list gets `UnComma`'d once per game name
-   *and* once again for the whole joined string, escaping the `,` separators themselves into `%C`,
-   e.g. observed as `GAMES,MerchantOfVenus%COutpost` in a live smoke test) surfaced exactly the kind
-   of latent fragility a hand-rolled escaping scheme invites — safe today only because no game name
-   ever contains a comma or `%`, not provably safe in general. Requires a real Java-client change
-   (parsing JSON instead of comma lines) — "modest," per Albert, and distinct from the much larger,
+   neighbor. Revised 2026-09-27 (Albert) to cover actions, not events — see the dated note below for
+   why — then revised again 2026-09-28 (Albert): the real dividing line is direction, not message
+   category. **Phase 2 covers *every* client→server message, not just in-game actions** — this
+   explicitly includes `LOGIN`/`LOGOUTOTHER` (today's `ClientManager.SendLoginLikeString`, previously
+   carved out as its own separately-deferred island — that carve-out is superseded) and whatever
+   room-navigation traffic (`CHANGEROOM`/`NEWROOM`/etc.) the client sends, source not yet located in
+   this codebase as of this writing (see [[component-java-client]] — likely `roomgui/`, unexplored).
+   Server→client traffic (events, the welcome string, the login response, the gui-management
+   meta-layer) stays phase 3's side of the same clean split — see that bullet below. Actions (and now
+   everything else crossing this direction) get the same message *type* and semantics as today, just
+   a JSON payload instead of hand-rolled `UnCommaStringify`/`UnComma`/`ReComma` escaping. Deliberately
+   *not* folded
+   into phase 1 (which was scoped to leave the client boundary alone entirely, and bundling would
+   double what needs validating at once) nor phase 3 (which bundles a much bigger message-*shape*
+   change; re-encoding today's existing action messages is a fully separable, smaller,
+   independently-valuable step). Concretely motivated, not just theoretical: investigating a real
+   discovered bug (`Room::AddPlayerToRoom`'s `GAMES,` list gets `UnComma`'d once per game name *and*
+   once again for the whole joined string, escaping the `,` separators themselves into `%C`, e.g.
+   observed as `GAMES,MerchantOfVenus%COutpost` in a live smoke test) surfaced exactly the kind of
+   latent fragility a hand-rolled escaping scheme invites — safe today only because no game name ever
+   contains a comma or `%`, not provably safe in general (that specific bug is in an *event*, though,
+   so this phase doesn't itself fix it — phase 3 does, by retiring the mechanism that produces it).
+   Requires a real Java-client change (sending JSON instead of comma lines for every outgoing
+   message, not just in-game actions) — "modest," per Albert, and distinct from the much larger,
    separately-tracked full front-end rewrite. Also requires updating `server/tests/client.py` (still
-   speaking legacy lines as of this writing) to the new encoding.
+   sending legacy action lines, and legacy raw `LOGIN`/`LOGOUTOTHER` lines, as of this writing).
 3. **Full per-viewer state** (see above) — the many-typed-events-to-one-blob redesign, plus
-   `SPECTATOR`-targeted routing, built on top of phase 2's now-JSON wire rather than needing to
-   introduce JSON itself at the same time.
+   `SPECTATOR`-targeted routing. **Revised 2026-09-27: events go straight from today's raw comma-lines
+   to this, with no JSON-wrapped-event intermediate stage** — see the dated note below.
+   **Revised again 2026-09-28 (Albert): phase 3 is also where every *other* remaining server→client
+   message becomes JSON** — completing the direction-based split phase 2 now owns on the
+   client→server side (see that bullet above). This is genuinely two different kinds of change
+   bundled under one phase, worth keeping distinct: (a) the individual per-transition game Events,
+   which get replaced *in shape* by the `GetClientState` blob redesign — this is the one place a
+   JSON-wrapped-event intermediate stage would be pure throwaway work, per the revision above; (b)
+   the welcome string, the login response (`WELCOME`/`ALREADYLOGGEDIN`/error text), and the
+   `NEWGUI`/`ADDGUI`/`RESETGUI`/`DROPGUI`/`MESSAGE`/`SERVERERROR` gui-management meta-layer (see
+   [[component-java-client]]'s `GuiPacketParser`) — these just get JSON-wrapped with their *existing*
+   shape/semantics preserved, exactly like phase 2 does for actions, and nothing later throws that
+   away. A genuine side-benefit of (b): it permanently retires `GuiPacketParser`'s un-escaped
+   `split(",")` tokenizing (the same class of latent fragility as the `GAMES,` bug above, previously
+   noted as out of scope for either phase — no longer true). Also unambiguously the moment to do the
+   `TODO.md`-flagged `V1.0`→`V2.0` server version-string bump, since the welcome string carrying that
+   version is itself one of the messages changing shape.
 
-**Confirmed 2026-09-26: phase 2 wraps today's messages, it does not genuinely restructure them —
-deliberately, to avoid replumbing the same code twice.** Phase 2 could, in principle, re-encode each
-action/event as real per-field JSON (`{"method":"MOVE","params":{"piece":3,"dest":7}}`) rather than
-an opaque comma-string carried as one JSON field's value (`{"action":"MOVE,3,7"}`). Albert's call: if
-phase 2 were the final destination, genuine restructuring would be worth it — but phase 3 is coming
-regardless, and it requires touching essentially the same client/server code paths again, more
-deeply, to actually split state into per-field JSON. Doing the "real" restructuring once, in phase 3,
-rather than a shallow pass in phase 2 and a deeper one in phase 3, avoids replumbing the same places
-twice. Concrete consequence: `ActionParser` (see `gamecommon/ActionParser.hpp`) needs no changes at
-all across phase 2 — its `GetRawLine()` accessor (added for `GameProcessProxy`'s forwarding needs,
-phase 1) stays exactly as useful once actions arrive JSON-wrapped instead of as bare socket lines,
-since `ActionParser` never knew or cared where its input string came from in the first place; only
-whoever constructs it (parsing the outer JSON envelope first, under phase 2) changes.
+**Confirmed 2026-09-26, revised 2026-09-27: phase 2 wraps today's *action* messages, it does not
+genuinely restructure them, and it does not touch events at all — both deliberately, to avoid
+replumbing the same code twice.** Phase 2 could, in principle, re-encode actions as real per-field
+JSON (`{"method":"MOVE","params":{"piece":3,"dest":7}}`) rather than an opaque comma-string carried
+as one JSON field's value (`{"action":"MOVE,3,7"}`) — Albert's call: if phase 2 were the final
+destination, genuine restructuring would be worth it, but phase 3 requires touching the same code
+again, more deeply, to actually split state into per-field JSON, so doing the "real" restructuring
+once, in phase 3, avoids replumbing the same places twice. Concrete consequence: `ActionParser` (see
+`gamecommon/ActionParser.hpp`) needs no changes at all across phase 2 — its `GetRawLine()` accessor
+(added for `GameProcessProxy`'s forwarding needs, phase 1) stays exactly as useful once actions
+arrive JSON-wrapped instead of as bare socket lines, since `ActionParser` never knew or cared where
+its input string came from in the first place; only whoever constructs it (parsing the outer JSON
+envelope first, under phase 2) changes.
+
+**Second application of the same "don't replumb it twice" principle, this time to *which side* of
+the wire phase 2 touches at all, not just how deep (Albert, 2026-09-27):** the original plan had
+phase 2 also JSON-wrap events, symmetrically with actions. That would have required real work on
+*both* ends of the event path — server-side code wrapping every outgoing `SENDLINE`/`RoomOutputPort`
+string in a JSON envelope, and client-side code unwrapping it before handing the same comma-string to
+its existing per-event-type dispatch logic. Since phase 3 doesn't send individual events *at all*
+anymore (one `GetClientState` blob replaces the whole per-transition event mechanism), all of that
+event-wrapping/unwrapping code would be built in phase 2 and then discarded almost immediately in
+phase 3 — a complete throwaway on both ends of the wire, not hypothetical waste. So phase 2 leaves
+events alone entirely: still today's raw, unwrapped comma-lines, both directions unchanged from
+phase 1. **Real, deliberate consequence: phase 2's wire is asymmetric while it's deployed on its
+own** — actions arrive JSON-wrapped, events leave as plain comma-lines, same connection, two
+different framings in the two directions. Albert confirmed this is an acceptable consequence, not a
+problem to design around (2026-09-27) — especially since the intent is to ship phases 2 and 3 the
+same day, making the asymmetric-phase-2-alone window very short in practice. This doesn't remove the
+still-outstanding prerequisite noted elsewhere (Albert walking through how the client's *generic*
+wire-protocol handling works, distinct from the widget/rendering architecture) — if anything it's
+slightly more load-bearing now, since this plan skips the shallow "practice run" a JSON-wrapped-events
+pass in phase 2 would otherwise have given before phase 3's real restructuring.
 
 **Scoping note:** this section (and the rest of this spec) governs the *game↔server* wire. The
 *server↔client* leg either carries translated legacy lines (if the Java client is left alone for
 now) or the same JSON payloads (given the "modest change" above) — those are independently staged;
 nothing here forces the front-end rewrite to happen on any particular timeline.
+
+## Action namespacing — resolved 2026-09-28, part of the Phase 2 JSON re-encoding
+
+**The problem, found while walking the real server dispatch code (Albert + Claude, 2026-09-28):**
+today's Action name is a single flat namespace with no scoping at all, and the server resolves it by
+literal-string-match priority order, not by anything structural:
+```cpp
+// RoomManager::HandleAction
+if (i_ap.GetActionName() == "NEWROOM") ...
+else if (i_ap.GetActionName() == "CHANGEROOM") ...
+else if (i_ap.GetActionName() == "ROOMTALK") ...
+else if (i_ap.GetActionName() == "PLAYERTALK") ...
+else { pRoom->HandleAction(i_Name, i_ap); }   // falls through to Room
+
+// Room::HandleAction
+if (i_ap.GetActionName() == "NEWGAME") ...
+else if (i_ap.GetActionName() == "LOADGAME") ...
+else if (i_ap.GetActionName() == "SAVEGAME") ...
+else { m_pGame->HandleAction(i_Name, i_ap, m_Inhabitants); }  // only now reaches the live game
+```
+Seven reserved names (`NEWROOM`/`CHANGEROOM`/`ROOMTALK`/`PLAYERTALK`/`NEWGAME`/`LOADGAME`/`SAVEGAME`)
+are silently intercepted before ever reaching a game process — any game transition that happens to
+share one of these names (`CHANGEROOM` is a plausible real collision: any game with its own in-game
+"move between areas" concept) would never fire at all, with no error, just the wrong handler quietly
+eating it. Confirmed real while exploring [[component-java-client]]'s `roomgui/` client, not
+hypothetical.
+
+**A second, distinct bug class this same gap enables, found in the same reading:** `Room::HandleAction`'s
+final fallthrough forwards *unconditionally* to whatever `m_pGame` currently is, with no check that
+the action was ever meant for *that* game. A stale action (e.g. arriving after `NEWGAME` has swapped
+one game type for another in the same room) that happens to coincidentally also be a valid transition
+name in the new game would silently misfire against the wrong rules instead of erroring.
+
+**Resolution (Albert, 2026-09-28), rolled into the Phase 2 JSON re-encoding of the client→server
+wire (see "Staging" above): every Action gets an explicit `namespace` field — a path of segments,
+not a flat string or a binary tag** — specifically so adding more layers later never forces a
+redesign, only inserting one more check in the existing chain. **No default/implicit namespace is
+allowed; every action must carry one explicitly.** Two kinds of namespace value:
+- **A small, hardcoded, structurally-fixed set for the server's own reserved layers** — one segment
+  value per real dispatch layer (`RoomManager`'s own 4 actions, `Room`'s own 3), matching the two
+  `HandleAction` chains above exactly.
+- **For every other action, the namespace must equal the actual live game's own public `Name`**
+  (`ServerGameInfo::GetName()`/`GameBox::GetName()` — the same string already threaded through
+  `NEWGUI`/`GAMES`/`RESET`, see "Server's residual per-game-type knowledge" above — not a new
+  identifier). **The server validates this against the room's actual current game and generates an
+  explicit error on any mismatch** (wrong game name, or no live game at all) — this is what closes
+  the second bug class above, not just the first: a stale or misdirected action can no longer
+  silently reach the wrong game's rules engine.
+
+**What this makes `RoomManager`/`Room`'s dispatch look like** (Albert: "quite lovely" — handle
+everything that's your own, pass on everything that isn't, unchanged in shape as more layers appear):
+```cpp
+void RoomManager::HandleAction(...) {
+  if (i_ap.GetNamespace().front() == "roommanager") { /* dispatch by action name, as today */ }
+  else { pRoom->HandleAction(i_Name, i_ap); }  // pass the whole thing on, untouched
+}
+void Room::HandleAction(...) {
+  if (i_ap.GetNamespace().front() == "room") { /* dispatch by action name, as today */ }
+  else { m_pGame->HandleAction(i_Name, i_ap, m_Inhabitants); }  // game validates namespace == its own Name
+}
+```
+
+**Client-side consequence, concrete and small:** `GameGui` doesn't currently store its own gui-name
+at all — `GUIUnit` sees it via `GuiPacketParser.GetGuiName()` at construction time (the same string
+as the game's public `Name`, per how `NEWGUI` is built) but never passes it down. That needs
+threading into `GameGui`'s constructor so `SendAction` can stamp `{"namespace": [thatName], ...}` on
+every outgoing action from that instance automatically, with no per-action-site bookkeeping anywhere
+in the widget code documented in [[component-java-client]]/[[outpost-client-gui]]/
+[[merchant-of-venus-client-gui]] — none of those call sites need to know or care about namespacing at
+all, `GameGui.SendAction` is still the one and only place that changes.
 
 ## `ERROR` is a special case, handled specially on both client and server (Albert, 2026-09-22)
 

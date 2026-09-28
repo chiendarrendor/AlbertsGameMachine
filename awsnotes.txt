@@ -1,7 +1,7 @@
 
 # how to run the gui client-side
 curl --output Client.jar https://d1g3rnc919nzml.cloudfront.net/Client.jar
-java -classpath Client.jar OpenZorz.ClientApplication 3.14.13.50
+java -classpath Client.jar TheGameMachine.ClientApplication 3.14.13.50
 
 #how to upload a gui to S3
 # obsolete!  switching over to JAR with same name as GUI

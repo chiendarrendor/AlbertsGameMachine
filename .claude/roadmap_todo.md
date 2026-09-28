@@ -11,7 +11,7 @@ metadata:
 There is a `TODO.md` at `.claude/TODO.md` (repo-relative — this whole `.claude/` directory, including this memory, is checked into the repo itself so it travels with the code across machines, e.g. Windows laptop and EC2) tracking Albert's roadmap/wishlist items, built up across conversations. Check it at the start of any substantial work session for current priorities — it's a plain checklist, not memory content itself, so read it fresh rather than trusting a stale summary here.
 
 As of 2026-09-12, major items (roughly small→huge):
-1. Expunge "OpenZorz" naming from the codebase (see [[project-overview]]).
+1. ~~Expunge "OpenZorz" naming from the codebase~~ RESOLVED 2026-09-28 (see [[project-overview]], [[component-java-client]]).
 2. Rewrite the Java client front-end using modern browser GUI tech (see [[component-java-client]]).
 3. Rearchitect game state/Events to use automatic dirty-tracking instead of manual Events + `refresh` (see [[game-server-xml]]).
 4. Replace the XML + `transitioncompiler` pipeline with native C++ FSM code (see [[component-perl-compiler]]).
