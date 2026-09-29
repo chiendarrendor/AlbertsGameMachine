@@ -36,8 +36,7 @@ void GameServerConnectionHandler::HandleLine(const std::string &i_Line)
 	{
 		ActionParser ap(i_Line);
 
-		std::cout << "In HandleLine: " << std::endl;
-		std::cout << ap << std::endl;
+		std::cout << "from " << m_Name << ": " << ap;
 
 		if (m_Named)
 		{

@@ -34,8 +34,6 @@ const boost::json::object &ActionParser::GetParams() const
 
 std::ostream &operator<<(std::ostream &o, const ActionParser &i_ap)
 {
-	o << "Namespace: " << i_ap.GetNamespace() << std::endl;
-	o << "Name: " << i_ap.GetActionName() << std::endl;
-	o << "Params: " << boost::json::serialize(i_ap.GetParams()) << std::endl;
+	o << i_ap.GetNamespace() << "." << i_ap.GetActionName() << " " << boost::json::serialize(i_ap.GetParams()) << std::endl;
 	return o;
 }
