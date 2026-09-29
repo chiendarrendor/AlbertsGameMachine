@@ -1,5 +1,5 @@
 #include "TransitionTestUtilities.hpp"
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 
 const TransitionType *GetTransition(const OutpostStateMachine &i_osm,
                                     const std::string &i_sourceState,
@@ -25,5 +25,16 @@ const TransitionType *GetTransition(const OutpostStateMachine &i_osm,
   BOOST_CHECK_EQUAL(pnext->GetName() , i_destState);
   
   return ptrans;
+}
+
+ActionParser MakeAction(const std::string &i_ActionName,
+                        std::initializer_list<std::pair<std::string,boost::json::value> > i_Params)
+{
+  boost::json::object obj;
+  for (const std::pair<std::string,boost::json::value> &p : i_Params)
+  {
+    obj[p.first] = p.second;
+  }
+  return ActionParser(i_ActionName,obj);
 }
 

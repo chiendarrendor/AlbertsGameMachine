@@ -1,7 +1,9 @@
 #include "GameServerConnectionHandler.hpp"
+#include "JsonParamExtraction.hpp"
 
 #include <iostream>
 #include <boost/lexical_cast.hpp>
+#include <boost/json.hpp>
 
 const char *ALREADYLOGGEDIN = "This User Name is already Logged in!";
 
@@ -11,7 +13,7 @@ GameServerConnectionHandler::GameServerConnectionHandler(int i_Socket,ServerSock
 	m_fac(i_fac),
 	m_Named(false)
 {
-  SendLine("CONNECTSTRING,Welcome to Albert's Game Server, V1.0!");
+  SendLine("CONNECTSTRING,Welcome to Albert's Game Server, V2.0!");
 }
 
 GameServerConnectionHandler::~GameServerConnectionHandler()
@@ -30,67 +32,74 @@ const std::string &GameServerConnectionHandler::GetName()
 
 void GameServerConnectionHandler::HandleLine(const std::string &i_Line)
 {
-	ActionParser ap(i_Line);
-
-  std::cout << "In HandleLine: " << std::endl;
-  std::cout << ap << std::endl;
-
-	
-	if (m_Named)
+	try
 	{
-		m_fac.HandleAction(m_Name,ap);
+		ActionParser ap(i_Line);
+
+		std::cout << "In HandleLine: " << std::endl;
+		std::cout << ap << std::endl;
+
+		if (m_Named)
+		{
+			m_fac.HandleAction(m_Name,ap);
+			return;
+		}
+
+		// Pre-login: LOGIN/LOGOUTOTHER live in their own reserved "login"
+		// namespace -- absolutely fixed shape (always exactly username/
+		// password), but still the same envelope/parser as every other
+		// Action, per Albert 2026-09-29 (see
+		// .claude/server_game_interface_spec.md's Action-namespacing section).
+		if (ap.GetNamespace() == "login" && ap.GetActionName() == "LOGIN")
+		{
+			std::string username = ExtractJsonParam<std::string>(ap.GetParams(),"username");
+			std::string password = ExtractJsonParam<std::string>(ap.GetParams(),"password");
+
+			if (!m_fac.ValidateLogin(username,password))
+			{
+				SendLine("ERROR,Can't login with name " + username + ": User Name/Password not validated");
+				return;
+			}
+
+			if (m_fac.GetNamedHandler(username) != NULL)
+			{
+				SendLine("ALREADYLOGGEDIN");
+				return;
+			}
+
+			m_fac.NameMe(*this,username);
+			SendLine("WELCOME");
+			m_Named = true;
+			m_Name = username;
+			m_fac.InitialConnection(m_Name);
+		}
+		else if (ap.GetNamespace() == "login" && ap.GetActionName() == "LOGOUTOTHER")
+		{
+			std::string username = ExtractJsonParam<std::string>(ap.GetParams(),"username");
+			std::string password = ExtractJsonParam<std::string>(ap.GetParams(),"password");
+
+			if (!m_fac.ValidateLogin(username,password))
+			{
+				SendLine("ERROR,Can't logout name " + username + ": User Name/Password not validated");
+				return;
+			}
+
+			GameServerConnectionHandler *pgsch = m_fac.GetNamedHandler(username);
+			if (pgsch == NULL)
+			{
+				return;
+			}
+			pgsch->Shutdown();
+		}
+		else
+		{
+			SendLine("ERROR,Unknown Initialization Packet " + ap.GetActionName());
+		}
 	}
-	else if (ap.GetActionName() == "LOGIN")
-  {
-    if (ap.GetNumArguments() != 2)
-    {
-			SendLine("ERROR,Illegal LOGIN Packet");
-			return;
-		}
-
-    if (!m_fac.ValidateLogin(ap[0],ap[1]))
-    {
-      SendLine("ERROR,Can't login with name " + ap[0] + ": User Name/Password not validated");
-      return;
-    }
-
-    if (m_fac.GetNamedHandler(ap[0]) != NULL)
-    {
-      SendLine("ALREADYLOGGEDIN");
-      return;
-    }
-
-    m_fac.NameMe(*this,ap[0]);
-    SendLine("WELCOME");
-    m_Named = true;
-    m_Name = ap[0];
-    m_fac.InitialConnection(m_Name);
-  }
-  else if (ap.GetActionName() == "LOGOUTOTHER")
-  {
-    if (ap.GetNumArguments() != 2)
-    {
-			SendLine("ERROR,Illegal LOGOUTOTHER Packet");
-			return;
-		}
-
-    if (!m_fac.ValidateLogin(ap[0],ap[1]))
-    {
-      SendLine("ERROR,Can't logout name " + ap[0] + ": User Name/Password not validated");
-      return;
-    }
-
-    GameServerConnectionHandler *pgsch = m_fac.GetNamedHandler(ap[0]);
-    if (pgsch == NULL)
-    {
-      return;
-    }
-    pgsch->Shutdown();
-  }
-  else
-  {
-    SendLine("ERROR,Unknown Initialization Packet " + ap.GetActionName());
-  }
+	catch (const std::exception &e)
+	{
+		SendLine("ERROR,Malformed action: " + std::string(e.what()));
+	}
 }
 
 void GameServerConnectionHandler::CleanUp()

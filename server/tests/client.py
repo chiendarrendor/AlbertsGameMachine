@@ -1,8 +1,13 @@
 """Thin wrapper around one simulated player's raw TCP connection to the real
-server, speaking today's legacy comma-line client<->server protocol -- this
-layer is untouched by the whole game<->server redesign this test
-infrastructure exists to validate (see .claude/server_game_interface_spec.md).
+server. Client->server traffic is now the JSON envelope from Phase 2 of the
+wire redesign (see .claude/server_game_interface_spec.md's Action-namespacing
+section): {"namespace": ..., "action": ..., "params": {...}}, plus LOGIN's own
+fixed shape reusing the same envelope under the reserved "login" namespace.
+Server->client traffic (events) is untouched by Phase 2 and still today's
+legacy comma-line format -- recv()/expect() below don't need to change for
+that reason.
 """
+import json
 import selectors
 import socket
 
@@ -20,11 +25,18 @@ class Client:
     def connect(cls, host, port, name, password="password"):
         sock = socket.create_connection((host, port))
         client = cls(sock)
-        client.send("LOGIN,%s,%s" % (name, password))
+        client.send(json.dumps({"namespace": "login", "action": "LOGIN",
+                                 "params": {"username": name, "password": password}}))
         return client
 
     def send(self, line):
         self._sock.sendall((line + "\n").encode("utf-8"))
+
+    def send_action(self, namespace, action, **params):
+        """Builds and sends the standard Action envelope -- the normal way
+        to talk to the server post-Phase-2, for anything other than LOGIN/
+        LOGOUTOTHER (see connect() above for those)."""
+        self.send(json.dumps({"namespace": namespace, "action": action, "params": params}))
 
     def recv(self, timeout=2.0):
         while b"\n" not in self._buf:

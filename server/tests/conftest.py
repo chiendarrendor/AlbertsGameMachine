@@ -60,7 +60,7 @@ class ServerHarness:
 
     def start_game(self, client, game_name="TestGame"):
         self.arm_mock()
-        client.send("NEWGAME,%s" % game_name)
+        client.send_action("room", "NEWGAME", NewGame=game_name)
 
     def shutdown(self):
         self._proc.terminate()

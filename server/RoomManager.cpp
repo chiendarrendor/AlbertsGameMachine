@@ -1,6 +1,7 @@
 #include "RoomManager.hpp"
 #include "GameServerConnectionHandler.hpp"
 #include "StringUtilities.hpp"
+#include "JsonParamExtraction.hpp"
 #include <sstream>
 #include <iostream>
 #include <time.h>
@@ -168,33 +169,42 @@ std::string Room::GetSavedGameString()
 
 void Room::HandleAction(const std::string &i_Name,const ActionParser &i_ap)
 {
-  if (i_ap.GetActionName() == "NEWGAME")
+  if (i_ap.GetNamespace() == "room")
   {
-    HandleNewGame(i_Name,i_ap);
-  }
-  else if (i_ap.GetActionName() == "LOADGAME")
-  {
-    HandleLoadGame(i_Name,i_ap);
-  }
-  else if (i_ap.GetActionName() == "SAVEGAME")
-  {
-    HandleSaveGame(i_Name,i_ap);
-  }
-  else
-  {
-    if (m_pGame)
+    if (i_ap.GetActionName() == "NEWGAME")
     {
-      m_pGame->HandleAction(i_Name,i_ap,m_Inhabitants);
+      HandleNewGame(i_Name,i_ap);
     }
+    else if (i_ap.GetActionName() == "LOADGAME")
+    {
+      HandleLoadGame(i_Name,i_ap);
+    }
+    else if (i_ap.GetActionName() == "SAVEGAME")
+    {
+      HandleSaveGame(i_Name,i_ap);
+    }
+    else
+    {
+      m_Connections.UniCast(i_Name,std::string("ERROR,Unknown room action ") + i_ap.GetActionName());
+    }
+    return;
   }
+
+  ROOMVALIDATE(m_pGame != NULL,"No active game in this room.");
+  ROOMVALIDATE(i_ap.GetNamespace() == m_pGame->GetServerGameInfo().GetName(),
+               "Action namespace '" + i_ap.GetNamespace() + "' doesn't match this room's active game.");
+
+  m_pGame->HandleAction(i_Name,i_ap,m_Inhabitants);
 }
 
 void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetNumArguments() == 1,"Illegal NEWGAME action.");
-  const GameBox *pGameBox = s_pGameCloset->GetGameBoxByName(i_ap[0]);
+  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal NEWGAME action.");
+  std::string gameName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NewGame");
 
-  ROOMVALIDATE(pGameBox != NULL,"Unknown Game: " + i_ap[0]);
+  const GameBox *pGameBox = s_pGameCloset->GetGameBoxByName(gameName);
+
+  ROOMVALIDATE(pGameBox != NULL,"Unknown Game: " + gameName);
   ROOMVALIDATE(m_pGame == NULL || m_pGame->IsDone(),"Room already has active game!");
 
   if (m_pGame != NULL)
@@ -208,7 +218,7 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 
   ROOMVALIDATE(m_pGame,"Unknown Error: could not create game!");
 
-  std::string newguievent = 
+  std::string newguievent =
     std::string("NEWGUI,") +
     pGameBox->GetName() + std::string(",") +
     pGameBox->GetXMLLoc() + std::string(",") +
@@ -221,17 +231,19 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 
 void Room::HandleLoadGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetNumArguments() == 1,"Illegal LOADGAME action.");
+  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal LOADGAME action.");
+  std::string fileName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NameToLoad");
   ROOMVALIDATE(m_pGame,"No Game to Load.");
-  ROOMVALIDATE(m_pGame->Load(i_ap[0]),"Game " + i_ap[0] + " failed to load.");
+  ROOMVALIDATE(m_pGame->Load(fileName),"Game " + fileName + " failed to load.");
   BroadcastFullState();
 }
 
 void Room::HandleSaveGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetNumArguments() == 1,"Illegal SAVEGAME action.");
+  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal SAVEGAME action.");
+  std::string fileName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NameToSave");
   ROOMVALIDATE(m_pGame,"No Game to Save.");
-  ROOMVALIDATE(m_pGame->Save(i_ap[0]),"Game " + i_ap[0] + " failed to save.");
+  ROOMVALIDATE(m_pGame->Save(fileName),"Game " + fileName + " failed to save.");
   m_Connections.BroadCast(GetSavedGameString());
 }
 
@@ -310,36 +322,42 @@ void RoomManager::HandleInitialConnection(const std::string &i_Name,
 void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_ap,
 			       GameServerConnectionHandlerFactory &i_Connections)
 {
-  if (i_ap.GetActionName() == "NEWROOM") HandleNewRoom(i_Name,i_ap,i_Connections);
-  else if (i_ap.GetActionName() == "CHANGEROOM") HandleChangeRoom(i_Name,i_ap,i_Connections);
-  else if (i_ap.GetActionName() == "ROOMTALK") HandleRoomTalk(i_Name,i_ap,i_Connections);
-  else if (i_ap.GetActionName() == "PLAYERTALK") HandlePlayerTalk(i_Name,i_ap,i_Connections);
-  else
+  if (i_ap.GetNamespace() == "roommanager")
   {
-    Room *pRoom = GetRoomOf(i_Name);
-    if (!pRoom) return;
-    pRoom->HandleAction(i_Name,i_ap);
-
-    // disseminate new room state ROOMSTATE
-    std::set<std::string>::iterator setit;
-    for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
+    if (i_ap.GetActionName() == "NEWROOM") HandleNewRoom(i_Name,i_ap,i_Connections);
+    else if (i_ap.GetActionName() == "CHANGEROOM") HandleChangeRoom(i_Name,i_ap,i_Connections);
+    else if (i_ap.GetActionName() == "ROOMTALK") HandleRoomTalk(i_Name,i_ap,i_Connections);
+    else if (i_ap.GetActionName() == "PLAYERTALK") HandlePlayerTalk(i_Name,i_ap,i_Connections);
+    else
     {
-      SENDLINE(*setit, "GUIROOM," << UnComma(pRoom->GetName())
-               << "," << UnComma(pRoom->GetGameName())
-               << "," << UnComma(pRoom->GetGameStatus()));
+      i_Connections.SendLineToName(i_Name,"ERROR,Unknown roommanager action " + i_ap.GetActionName());
     }
+    return;
+  }
+
+  Room *pRoom = GetRoomOf(i_Name);
+  if (!pRoom) return;
+  pRoom->HandleAction(i_Name,i_ap);
+
+  // disseminate new room state ROOMSTATE
+  std::set<std::string>::iterator setit;
+  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
+  {
+    SENDLINE(*setit, "GUIROOM," << UnComma(pRoom->GetName())
+             << "," << UnComma(pRoom->GetGameName())
+             << "," << UnComma(pRoom->GetGameStatus()));
   }
 }
 
 void RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
-  if (i_ap.GetNumArguments() == 0)
+  if (i_ap.GetParams().size() != 1)
   {
     SENDLINE(i_Name,"ERROR,Bad NEWROOM action");
     return;
   }
-  std::string newName = i_ap[0];
+  std::string newName = ExtractJsonParam<std::string>(i_ap.GetParams(),"RoomName");
 
   if (newName.size() == 0)
   {
@@ -367,13 +385,13 @@ void RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_
 void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
-  if (i_ap.GetNumArguments() == 0)
+  if (i_ap.GetParams().size() != 1)
   {
     SENDLINE(i_Name,"ERROR,Bad CHANGEROOM action");
     return;
   }
 
-  std::string newRoomName = i_ap[0].c_str();
+  std::string newRoomName = ExtractJsonParam<std::string>(i_ap.GetParams(),"TargetRoom");
   std::map<std::string,Room *>::iterator findit = m_Rooms.find(newRoomName);
   if (findit == m_Rooms.end())
   {
@@ -402,7 +420,7 @@ void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser 
 void RoomManager::HandleRoomTalk(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
-  if (i_ap.GetNumArguments() == 0)
+  if (i_ap.GetParams().size() != 1)
   {
     i_Connections.SendLineToName(i_Name,"ERROR,Bad ROOMTALK action");
     return;
@@ -417,7 +435,7 @@ void RoomManager::HandleRoomTalk(const std::string &i_Name,const ActionParser &i
   message += " to room '";
   message += pRoom->GetName();
   message += "') ";
-  message += i_ap[0];
+  message += ExtractJsonParam<std::string>(i_ap.GetParams(),"RoomMessage");
 
   std::string packet;
   packet += "MESSAGE,";
@@ -435,19 +453,19 @@ void RoomManager::HandleRoomTalk(const std::string &i_Name,const ActionParser &i
 void RoomManager::HandlePlayerTalk(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
-  if (i_ap.GetNumArguments() != 2)
+  if (i_ap.GetParams().size() != 2)
   {
     i_Connections.SendLineToName(i_Name,"ERROR,Bad PLAYERTALK action");
     return;
   }
 
-  std::string target = i_ap[0];
+  std::string target = ExtractJsonParam<std::string>(i_ap.GetParams(),"TalkPlayer");
 
   std::string message;
   message += "(";
   message += i_Name;
   message += ") ";
-  message += i_ap[1];
+  message += ExtractJsonParam<std::string>(i_ap.GetParams(),"PlayerMessage");
 
   std::string packet;
   packet += "MESSAGE,";

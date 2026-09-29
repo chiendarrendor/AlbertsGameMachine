@@ -29,7 +29,7 @@ def spawn_mock(tmp_path, mock):
 
 def test_happy_path_emits_then_responds(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="JOIN") \
+    mock.on("handleAction", action="JOIN", params={}) \
         .emit(target="alice", message="NEWSTATE,Playing,desc") \
         .emit(target="SPECTATOR", message="LEGALACTION,JOIN") \
         .respond_ok()
@@ -37,7 +37,7 @@ def test_happy_path_emits_then_responds(tmp_path):
     proc = spawn_mock(tmp_path, mock)
     try:
         write_message(proc.stdin, {"id": 1, "method": "handleAction",
-                                    "params": {"player": "alice", "action": "JOIN"}})
+                                    "params": {"player": "alice", "action": "JOIN", "params": {}}})
 
         first = read_message(proc.stdout)
         assert first == {"method": "event",
@@ -56,12 +56,12 @@ def test_happy_path_emits_then_responds(tmp_path):
 
 def test_error_response_has_no_preceding_events(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="MOVE").respond_error("That is not a legal move.")
+    mock.on("handleAction", action="MOVE", params={}).respond_error("That is not a legal move.")
 
     proc = spawn_mock(tmp_path, mock)
     try:
         write_message(proc.stdin, {"id": 7, "method": "handleAction",
-                                    "params": {"player": "alice", "action": "MOVE"}})
+                                    "params": {"player": "alice", "action": "MOVE", "params": {}}})
         response = read_message(proc.stdout)
         assert response == {"id": 7, "error": "That is not a legal move."}
     finally:
@@ -71,22 +71,22 @@ def test_error_response_has_no_preceding_events(tmp_path):
 
 def test_crash_exits_without_responding(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="MOVE").crash()
+    mock.on("handleAction", action="MOVE", params={}).crash()
 
     proc = spawn_mock(tmp_path, mock)
     write_message(proc.stdin, {"id": 1, "method": "handleAction",
-                                "params": {"player": "alice", "action": "MOVE"}})
+                                "params": {"player": "alice", "action": "MOVE", "params": {}}})
     assert read_message(proc.stdout) is None  # EOF -- the "crash" happened
     assert proc.wait(timeout=5) != 0
 
 
 def test_mismatched_request_fails_loudly(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="JOIN").respond_ok()
+    mock.on("handleAction", action="JOIN", params={}).respond_ok()
 
     proc = spawn_mock(tmp_path, mock)
     write_message(proc.stdin, {"id": 1, "method": "handleAction",
-                                "params": {"player": "alice", "action": "SOMETHING_ELSE"}})
+                                "params": {"player": "alice", "action": "SOMETHING_ELSE", "params": {}}})
     assert proc.wait(timeout=5) != 0
     stderr = proc.stderr.read()
     assert "expected a request matching" in stderr
@@ -94,15 +94,15 @@ def test_mismatched_request_fails_loudly(tmp_path):
 
 def test_extra_request_after_script_exhausted_fails_loudly(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="JOIN").respond_ok()
+    mock.on("handleAction", action="JOIN", params={}).respond_ok()
 
     proc = spawn_mock(tmp_path, mock)
     write_message(proc.stdin, {"id": 1, "method": "handleAction",
-                                "params": {"player": "alice", "action": "JOIN"}})
+                                "params": {"player": "alice", "action": "JOIN", "params": {}}})
     assert read_message(proc.stdout) == {"id": 1, "result": {}}
 
     write_message(proc.stdin, {"id": 2, "method": "handleAction",
-                                "params": {"player": "alice", "action": "MOVE"}})
+                                "params": {"player": "alice", "action": "MOVE", "params": {}}})
     assert proc.wait(timeout=5) != 0
     stderr = proc.stderr.read()
     assert "unexpected request after script exhausted" in stderr
@@ -110,12 +110,12 @@ def test_extra_request_after_script_exhausted_fails_loudly(tmp_path):
 
 def test_malformed_writes_raw_garbage(tmp_path):
     mock = MockGame()
-    mock.on("handleAction", action="JOIN").malformed("not json at all {{{")
+    mock.on("handleAction", action="JOIN", params={}).malformed("not json at all {{{")
 
     proc = spawn_mock(tmp_path, mock)
     try:
         write_message(proc.stdin, {"id": 1, "method": "handleAction",
-                                    "params": {"player": "alice", "action": "JOIN"}})
+                                    "params": {"player": "alice", "action": "JOIN", "params": {}}})
         raw_line = proc.stdout.readline()
         assert raw_line.strip() == "not json at all {{{"
     finally:

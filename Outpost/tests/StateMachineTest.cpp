@@ -1,5 +1,5 @@
 #include "OutpostGameInfo.hpp"
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include <iostream>
 
 #include "ActionParser.hpp"
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestJOIN )
 
   OutpostGameInfo ogi(oset,sgi,top);
   BOOST_CHECK_EQUAL (ogi.GetPlayers().size() , (size_t)0);
-  ActionParser ap("JOIN");
+  ActionParser ap = MakeAction("JOIN");
 
   BOOST_CHECK_EQUAL(pJoin->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pJoin->IsLegal("Player1","InitialState",ogi) , true);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestUNJOIN )
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
   TestOutputPort top;
-  ActionParser ap("UNJOIN");
+  ActionParser ap = MakeAction("UNJOIN");
 
   OutpostStateMachine osm;
   const TransitionType *pUnJoin = GetTransition(osm,"InitialState","UNJOIN","InitialState",numInitialStateTransitions);
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   OutpostStateMachine osm;
   const TransitionType *pOptions = GetTransition(osm,"InitialState","OPTIONS","InitialState",numInitialStateTransitions);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("OPTIONS,0,0,0,1,3,2,0,1,0,1,2");
+  ActionParser ap = MakeAction("OPTIONS",{{"discard",false},{"refinery",false},{"oneupgrade",false},{"activebid",true},{"supplyharshness",3},{"robots",2},{"researchmega",false},{"smallresearch",true},{"smallmicro",false},{"blinddraws",true},{"stock",2}});
 
   ogi.GetPlayers().add("Player1");
 
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetBlindDraws() , true);
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetStockMechanism() , SOME_ONE_EXTRA);
 
-  ActionParser ap2("STANDARDBASIC");
+  ActionParser ap2 = MakeAction("STANDARDBASIC");
   const TransitionType *pSB = GetTransition(osm,"InitialState","STANDARDBASIC","InitialState",numInitialStateTransitions);
 
   // only players in the game can change options.
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetResearchIsSmall() , false);
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetMicroIsSmall() , false);
 
-  ActionParser ap3("STANDARDEXPERT");
+  ActionParser ap3 = MakeAction("STANDARDEXPERT");
   const TransitionType *pSE = GetTransition(osm,"InitialState","STANDARDEXPERT","InitialState",numInitialStateTransitions);
 
   // only players in the game can change options.
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestVALIDATESETUP )
   OutpostStateMachine osm;
   const TransitionType *pVS = GetTransition(osm,"InitialState","VALIDATESETUP","ValidateSetup",numInitialStateTransitions);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("VALIDATESETUP");
+  ActionParser ap = MakeAction("VALIDATESETUP");
 
   ogi.GetPlayers().add("Player1");
 
@@ -312,8 +312,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestLIKEORNOT )
   const TransitionType *pLO = GetTransition(osm,"ValidateSetup","LIKEOPTIONS","ValidateSetup",3);
   const TransitionType *pDL = GetTransition(osm,"ValidateSetup","DONTLIKEOPTIONS","InitialState",3);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("LIKEOPTIONS");
-  ActionParser ap2("DONTLIKEOPTIONS");
+  ActionParser ap = MakeAction("LIKEOPTIONS");
+  ActionParser ap2 = MakeAction("DONTLIKEOPTIONS");
 
   ogi.GetPlayers().add("Player1");
   ogi.GetPlayers().add("Player3");
@@ -361,7 +361,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTGAME )
   OutpostStateMachine osm;
   const TransitionType *pSG = GetTransition(osm,"ValidateSetup","STARTGAME","TurnOrder",3);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // STARTGAME should never be a legal action.
   BOOST_CHECK_EQUAL(pSG->IsLegal("Player1","ValidateSetup",ogi) , false);
@@ -522,7 +522,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestTURNORDER )
   OutpostStateMachine osm;
   const TransitionType *pTO = GetTransition(osm,"TurnOrder","DETERMINETURNORDER","SupplyFill",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pTO->IsLegal("Player1","TurnOrder",ogi) , false);
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestFILLSHIP )
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"SupplyFill","FILLSHIP","StartResources",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pFS->IsLegal("Player1","SupplyFill",ogi) , false);
@@ -630,7 +630,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pFS->IsLegal("Player1","StartResources",ogi) , false);
@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Turn1 )
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pFS->IsLegal("Player1","StartResources",ogi) , false);
@@ -803,7 +803,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Refineries )
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pFS->IsLegal("Player1","StartResources",ogi) , false);
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBlindDraws )
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
   
   // player 1 has 5 vp
   ogi.GetPlayers().add("Player1");
@@ -959,7 +959,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
   OutpostStateMachine osm;
   const TransitionType *pFS = GetTransition(osm,"PromptMegaResources","REQUESTMEGA","MegaResources",3);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   // should never be a legal action.
   BOOST_CHECK_EQUAL(pFS->IsLegal("Player1","PromptMegaResources",ogi) , false);
@@ -1022,20 +1022,20 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
   BOOST_CHECK_EQUAL(pNM->IsLegal("Player2","MegaResources",ogi) , false );
 
   // bad input should keep it from executing.
-  ActionParser ap2("NUMMEGAS,-1");
+  ActionParser ap2 = MakeAction("NUMMEGAS",{{"i_count",-1}});
   BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap2) , false);
   BOOST_CHECK_EQUAL(ogi.GetProductionManager().IsProductionDone() , false);
   BOOST_CHECK_EQUAL(top.GetOutput(), "unicast: Player1 -- ERROR,Action NUMMEGAS variable i_count is below minimum\n");
   top.ResetOutput();
 
   // bad input should keep it from executing.
-  ActionParser ap3("NUMMEGAS,2");
+  ActionParser ap3 = MakeAction("NUMMEGAS",{{"i_count",2}});
   BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap3) , false);
   BOOST_CHECK_EQUAL(ogi.GetProductionManager().IsProductionDone() , false);
   BOOST_CHECK_EQUAL(top.GetOutput(), "unicast: Player1 -- ERROR,Action NUMMEGAS variable i_count is above maximum\n");
   top.ResetOutput();
 
-  ActionParser ap4("NUMMEGAS,1");
+  ActionParser ap4 = MakeAction("NUMMEGAS",{{"i_count",1}});
   BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap4) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true),"|WA30M-WA*|");
 
@@ -1077,7 +1077,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD1 )
   OutpostStateMachine osm;
   const TransitionType *pSD = GetTransition(osm,"StartDiscard","STARTDISCARD","DoDiscard",1);
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   ogi.GetPlayers().add("Player1");
   ogi.GetPlayers()[0].GetOwnedItems().AddItem(OUTPOST);
@@ -1148,7 +1148,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD2 )
 
   OutpostStateMachine osm;
   OutpostGameInfo ogi(oset,sgi,top);
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   ogi.GetPlayers().add("Player1");
   ogi.GetPlayers().DetermineTurnOrder(); // points to the first player
@@ -1319,7 +1319,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap("DISCARD,001100100");
+  ActionParser ap = MakeAction("DISCARD",{{"i_discardstring","001100100"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Mismatched delete string length\n" );
   top.ResetOutput();
@@ -1330,7 +1330,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap2("DISCARD,001B0000");
+  ActionParser ap2 = MakeAction("DISCARD",{{"i_discardstring","001B0000"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap2) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Illegal characters in delete string\n" );
   top.ResetOutput();
@@ -1341,7 +1341,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap3("DISCARD,00000011");
+  ActionParser ap3 = MakeAction("DISCARD",{{"i_discardstring","00000011"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap3) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , 
                      "unicast: Player1 -- ERROR,You need to discard more to get to your hand limit.\n" );
@@ -1353,7 +1353,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap4("DISCARD,00000111");
+  ActionParser ap4 = MakeAction("DISCARD",{{"i_discardstring","00000111"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap4) , true);
   BOOST_CHECK_EQUAL( top.GetOutput() , 
                      "broadcast: SPENDS,0,0,2,0,3,|TI17-TI16-TI15|\n"
@@ -1419,7 +1419,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap("DISCARD,001100100");
+  ActionParser ap = MakeAction("DISCARD",{{"i_discardstring","001100100"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Mismatched delete string length\n" );
   top.ResetOutput();
@@ -1430,7 +1430,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap2("DISCARD,001B0000");
+  ActionParser ap2 = MakeAction("DISCARD",{{"i_discardstring","001B0000"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap2) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Illegal characters in delete string\n" );
   top.ResetOutput();
@@ -1441,7 +1441,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(TITANIUM_COMMODITY).GetDiscardSize() , 0 );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
-  ActionParser ap3("DISCARD,00000011");
+  ActionParser ap3 = MakeAction("DISCARD",{{"i_discardstring","00000011"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap3) , false);
   BOOST_CHECK_EQUAL( top.GetOutput() , 
                      "unicast: Player1 -- ERROR,You need to discard more to get to your hand limit.\n" );
@@ -1459,7 +1459,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 0);
 
 
-  ActionParser ap4("DISCARD,00000111");
+  ActionParser ap4 = MakeAction("DISCARD",{{"i_discardstring","00000111"}});
   BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap4) , true);
   BOOST_CHECK_EQUAL( top.GetOutput() , 
                      "broadcast: SPENDS,0,0,2,0,3,|TI17-TI16-TI15|\n"
@@ -1493,7 +1493,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTMANNING )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   TestOutputPort top;
 
@@ -1559,7 +1559,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONEMANNING )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   TestOutputPort top;
 
@@ -1684,7 +1684,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDMANNING )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   TestOutputPort top;
 
@@ -1764,7 +1764,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("");
+  ActionParser ap = MakeAction("");
 
   TestOutputPort top;
 

@@ -1,23 +1,20 @@
 #include "ActionParser.hpp"
-#include "StringUtilities.hpp"
-#include <stdexcept>
-#include <iostream>
+#include <ostream>
 
-ActionParser::ActionParser(const std::string &i_InString) :
-	m_RawLine(i_InString)
+ActionParser::ActionParser(const std::string &i_RawJsonLine)
 {
-	Tokenize(m_Arguments,i_InString,",",true);
+	boost::json::value parsed = boost::json::parse(i_RawJsonLine);
+	const boost::json::object &obj = parsed.as_object();
 
-	if (m_Arguments.size() == 0) return;
+	m_Namespace = std::string(obj.at("namespace").as_string().c_str());
+	m_ActionName = std::string(obj.at("action").as_string().c_str());
+	m_Params = obj.at("params").as_object();
+}
 
-	for (size_t i = 0 ; i < m_Arguments.size() ; i++)
-	{
-		m_Arguments[i] = ReComma(m_Arguments[i]);
-	}
-
-	m_ActionName = m_Arguments[0];
-
-	m_Arguments.erase(m_Arguments.begin());
+ActionParser::ActionParser(const std::string &i_ActionName,const boost::json::object &i_Params) :
+	m_ActionName(i_ActionName),
+	m_Params(i_Params)
+{
 }
 
 const std::string &ActionParser::GetActionName() const
@@ -25,32 +22,20 @@ const std::string &ActionParser::GetActionName() const
 	return m_ActionName;
 }
 
-const std::string &ActionParser::GetRawLine() const
+const std::string &ActionParser::GetNamespace() const
 {
-	return m_RawLine;
+	return m_Namespace;
 }
 
-int ActionParser::GetNumArguments() const
+const boost::json::object &ActionParser::GetParams() const
 {
-	return m_Arguments.size();
-}
-
-const std::string &ActionParser::operator[] (size_t i_Index) const
-{
-	if (i_Index < 0 || i_Index >= m_Arguments.size())
-	{
-		throw std::out_of_range("Out of Range in ActionParser");
-	}
-	return m_Arguments[i_Index];
+	return m_Params;
 }
 
 std::ostream &operator<<(std::ostream &o, const ActionParser &i_ap)
 {
+	o << "Namespace: " << i_ap.GetNamespace() << std::endl;
 	o << "Name: " << i_ap.GetActionName() << std::endl;
-	for (int i = 0 ; i < i_ap.GetNumArguments() ; ++i)
-	{
-		o << "   " << i_ap[i] << std::endl;
-	}
+	o << "Params: " << boost::json::serialize(i_ap.GetParams()) << std::endl;
 	return o;
 }
-

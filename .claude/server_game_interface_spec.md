@@ -663,7 +663,11 @@ validatable, one variable changed at a time:**
 2. **JSON re-encoding of the client↔server wire — its own standalone phase, not bundled into either
    neighbor. Revised 2026-09-27 (Albert) to cover actions, not events — see the dated note below for
    why — then revised again 2026-09-28 (Albert): the real dividing line is direction, not message
-   category. **Phase 2 covers *every* client→server message, not just in-game actions** — this
+   category. **Phase 2 covers *every* client→server message, not just in-game actions.** **Server side
+   (including the game-process side of the game↔server wire and `transitioncompiler`'s codegen) done
+   and verified 2026-09-29 — see `TODO.md`'s matching item for the full file-by-file summary and test
+   results; only the Java client's outgoing side (`GameGui.SendAction`/`ClientManager.
+   SendLoginLikeString`) remains, not started.** This
    explicitly includes `LOGIN`/`LOGOUTOTHER` (today's `ClientManager.SendLoginLikeString`, previously
    carved out as its own separately-deferred island — that carve-out is superseded) and whatever
    room-navigation traffic (`CHANGEROOM`/`NEWROOM`/etc.) the client sends, source not yet located in
@@ -706,19 +710,51 @@ validatable, one variable changed at a time:**
    `TODO.md`-flagged `V1.0`→`V2.0` server version-string bump, since the welcome string carrying that
    version is itself one of the messages changing shape.
 
-**Confirmed 2026-09-26, revised 2026-09-27: phase 2 wraps today's *action* messages, it does not
-genuinely restructure them, and it does not touch events at all — both deliberately, to avoid
-replumbing the same code twice.** Phase 2 could, in principle, re-encode actions as real per-field
-JSON (`{"method":"MOVE","params":{"piece":3,"dest":7}}`) rather than an opaque comma-string carried
-as one JSON field's value (`{"action":"MOVE,3,7"}`) — Albert's call: if phase 2 were the final
-destination, genuine restructuring would be worth it, but phase 3 requires touching the same code
-again, more deeply, to actually split state into per-field JSON, so doing the "real" restructuring
-once, in phase 3, avoids replumbing the same places twice. Concrete consequence: `ActionParser` (see
-`gamecommon/ActionParser.hpp`) needs no changes at all across phase 2 — its `GetRawLine()` accessor
-(added for `GameProcessProxy`'s forwarding needs, phase 1) stays exactly as useful once actions
-arrive JSON-wrapped instead of as bare socket lines, since `ActionParser` never knew or cared where
-its input string came from in the first place; only whoever constructs it (parsing the outer JSON
-envelope first, under phase 2) changes.
+**Superseded 2026-09-29 — the "opaque string, avoid replumbing twice" reasoning below no longer
+applies, and is kept only for the history of how this design evolved.** ~~Confirmed 2026-09-26,
+revised 2026-09-27: phase 2 wraps today's *action* messages, it does not genuinely restructure them,
+and it does not touch events at all — both deliberately, to avoid replumbing the same code twice.
+Phase 2 could, in principle, re-encode actions as real per-field JSON
+(`{"method":"MOVE","params":{"piece":3,"dest":7}}`) rather than an opaque comma-string carried as one
+JSON field's value (`{"action":"MOVE,3,7"}`) — Albert's call: if phase 2 were the final destination,
+genuine restructuring would be worth it, but phase 3 requires touching the same code again, more
+deeply, to actually split state into per-field JSON, so doing the "real" restructuring once, in phase
+3, avoids replumbing the same places twice.~~ **Why this no longer holds (Albert, 2026-09-29):** this
+assumed phase 3 would eventually come back and restructure the *action* side "for real." Under the
+direction-based phase split finalized 2026-09-28 (Phase 2 = the entire client→server direction,
+permanently; Phase 3 = the entire server→client direction, permanently — see "Action namespacing"
+above and the Staging section below), Phase 3 never touches actions at all. There is no future second
+pass on the action encoding — whatever shape Phase 2 gives it is what this codebase lives with for
+the foreseeable future, so the "avoid doing it twice" argument for picking the cheapest option
+doesn't apply; there's no second time to avoid.
+
+**Resolved 2026-09-29 (Albert): actions get real, natively-typed, named JSON fields — not an opaque
+string, not even named-but-still-string fields.** E.g. `{"namespace":["game"],"action":"OPTIONS",
+"params":{"discard":false,"robots":2,...}}`, with each param's JSON type (number/boolean/string)
+matching its declared C++ type, not a stringified value needing `boost::lexical_cast`. This is a
+direct, deliberate response to actually reading the real generated validation code together
+(`Outpost/tca/OutpostDLL.cpp`'s `OutpostGameInfo::OPTIONS_ExecuteAction`): today's `ActionParser`
+(`gamecommon/ActionParser.hpp`) hands every argument to `*_ExecuteAction` as a plain positional
+`std::string`, and the transitioncompiler-generated body does one `boost::lexical_cast<T>(i_ap[N])`
+per declared argument (plus separate min/max range validation, unaffected by this change either way).
+Two things make the natively-typed option cheap enough to justify given it's now permanent, not a
+placeholder to revisit later: (1) **no new dependency** — `boost::json` is already a live project
+dependency (`common/JsonLineProtocol.hpp`, built for Phase 1's game↔server wire), so parsing typed
+JSON values doesn't require adopting anything new; (2) **no new information to invent** — every
+argument's target type (and its min/max) already lives in the `<var>` declarations in each
+`<Game>Server.xml` at codegen time, `transitioncompiler` already knows it, it just currently emits a
+`lexical_cast`-from-string call instead of a typed JSON-object accessor. The actual work is
+localized and identified, not open-ended: `transitioncompiler/Transition.pm` and `FileWriter.pm` are
+the two modules that currently emit the `lexical_cast` blocks (confirmed via `grep`) and are what need
+rewriting to emit typed `boost::json` extraction instead. `ActionParser` itself either goes away or
+becomes a thin JSON-object wrapper — no longer a comma-line splitter.
+
+**A related, softer finding from the same conversation, recorded in `TODO.md`'s "Phase 4"
+`transitioncompiler`-obsolescence item, not here:** reading this validation code directly reminded
+Albert how much real sophistication `transitioncompiler` already generates (argument-count checks,
+per-field typed casting, range validation, state-validity checks) — tempering, not cancelling, the
+appetite for replacing it with template metaprogramming or a from-scratch reimplementation anytime
+soon. See that `TODO.md` item for the full note.
 
 **Second application of the same "don't replumb it twice" principle, this time to *which side* of
 the wire phase 2 touches at all, not just how deep (Albert, 2026-09-27):** the original plan had
@@ -778,12 +814,10 @@ one game type for another in the same room) that happens to coincidentally also 
 name in the new game would silently misfire against the wrong rules instead of erroring.
 
 **Resolution (Albert, 2026-09-28), rolled into the Phase 2 JSON re-encoding of the client→server
-wire (see "Staging" above): every Action gets an explicit `namespace` field — a path of segments,
-not a flat string or a binary tag** — specifically so adding more layers later never forces a
-redesign, only inserting one more check in the existing chain. **No default/implicit namespace is
-allowed; every action must carry one explicitly.** Two kinds of namespace value:
-- **A small, hardcoded, structurally-fixed set for the server's own reserved layers** — one segment
-  value per real dispatch layer (`RoomManager`'s own 4 actions, `Room`'s own 3), matching the two
+wire (see "Staging" above): every Action gets an explicit `namespace` field.** **No default/implicit
+namespace is allowed; every action must carry one explicitly.** Two kinds of namespace value:
+- **A small, hardcoded, structurally-fixed set for the server's own reserved layers** — one value
+  per real dispatch layer (`RoomManager`'s own 4 actions, `Room`'s own 3), matching the two
   `HandleAction` chains above exactly.
 - **For every other action, the namespace must equal the actual live game's own public `Name`**
   (`ServerGameInfo::GetName()`/`GameBox::GetName()` — the same string already threaded through
@@ -793,15 +827,55 @@ allowed; every action must carry one explicitly.** Two kinds of namespace value:
   the second bug class above, not just the first: a stale or misdirected action can no longer
   silently reach the wrong game's rules engine.
 
+**`namespace` is a plain string, not a path/array — settled 2026-09-29, after briefly considering and
+rejecting an array.** The initial design (2026-09-28) made `namespace` an array of segments
+specifically so a hypothetical future extra dispatch layer could be added without a wire-schema
+change, modeled on filesystem paths/Java packages. **Albert, 2026-09-29, after being asked to weigh
+that tradeoff directly: "I can't for the life of me see this getting complicated enough that we would
+need in-JSON-object support for hierarchical namespaces"** — every concrete namespace value actually
+specified above is exactly one segment deep (a single hardcoded reserved-layer value, or a single
+game name), so the array was paying a real complexity cost against a hierarchy need that doesn't
+exist and may never materialize; if it ever does, a plain string can move to a delimited convention
+(`"room.something"`) or a schema bump same as any other wire format change would. Settled as a plain
+string.
+
+**Full resolved shape of an incoming Action (Albert, 2026-09-29) — envelope fields at the top level,
+every argument nested one level down, eliminating any possibility of a name collision between the
+two (see below for why nesting, not a prefix, was chosen):**
+```json
+{"namespace": "Outpost", "action": "BUYOREFACTORIES", "params": {"NumOre": 2, "DiscardString": "0010"}}
+```
+- **`namespace`** — a plain string, per above: one of the small hardcoded reserved values, or the
+  live game's own public `Name`.
+- **`action`** — the action's own name (matching today's `ActionParser::GetActionName()`).
+  **Naming this took two rejected candidates first, worth recording since the reasoning generalizes:**
+  `name` was rejected because it's already heavily used in the real dispatch code to mean the
+  *player's* name (`Room::HandleAction(const std::string &i_Name, const ActionParser &i_ap)`,
+  `RoomManager::HandleNewRoom(const std::string &i_Name, ...)`, etc. — confirmed directly in
+  `RoomManager.cpp`); `method` was rejected because it borrows JSON-RPC vocabulary implying real
+  method dispatch, when `RoomManager`/`Room::HandleAction` are actually plain if/else string chains —
+  Albert didn't want a field name overclaiming an implementation shape the code doesn't have.
+  `actionname` (mapping 1:1 onto the existing C++ accessor) was considered and rejected in favor of
+  the shorter `action`.
+- **`params`** — every argument declared by the transition's `<var>` directives in `<Game>Server.xml`,
+  keyed by name, nested in its own object specifically so `namespace`/`action` can never collide with
+  a user-defined argument name — reusing the exact same envelope/`params` split already established
+  for the Phase 1 game↔server wire's `Request` shape (`{"id":<n>,"method":"<name>","params":{...}}`,
+  see the message catalog above) rather than inventing a second, different collision-avoidance
+  convention (e.g. a reserved-field prefix) for this leg of the wire.
+- **C++ numeric types are represented as native JSON numbers, non-numeric C++ types as JSON strings**
+  (Albert, 2026-09-29) — this is what Tier 3 (above) actually means concretely: `int`/similar become
+  JSON numbers, not numeral strings needing `boost::lexical_cast`.
+
 **What this makes `RoomManager`/`Room`'s dispatch look like** (Albert: "quite lovely" — handle
 everything that's your own, pass on everything that isn't, unchanged in shape as more layers appear):
 ```cpp
 void RoomManager::HandleAction(...) {
-  if (i_ap.GetNamespace().front() == "roommanager") { /* dispatch by action name, as today */ }
+  if (i_ap.GetNamespace() == "roommanager") { /* dispatch by action name, as today */ }
   else { pRoom->HandleAction(i_Name, i_ap); }  // pass the whole thing on, untouched
 }
 void Room::HandleAction(...) {
-  if (i_ap.GetNamespace().front() == "room") { /* dispatch by action name, as today */ }
+  if (i_ap.GetNamespace() == "room") { /* dispatch by action name, as today */ }
   else { m_pGame->HandleAction(i_Name, i_ap, m_Inhabitants); }  // game validates namespace == its own Name
 }
 ```
@@ -809,11 +883,53 @@ void Room::HandleAction(...) {
 **Client-side consequence, concrete and small:** `GameGui` doesn't currently store its own gui-name
 at all — `GUIUnit` sees it via `GuiPacketParser.GetGuiName()` at construction time (the same string
 as the game's public `Name`, per how `NEWGUI` is built) but never passes it down. That needs
-threading into `GameGui`'s constructor so `SendAction` can stamp `{"namespace": [thatName], ...}` on
+threading into `GameGui`'s constructor so `SendAction` can stamp `{"namespace": thatName, ...}` on
 every outgoing action from that instance automatically, with no per-action-site bookkeeping anywhere
 in the widget code documented in [[component-java-client]]/[[outpost-client-gui]]/
 [[merchant-of-venus-client-gui]] — none of those call sites need to know or care about namespacing at
 all, `GameGui.SendAction` is still the one and only place that changes.
+
+**`LOGIN`/`LOGOUTOTHER` are explicitly excluded from this shape (Albert, 2026-09-29) — their own
+design is a separate conversation, not yet had.** Albert wants them JSON too eventually, but since
+their format is "absolutely fixed" (always exactly username/password, no schema-driven variability
+the way a game transition's `<var>`s have), they don't need the generality of `namespace`/`action`/
+`params` at all — whatever shape ends up simplest for a fixed two-field message is fine, and doesn't
+need to reuse this envelope.
+
+**Both the server and the individual game process unwrap this JSON — but not the same amount, and
+not symmetrically. Confirmed 2026-09-29 by tracing the real code, both directions of both wires
+involved:**
+- **Client → server:** `RoomManager`/`Room::HandleAction` must parse the incoming JSON enough to read
+  `namespace` — mandatory for every action, since routing depends on it. For the 7 reserved actions
+  (`NEWROOM`/`CHANGEROOM`/`ROOMTALK`/`PLAYERTALK`/`NEWGAME`/`LOADGAME`/`SAVEGAME`), the server also
+  needs `action` and `params` fully, since it executes those itself. For a game-bound action, the
+  server needs `namespace` (to validate against the room's live game) but never needs to interpret
+  `action`/`params` at all — those get passed through opaquely, matching the standing principle that
+  the server holds no game-internal knowledge.
+- **Server → game process — this is the part that reaches back into already-shipped Phase 1 work, not
+  just new Phase 2 surface.** Checked directly: `server/GameProcessProxy.cpp:192` builds today's
+  outgoing `handleAction` JSON-RPC request with `params["action"] = i_ap.GetRawLine();` — the
+  *entire original raw client line*, forwarded verbatim as one opaque string, exactly what
+  `ActionParser::GetRawLine()` was added for in Phase 1. Inside the game process,
+  `gamecommon/GameServerMain.hpp:172,182` pulls that string back out
+  (`params.at("action").as_string()`) and reconstructs a **second** `ActionParser` from it
+  (`ActionParser ap(action)`) before calling `game.HandleAction(player, ap, roster)` — which is what
+  reaches the generated `*_ExecuteAction` methods' positional `boost::lexical_cast` calls. So today,
+  both wires' `ActionParser`s run over the *identical* raw string, redundantly — that redundancy is
+  exactly what let Phase 1 ship with zero coupling between the two wires' formats.
+- **What Tier 3 forces to change here:** for the generated `*_ExecuteAction` code to actually stop
+  doing `lexical_cast`-from-string and read typed JSON directly, the typed `params` object has to
+  survive intact from the client all the way into the game process — a single raw string can't carry
+  that. Concretely: `GameProcessProxy.cpp`'s outgoing `handleAction` request needs to carry `action`
+  (the name) and `params` (the real JSON object, passed through by the server without transformation)
+  instead of one opaque string, and `GameServerMain.hpp`'s `handleAction` case needs to stop building
+  an `ActionParser` from a string and instead hand the generated dispatch code a `boost::json::object`
+  directly. **Real implementation-scope consequence: Phase 2, as designed, requires touching
+  `GameProcessProxy.cpp` and `GameServerMain.hpp` — both already-shipped, already-tested Phase 1
+  code — not just `RoomManager`/`Room`/`ActionParser`/`transitioncompiler`.** `ActionParser` itself
+  likely goes away entirely at that point, on both sides of both wires, replaced by direct
+  `boost::json::object` access — it was purpose-built for the comma-line format this whole redesign
+  is retiring.
 
 ## `ERROR` is a special case, handled specially on both client and server (Albert, 2026-09-22)
 

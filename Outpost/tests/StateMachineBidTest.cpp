@@ -1,5 +1,5 @@
 #include "OutpostGameInfo.hpp"
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include <iostream>
 
 #include "ActionParser.hpp"
@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPurchaseDualTransitions )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   ogi.GetPlayers()[4].SetLastBid(25);
   ogi.GetPlayers()[5].SetLastBid(25);
 
-  ActionParser ap1("OPENBID,2,30");
+  ActionParser ap1 = MakeAction("OPENBID",{{"i_shipslot",2},{"i_openingbid",30}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap1) , false); // fail, slot is not valid
   BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_shipslot has illegal value\n");
   top.ResetOutput();
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetLastBid() , 25);
 
 
-  ActionParser ap2("OPENBID,1,90");
+  ActionParser ap2 = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",90}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap2) , false); // fail, less than face cost
   BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_openingbid is below minimum\n");
   top.ResetOutput();
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetLastBid() , 25);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetLastBid() , 25);
 
-  ActionParser ap2a("OPENBID,1,106");
+  ActionParser ap2a = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",106}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap2a) , false); // fail, above funds + discounts (90 + 15)
   BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_openingbid is above maximum\n");
   top.ResetOutput();
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetPurchaseState() , INTERNALIZING );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetPurchaseState() , UNPLAYED );
 
-  ActionParser ap3("OPENBID,1,100");
+  ActionParser ap3 = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",100}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap3) , true); // should work...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetBidState() , UNBID);     BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetHighBid() , NOT_HIGH_BID );
@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -568,31 +568,31 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
   //     current bidder index's highbid - current bidder index's discounts
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
-  ActionParser ap3("PURCHASEBID,1111");
+  ActionParser ap3 = MakeAction("PURCHASEBID",{{"i_discardstring","1111"}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player4 -- ERROR,Mismatched delete string length\n" );
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
-  ActionParser ap4("PURCHASEBID,11");
+  ActionParser ap4 = MakeAction("PURCHASEBID",{{"i_discardstring","11"}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player4 -- ERROR,Mismatched delete string length\n" );
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
-  ActionParser ap5("PURCHASEBID,11V");
+  ActionParser ap5 = MakeAction("PURCHASEBID",{{"i_discardstring","11V"}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player4 -- ERROR,Illegal characters in delete string\n" );
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
-  ActionParser ap6("PURCHASEBID,110");
+  ActionParser ap6 = MakeAction("PURCHASEBID",{{"i_discardstring","110"}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player4 -- ERROR,You need to spend more to buy that.\n" );
   top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
-  ActionParser ap7("PURCHASEBID,111");
+  ActionParser ap7 = MakeAction("PURCHASEBID",{{"i_discardstring","111"}});
 
   ogi.GetPlayers()[4].AddHumans(1);
 
@@ -653,7 +653,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -757,7 +757,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
   ogi.GetPlayers()[5].SetLastBid(15);
 
 
-  ActionParser ap1("BID,50");
+  ActionParser ap1 = MakeAction("BID",{{"i_bid",50}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap1) , false); // should be fine
   BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player3 -- ERROR,Action BID variable i_bid is below minimum\n");
   top.ResetOutput();
@@ -770,7 +770,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetLastBid() , 15);
 
 
-  ActionParser ap2("BID,62");
+  ActionParser ap2 = MakeAction("BID",{{"i_bid",62}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap2) , false); // should be fine
   BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player3 -- ERROR,Action BID variable i_bid is above maximum\n");
   top.ResetOutput();
@@ -783,7 +783,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetLastBid() , 15);
 
 
-  ActionParser ap3("BID,55");
+  ActionParser ap3 = MakeAction("BID",{{"i_bid",55}});
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap3) , true); // should be fine
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 10);
@@ -828,7 +828,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASS )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -908,7 +908,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASS )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player3","Bid",ogi) , false); // current bidder, has enough money, but already has high bid.
   ogi.GetPlayers()[3].SetHighBid(NOT_HIGH_BID);
 
-  ActionParser ap3("PASS");
+  ActionParser ap3 = MakeAction("PASS");
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap3) , true); // should be fine
 
   // body:
@@ -937,7 +937,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
 {
   OutpostSet oset("");
   ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
-  ActionParser ap("DONE");
+  ActionParser ap = MakeAction("DONE");
 
   TestOutputPort top;
 
@@ -1017,7 +1017,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player3","Bid",ogi) , false); // current bidder, has enough money, but already has high bid.
   ogi.GetPlayers()[3].SetHighBid(NOT_HIGH_BID);
 
-  ActionParser ap3("PASS");
+  ActionParser ap3 = MakeAction("PASS");
 
   BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player5",ap3) , true); // should be fine
   // body for non-active player passing out:

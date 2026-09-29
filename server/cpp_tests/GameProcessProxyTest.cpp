@@ -3,7 +3,8 @@
 #include "ActionParser.hpp"
 #include "RecordingOutputPort.hpp"
 
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
+#include <boost/json.hpp>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -44,7 +45,7 @@ BOOST_AUTO_TEST_CASE( GetNameNeverTouchesTheWire )
 BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
 {
   std::string dir = MakeGameDir(
-    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\"}},"
+    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
     "\"emit\":[{\"target\":\"alice\",\"message\":\"NEWSTATE,Playing,desc\"},"
     "{\"message\":\"TURNORDER,alice\"}],"
     "\"then\":{\"result\":{}}}]");
@@ -52,7 +53,7 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
   RecordingOutputPort port;
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
-  ActionParser join("JOIN");
+  ActionParser join("JOIN", boost::json::object());
   std::set<std::string> roster;
   roster.insert("alice");
   proxy.HandleAction("alice", join, roster);
@@ -74,13 +75,13 @@ BOOST_AUTO_TEST_CASE( HandleActionForwardsRosterOverTheWire )
   // array always comes out sorted regardless of insertion order.
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"handleAction\","
-    "\"params\":{\"action\":\"JOIN\",\"roster\":[\"alice\",\"bob\"]}},"
+    "\"params\":{\"action\":\"JOIN\",\"params\":{},\"roster\":[\"alice\",\"bob\"]}},"
     "\"then\":{\"result\":{}}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
   RecordingOutputPort port;
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
-  ActionParser join("JOIN");
+  ActionParser join("JOIN", boost::json::object());
   std::set<std::string> roster;
   roster.insert("bob");
   roster.insert("alice");
@@ -90,13 +91,15 @@ BOOST_AUTO_TEST_CASE( HandleActionForwardsRosterOverTheWire )
 BOOST_AUTO_TEST_CASE( HandleActionErrorBecomesSenderOnlyUnicast )
 {
   std::string dir = MakeGameDir(
-    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"MOVE,99\"}},"
+    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"MOVE\",\"params\":{\"space\":99}}},"
     "\"then\":{\"error\":\"That is not a legal move.\"}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
   RecordingOutputPort port;
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
-  ActionParser move("MOVE,99");
+  boost::json::object moveParams;
+  moveParams["space"] = 99;
+  ActionParser move("MOVE", moveParams);
   std::set<std::string> roster;
   roster.insert("alice");
   proxy.HandleAction("alice", move, roster);
@@ -157,13 +160,13 @@ BOOST_AUTO_TEST_CASE( CrashMidRoundTripTerminatesGameAndNotifiesRoom )
   // (which has no per-room recovery and would take the whole server down).
   // Instead it broadcasts one ERROR line to the room and marks itself done.
   std::string dir = MakeGameDir(
-    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\"}},"
+    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
     "\"then\":{\"crash\":true}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
   RecordingOutputPort port;
   GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
 
-  ActionParser join("JOIN");
+  ActionParser join("JOIN", boost::json::object());
   std::set<std::string> roster;
   roster.insert("alice");
   BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join, roster));

@@ -77,12 +77,12 @@ def test_real_game_join_round_trip(real_games_server, game_name):
     alice = _connect(port, "alice")
     drain_until(alice, "INHABITANT,alice,Great Hall")
 
-    alice.send("NEWROOM,GameRoom")
+    alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
     drain_until(alice, "GUIROOM,GameRoom,,")
-    alice.send("CHANGEROOM,GameRoom")
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(alice, "INHABITANT,alice,GameRoom")
 
-    alice.send("NEWGAME,%s" % game_name)
+    alice.send_action("room", "NEWGAME", NewGame=game_name)
     drain_until(alice, "GUIROOM,GameRoom,%s,Starting up." % game_name)
 
     # JOIN is a self-loop back to InitialState in both games' XML (<cyclic
@@ -91,5 +91,5 @@ def test_real_game_join_round_trip(real_games_server, game_name):
     # worded status) is real confirmation the roster-based LEGALACTION
     # rewrite and the whole spawn/dispatch loop worked correctly for a real
     # game, not just the scripted mock.
-    alice.send("JOIN")
+    alice.send_action(game_name, "JOIN")
     drain_until(alice, "GUIROOM,GameRoom,%s,Starting up." % game_name)

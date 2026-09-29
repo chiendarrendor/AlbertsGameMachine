@@ -170,6 +170,7 @@ int RunGameServerMain(int argc,char **argv,int i_AutoRecursionDepth,
     {
       std::string player(params.at("player").as_string().c_str());
       std::string action(params.at("action").as_string().c_str());
+      const boost::json::object &actionParams = params.at("params").as_object();
 
       std::set<std::string> roster;
       const boost::json::array &rosterArray = params.at("roster").as_array();
@@ -179,7 +180,7 @@ int RunGameServerMain(int argc,char **argv,int i_AutoRecursionDepth,
         roster.insert(std::string(rosterit->as_string().c_str()));
       }
 
-      ActionParser ap(action);
+      ActionParser ap(action,actionParams);
       game.HandleAction(player,ap,roster);
       // DLLGame::HandleAction reports a rejected action as a plain
       // UniCast("ERROR,...") to the sender, not a distinguished failure --

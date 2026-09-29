@@ -68,6 +68,8 @@ sub WriteFiles
     print DLLCPP "#include <set>\n";
     print DLLCPP "#include <stdexcept>\n";
     print DLLCPP "#include <boost/lexical_cast.hpp>\n";
+    print DLLCPP "#include <boost/json.hpp>\n";
+    print DLLCPP "#include \"JsonParamExtraction.hpp\"\n";
     print DLLCPP "#include \"StringUtilities.hpp\"\n";
     print DLLCPP "#include \"${name}GameInfo.hpp\"\n";
     print DLLCPP "#include \"DLLGame.hpp\"\n";
@@ -148,7 +150,7 @@ sub WriteFiles
 	
 	my $actionsize = (exists $trans->{ACTIONS}) ? scalar @{$trans->{ACTIONS}} : 0;
 
-	print DLLCPP "  if (i_ap.GetNumArguments() != ",$actionsize,")\n";
+	print DLLCPP "  if (i_ap.GetParams().size() != ",$actionsize,")\n";
 	print DLLCPP "  {\n";
         print DLLCPP "    UnicastERROR(i_PlayerName,\"Bad number of arguments to ${tname}\");\n";
 	print DLLCPP "    return false;\n";
@@ -160,8 +162,17 @@ sub WriteFiles
 	    my $action = $trans->{ACTIONS}->[$i];
 	    my $atype = $action->{TYPE};
 	    my $aname = $action->{NAME};
-	    
-	    print DLLCPP "  $atype $aname(",$action->{TRANS},"(i_ap[${i}]));\n";
+
+	    print DLLCPP "  $atype $aname;\n";
+	    print DLLCPP "  try\n";
+	    print DLLCPP "  {\n";
+	    print DLLCPP "    $aname = ExtractJsonParam<$atype>(i_ap.GetParams(),\"$aname\");\n";
+	    print DLLCPP "  }\n";
+	    print DLLCPP "  catch (const std::exception &)\n";
+	    print DLLCPP "  {\n";
+	    print DLLCPP "    UnicastERROR(i_PlayerName,\"Malformed arguments to ${tname}\");\n";
+	    print DLLCPP "    return false;\n";
+	    print DLLCPP "  }\n";
 	    print DLLCPP "\n";
 	    if (exists $action->{MIN})
 	    {

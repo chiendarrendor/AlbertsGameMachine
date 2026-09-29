@@ -28,7 +28,7 @@ def drain_until(client, expected_line, max_lines=40):
 def test_login_and_room_navigation_needs_no_game_process(server):
     # Sanity check of the fixture itself -- no NEWGAME, no mock involved.
     alice = server.connect("alice")
-    assert alice.recv() == "CONNECTSTRING,Welcome to Albert's Game Server, V1.0!"
+    assert alice.recv() == "CONNECTSTRING,Welcome to Albert's Game Server, V2.0!"
     assert alice.recv() == "WELCOME"
     alice.recv()  # NEWGUI,ROOMGUI,...
     assert alice.recv() == "GAMES, "
@@ -36,25 +36,25 @@ def test_login_and_room_navigation_needs_no_game_process(server):
     assert alice.recv() == "GUIIAM,alice"
     drain_until(alice, "INHABITANT,alice,Great Hall")
 
-    alice.send("NEWROOM,Clubhouse")
+    alice.send_action("roommanager", "NEWROOM", RoomName="Clubhouse")
     drain_until(alice, "GUIROOM,Clubhouse,,")
-    alice.send("CHANGEROOM,Clubhouse")
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="Clubhouse")
     drain_until(alice, "GAMES,TestGame")
 
 
 def test_newgame_and_join_round_trip(server):
     alice = server.connect("alice")
     drain_until(alice, "INHABITANT,alice,Great Hall")
-    alice.send("NEWROOM,GameRoom")
+    alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
     drain_until(alice, "GUIROOM,GameRoom,,")
-    alice.send("CHANGEROOM,GameRoom")
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(alice, "INHABITANT,alice,GameRoom")
 
     server.mock_game.on("sendFullState", player="alice") \
         .emit(target="alice", message="LEGALACTION,JOIN") \
         .respond_ok()
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
-    server.mock_game.on("handleAction", action="JOIN") \
+    server.mock_game.on("handleAction", action="JOIN", params={}) \
         .emit(target="alice", message="NEWSTATE,Playing,desc") \
         .emit(message="TURNORDER,alice") \
         .respond_ok()
@@ -65,7 +65,7 @@ def test_newgame_and_join_round_trip(server):
     assert alice.expect("LEGALACTION,JOIN")
     drain_until(alice, "GUIROOM,GameRoom,TestGame,Starting up.")
 
-    alice.send("JOIN")
+    alice.send_action("TestGame", "JOIN")
     assert alice.expect("NEWSTATE,Playing,desc")
     assert alice.expect("TURNORDER,alice")
     drain_until(alice, "GUIROOM,GameRoom,TestGame,In Progress.")
@@ -78,12 +78,12 @@ def test_rejected_action_reaches_only_the_sender(server):
     drain_until(bob, "INHABITANT,bob,Great Hall")
     drain_until(alice, "INHABITANT,bob,Great Hall")
 
-    alice.send("NEWROOM,GameRoom")
+    alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
     drain_until(alice, "GUIROOM,GameRoom,,")
     drain_until(bob, "GUIROOM,GameRoom,,")
-    alice.send("CHANGEROOM,GameRoom")
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(alice, "INHABITANT,alice,GameRoom")
-    bob.send("CHANGEROOM,GameRoom")
+    bob.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(bob, "INHABITANT,bob,GameRoom")
     drain_until(alice, "INHABITANT,bob,GameRoom")
 
@@ -99,7 +99,7 @@ def test_rejected_action_reaches_only_the_sender(server):
     server.mock_game.on("sendFullState", player="bob").respond_ok()
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
-    server.mock_game.on("handleAction", action="MOVE,99") \
+    server.mock_game.on("handleAction", action="MOVE", params={"space": 99}) \
         .respond_error("That is not a legal move.")
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
@@ -108,7 +108,7 @@ def test_rejected_action_reaches_only_the_sender(server):
     drain_until(alice, "GUIROOM,GameRoom,TestGame,Starting up.")
     drain_until(bob, "GUIROOM,GameRoom,TestGame,Starting up.")
 
-    alice.send("MOVE,99")
+    alice.send_action("TestGame", "MOVE", space=99)
     assert alice.expect("ERROR,That is not a legal move.")
     # bob must see nothing at all from this rejected action except the
     # ordinary post-action room-status refresh every action triggers.
@@ -122,12 +122,12 @@ def test_disconnect_never_reaches_the_game_process(server):
     drain_until(bob, "INHABITANT,bob,Great Hall")
     drain_until(alice, "INHABITANT,bob,Great Hall")
 
-    alice.send("NEWROOM,GameRoom")
+    alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
     drain_until(alice, "GUIROOM,GameRoom,,")
     drain_until(bob, "GUIROOM,GameRoom,,")
-    alice.send("CHANGEROOM,GameRoom")
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(alice, "INHABITANT,alice,GameRoom")
-    bob.send("CHANGEROOM,GameRoom")
+    bob.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
     drain_until(bob, "INHABITANT,bob,GameRoom")
     drain_until(alice, "INHABITANT,bob,GameRoom")
 
@@ -141,7 +141,7 @@ def test_disconnect_never_reaches_the_game_process(server):
     server.mock_game.on("sendFullState", player="bob").respond_ok()
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
     server.mock_game.on("getStatusString").respond_ok({"status": "Starting up."})
-    server.mock_game.on("handleAction", action="JOIN") \
+    server.mock_game.on("handleAction", action="JOIN", params={}) \
         .emit(target="bob", message="NEWSTATE,Playing,desc") \
         .respond_ok()
     server.mock_game.on("getStatusString").respond_ok({"status": "In Progress."})
@@ -153,5 +153,5 @@ def test_disconnect_never_reaches_the_game_process(server):
     alice.close()  # disconnect -- must not be reported to the game process
     drain_until(bob, "DROPINHABITANT,alice")
 
-    bob.send("JOIN")
+    bob.send_action("TestGame", "JOIN")
     assert bob.expect("NEWSTATE,Playing,desc")

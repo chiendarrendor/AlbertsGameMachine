@@ -19,6 +19,7 @@ As of 2026-09-12, major items (roughly small→huge):
 6. Complete MerchantOfVenus client + server (see [[games-overview]]).
 7. Start "Interstellar" once boards/rules are supplied (new game, not yet started — see [[games-overview]]).
 8. Migrate server to AWS serverless (Lambda + API Gateway, with DynamoDB for state). This is unstarted. **Correction:** `awsnotes.txt` is NOT related to this — it documents the *current* deployment (EC2 + CloudFront), a separate/earlier effort. See [[aws-deployment]].
+9. **(Added 2026-09-29)** Reorganize the overall project directory hierarchy — top-level currently mixes per-game, shared-server, shared-client, and deployment directories with no real grouping (`tca/` singled out by Albert as especially non-standard). Not designed yet; likely overlaps with #2, #5, and #8 above.
 
 `TODO.md` also has a **MerchantOfVenus-specific** section (added 2026-09-12, during the implementation-status deep dive — see [[games-overview]]): validate relic behavior, validate buy/sell vs. barter, add an option to strip the unused combat items (Laser/Nova Ball) from play, and check whether space cities and land cities both count as "cities" for the one-buy/one-sell-per-landing rule. (A fifth item — reconciling `MerchantOfVenusMap.xml`'s 24 qbox spaces against a rulebook figure implying 25 — was resolved and removed: Albert confirmed by checking the physical board that 24 is correct and the rulebook's "11 leftover" figure is simply a misprint. `MerchantOfVenusMap.xml` needed no change.)
 
