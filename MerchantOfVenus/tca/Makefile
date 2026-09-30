@@ -33,6 +33,7 @@ CLIENTINSTALL=C:/apache/htdocs/client/MerchantOfVenus
 SERVERINSTALL=../../data/MerchantOfVenus
 TCOMDIR=../../transitioncompiler
 TCOM=perl -I${TCOMDIR} ${TCOMDIR}/tcom.pl
+VALIDATOR=perl -I${TCOMDIR} ${TCOMDIR}/validate_action_schema.pl
 
 OBJS= MerchantOfVenusState.o MerchantOfVenusSet.o Players.o Player.o \
 	MapData.o MapSpace.o Token.o Ship.o MapOverlay.o \
@@ -81,8 +82,17 @@ ${COMMON}/libCommon.a:
 ${GAMECOMMON}/libGameCommon.a:
 	- (cd ${GAMECOMMON} ; make)
 
-MerchantOfVenusDLL.cpp MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp: ../MerchantOfVenusServer.xml
-	${TCOM} $<
+MerchantOfVenusDLL.cpp MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp: ../MerchantOfVenusServer.xml .actionschema.validated
+	${TCOM} ../MerchantOfVenusServer.xml
+
+# Cross-validates ../MerchantOfVenusServer.xml's transition/action schema
+# against MerchantOfVenusClient.xml's independently-authored action schema --
+# nothing else in the build catches these two drifting apart, despite the
+# game depending on them matching exactly. See .claude/TODO.md's action-
+# schema item.
+.actionschema.validated: ../MerchantOfVenusServer.xml MerchantOfVenusClient.xml
+	${VALIDATOR} ../MerchantOfVenusServer.xml MerchantOfVenusClient.xml
+	touch $@
 
 install: serverinstall clientinstall
 
@@ -100,7 +110,7 @@ clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
 MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml 
 	${CPP} -I../client -P ../client/MerchantOfVenusClient.xml > MerchantOfVenusClient.xml
 
-clientjava:
+clientjava: .actionschema.validated
 	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
 	@- rm -rf ${CLIENTCLASSDIR}
 	@- mkdir -p ${CLIENTCLASSDIR}
@@ -125,6 +135,7 @@ clean:
 	@- rm -f ${OBJS} ${TESTOBJS} MerchantOfVenusDLL.cpp ${MAINTESTOBJ}
 	@- rm -f outposttest.exe MerchantOfVenusClient.xml MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp
 	@- rm -f MerchantOfVenus
+	@- rm -f .actionschema.validated
 	@- rm -f ${ALLOBJS:.o=.d}
 
 -include $(ALLOBJS:.o=.d)

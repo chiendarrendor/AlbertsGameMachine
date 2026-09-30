@@ -18,6 +18,9 @@ a.out
 */tca/clientstage/
 */tca/*DLL.cpp
 */tca/*GameInfo.hpp
+*/tca/*EventGenerator.hpp
+*/tca/*Client.xml
+*/tca/.actionschema.validated
 */tca/*.d
 
 .claude/worktrees

@@ -14,6 +14,13 @@ CLIENTINSTALL=./clientstage
 SERVERINSTALL=../../data/Outpost
 TCOMDIR=../../transitioncompiler
 TCOM=perl -I${TCOMDIR} ${TCOMDIR}/tcom.pl
+VALIDATOR=perl -I${TCOMDIR} ${TCOMDIR}/validate_action_schema.pl
+
+# The fragments cpp -P splices into OutpostClient.xml -- not just the
+# top-level file -- so both the splice itself and the action-schema
+# validation below correctly rebuild when any of them changes.
+CLIENTXMLFRAGMENTS=../client/events.xml ../client/actions.xml ../client/Options.xml \
+	../client/Players.xml ../client/ResourceRules.xml
 
 MAINTESTOBJ=testmain.o
 
@@ -72,8 +79,16 @@ ${COMMON}/libCommon.a:
 ${GAMECOMMON}/libGameCommon.a:
 	- (cd ${GAMECOMMON} ; make)
 
-OutpostDLL.cpp OutpostEventGenerator.hpp OutpostGameInfo.hpp: ../OutpostServer.xml
-	${TCOM} $<
+OutpostDLL.cpp OutpostEventGenerator.hpp OutpostGameInfo.hpp: ../OutpostServer.xml .actionschema.validated
+	${TCOM} ../OutpostServer.xml
+
+# Cross-validates ../OutpostServer.xml's transition/action schema against
+# OutpostClient.xml's independently-authored action schema -- nothing else
+# in the build catches these two drifting apart, despite the game depending
+# on them matching exactly. See .claude/TODO.md's action-schema item.
+.actionschema.validated: ../OutpostServer.xml OutpostClient.xml
+	${VALIDATOR} ../OutpostServer.xml OutpostClient.xml
+	touch $@
 
 install: serverinstall clientinstall
 
@@ -99,10 +114,10 @@ stageclient: OutpostClient.xml clientjava
 	cp ../client/*.JPG .
 
 
-OutpostClient.xml: ../client/OutpostClient.xml 
+OutpostClient.xml: ../client/OutpostClient.xml ${CLIENTXMLFRAGMENTS}
 	${CPP} -I../client -P ../client/OutpostClient.xml > OutpostClient.xml
 
-clientjava:
+clientjava: .actionschema.validated
 	- rm -f ${CLIENTJAVADIR}/Outpost/*.class
 	- rm -rf ${CLIENTCLASSDIR}
 	- mkdir -p ${CLIENTCLASSDIR}
