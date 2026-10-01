@@ -47,7 +47,7 @@ ActionTransferManager atm;
     diebuttons = new JButton[7];
     for (int i = 1 ; i <= 6 ; ++i)
     {
-      diebuttons[i] = new JButton(ImageLoader.MakeImageIcon(dir+"/bigdie"+i+".png"));
+      diebuttons[i] = new JButton(ImageLoader.MakeImageIcon(this.getClass(),"bigdie"+i+".png"));
       buttonpanel.add(diebuttons[i]);
       diebuttons[i].setActionCommand(""+i);
 

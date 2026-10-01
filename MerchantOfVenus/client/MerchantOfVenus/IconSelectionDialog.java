@@ -44,7 +44,7 @@ public class IconSelectionDialog extends JDialog
 
     listener = bpl;
 
-    ImageIcon invis = ImageLoader.MakeImageIcon(icondir+"/invisible.png");
+    ImageIcon invis = ImageLoader.MakeImageIcon(this.getClass(),"invisible.png");
 
     label = new JLabel(prompt);
     label.setHorizontalAlignment(JLabel.CENTER);

@@ -278,16 +278,14 @@ private Board board;
       parent = par;
       par.addMouseListener(this);
       atm = i_atm;
-      highlighter = ImageLoader.MakeImageIcon(icondir+"/highlight.png"); 
-      
+      highlighter = ImageLoader.MakeImageIcon(this.getClass(),"highlight.png");
+
       Object[] dice = new Object[7];
       dice[0] = "None";
-      dice[1] =  ImageLoader.MakeImageIcon(icondir+"/die1.png");
-      dice[2] =  ImageLoader.MakeImageIcon(icondir+"/die2.png");
-      dice[3] =  ImageLoader.MakeImageIcon(icondir+"/die3.png");
-      dice[4] =  ImageLoader.MakeImageIcon(icondir+"/die4.png");
-      dice[5] =  ImageLoader.MakeImageIcon(icondir+"/die5.png");
-      dice[6] =  ImageLoader.MakeImageIcon(icondir+"/die6.png");
+      for (int i = 1 ; i <= 6 ; ++i)
+      {
+        dice[i] = ImageLoader.MakeImageIcon(this.getClass(),"die"+i+".png");
+      }
 
       isSelectDestination = false;
       isSelectPilotNumber = false;

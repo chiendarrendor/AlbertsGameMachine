@@ -25,10 +25,12 @@ endif
 
 JAVAC=javac -Xlint:unchecked
 
+AWSBUCKET=albertsgamemachine
+
 CLIENTJAVADIR=../client
 CLIENTJAVALIB=../../client/classes
 CLIENTCLASSDIR=classes
-CLIENTINSTALL=C:/apache/htdocs/client/MerchantOfVenus
+CLIENTINSTALL=./clientstage
 SERVERINSTALL=../../data/MerchantOfVenus
 TCOMDIR=../../transitioncompiler
 TCOM=perl -I${TCOMDIR} ${TCOMDIR}/tcom.pl
@@ -100,11 +102,17 @@ serverinstall: MerchantOfVenus ../MerchantOfVenusMap.xml
 	cp -f ../MerchantOfVenusMap.xml ${SERVERINSTALL}
 
 clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
-	cp -f ${CLIENTJAVADIR}/MerchantOfVenusClient.xml ${CLIENTINSTALL}
-	cp -f ${CLIENTCLASSDIR}/MerchantOfVenus/*.class ${CLIENTINSTALL}
-	cp -f ../MerchantOfVenusMap.xml ${CLIENTINSTALL}
+	- rm -fr ${CLIENTINSTALL}
+	- mkdir ${CLIENTINSTALL}
+	- mkdir ${CLIENTINSTALL}/MerchantOfVenus
+
 	cp -f ${CLIENTJAVADIR}/*.JPG ${CLIENTINSTALL}
 	cp -f ${CLIENTJAVADIR}/*.png ${CLIENTINSTALL}
+	cp -f ${CLIENTCLASSDIR}/MerchantOfVenus/*.class ${CLIENTINSTALL}/MerchantOfVenus
+	cd ${CLIENTINSTALL} ; jar -cf ../MerchantOfVenus.jar *
+	aws s3 cp ${CLIENTJAVADIR}/MerchantOfVenusClient.xml s3://${AWSBUCKET}/
+	aws s3 cp MerchantOfVenus.jar s3://${AWSBUCKET}/
+	aws s3 cp ../MerchantOfVenusMap.xml s3://${AWSBUCKET}/
 
 MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml 
 	${CPP} -I../client -P ../client/MerchantOfVenusClient.xml > MerchantOfVenusClient.xml

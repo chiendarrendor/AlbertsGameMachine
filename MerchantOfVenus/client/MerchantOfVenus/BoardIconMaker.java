@@ -19,24 +19,16 @@ public class BoardIconMaker
   private Board theBoard;
   private Vector<Shape> paths;
   private Map<String,ImageIcon> icons;
-  private String theDir;
 
   public BoardIconMaker(Board b,String dir)
   {
     theBoard = b;
-    theDir = dir;
     paths = null;
     icons = new HashMap<String,ImageIcon>();
-    icons.put("orbit",ImageLoader.MakeImageIcon(dir + "/orbit.png"));
-    icons.put("city",ImageLoader.MakeImageIcon(dir + "/city.png"));
-    icons.put("station",ImageLoader.MakeImageIcon(dir + "/station.png"));
-    icons.put("die1",ImageLoader.MakeImageIcon(dir + "/die1.png"));
-    icons.put("die2",ImageLoader.MakeImageIcon(dir + "/die2.png"));
-    icons.put("die3",ImageLoader.MakeImageIcon(dir + "/die3.png"));
-    icons.put("die4",ImageLoader.MakeImageIcon(dir + "/die4.png"));
-    icons.put("die5",ImageLoader.MakeImageIcon(dir + "/die5.png"));
-    icons.put("die6",ImageLoader.MakeImageIcon(dir + "/die6.png"));
-    icons.put("arrow",ImageLoader.MakeImageIcon(dir + "/arrow.png"));
+    for (String name : new String[]{"orbit","city","station","die1","die2","die3","die4","die5","die6","arrow"})
+    {
+      icons.put(name,ImageLoader.MakeImageIcon(this.getClass(),name + ".png"));
+    }
   }
 
 
@@ -518,7 +510,7 @@ public class BoardIconMaker
       for (Board.SolarSystemIcon ssi : ss.GetIcons() )
       {
         if (icons.containsKey(ssi.GetIconName())) continue;
-        icons.put(ssi.GetIconName(),ImageLoader.MakeImageIcon(theDir + "/" + ssi.GetIconName()));
+        icons.put(ssi.GetIconName(),ImageLoader.MakeImageIcon(this.getClass(),ssi.GetIconName()));
       }
     }
   }

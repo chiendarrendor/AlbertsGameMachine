@@ -6,7 +6,9 @@
 *.jar
 *.a
 *.so
-data/
+data/*/
+data/passwd
+data/ServerLog.txt
 outposttest
 stochastictest
 gameserver

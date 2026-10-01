@@ -27,13 +27,11 @@ JLabel handle;
   public DiceDisplay(PopAndLockPanel palp,String dir)
   {
     dieicons = new HashMap<String,ImageIcon>();
-    dieicons.put("0",ImageLoader.MakeImageIcon(dir+"/bigdieq.png"));
-    dieicons.put("1",ImageLoader.MakeImageIcon(dir+"/bigdie1.png"));
-    dieicons.put("2",ImageLoader.MakeImageIcon(dir+"/bigdie2.png"));
-    dieicons.put("3",ImageLoader.MakeImageIcon(dir+"/bigdie3.png"));
-    dieicons.put("4",ImageLoader.MakeImageIcon(dir+"/bigdie4.png"));
-    dieicons.put("5",ImageLoader.MakeImageIcon(dir+"/bigdie5.png"));
-    dieicons.put("6",ImageLoader.MakeImageIcon(dir+"/bigdie6.png"));
+    dieicons.put("0",ImageLoader.MakeImageIcon(this.getClass(),"bigdieq.png"));
+    for (int i = 1 ; i <= 6 ; ++i)
+    {
+      dieicons.put(""+i,ImageLoader.MakeImageIcon(this.getClass(),"bigdie"+i+".png"));
+    }
 
     handle = palp.Add(this,"Dice",500,PopAndLockPanel.OTHEREXTREME,false);
     handle.setForeground(Color.GREEN);

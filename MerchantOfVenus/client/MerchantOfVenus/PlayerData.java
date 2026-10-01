@@ -101,7 +101,7 @@ public class PlayerData
   public PlayerData(String dir)
   {
     icons = new Vector<PlayerIconInfo>();
-    ImageIcon ii = ImageLoader.MakeImageIcon(dir+"/shiplet.png"); 
+    ImageIcon ii = ImageLoader.MakeImageIcon(this.getClass(),"shiplet.png");
     icons.add(new PlayerIconInfo(ii,Color.WHITE,"White"));
     icons.add(new PlayerIconInfo(ii,Color.YELLOW,"Yellow"));
     icons.add(new PlayerIconInfo(ii,Color.GREEN,"Green"));

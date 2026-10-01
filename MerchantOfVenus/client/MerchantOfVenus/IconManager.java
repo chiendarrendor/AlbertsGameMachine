@@ -11,11 +11,10 @@ class IconManager
   private static Map<String,ImageIcon> icons = new HashMap<String,ImageIcon>();
   private static int penaltyWidth = 64;
   private static int penaltyHeight = 30;
-  private static String theDir;
   private static int aindex = 0;
   private static int acount = 3;
-  
-  public static void Initialize(String dir) { theDir = dir; }
+
+  public static void Initialize(String dir) { }
 
   // possible values of contents:
   // Telegate <id>
@@ -110,7 +109,7 @@ class IconManager
     String pname = "telegate"+id;
     if (!icons.containsKey(pname))
     {
-      ImageIcon back = ImageLoader.MakeImageIcon(theDir+"/telegate.png");
+      ImageIcon back = ImageLoader.MakeImageIcon(IconManager.class,"telegate.png");
       Image temp = new BufferedImage(back.getIconWidth(),
                                      back.getIconHeight(),
                                      BufferedImage.TYPE_4BYTE_ABGR);
@@ -132,9 +131,11 @@ class IconManager
   {
     if (!icons.containsKey("Asteroid0"))
     {
-      icons.put("Asteroid0",ImageLoader.MakeImageIcon(theDir+"/aster1.png"));
-      icons.put("Asteroid1",ImageLoader.MakeImageIcon(theDir+"/aster2.png"));
-      icons.put("Asteroid2",ImageLoader.MakeImageIcon(theDir+"/aster3.png"));
+      String[] asterImages = {"aster1.png","aster2.png","aster3.png"};
+      for (int i = 0 ; i < asterImages.length ; ++i)
+      {
+        icons.put("Asteroid"+i,ImageLoader.MakeImageIcon(IconManager.class,asterImages[i]));
+      }
     }
 
     ImageIcon result = icons.get("Asteroid"+aindex);
@@ -164,7 +165,7 @@ class IconManager
     String pname = "openport";
     if (!icons.containsKey(pname))
     {
-      icons.put(pname,ImageLoader.MakeImageIcon(theDir+"/openport.png"));
+      icons.put(pname,ImageLoader.MakeImageIcon(IconManager.class,"openport.png"));
     }
     return icons.get(pname);
   }
@@ -175,7 +176,7 @@ class IconManager
     if (!icons.containsKey(pname))
     {
       icons.put(pname,
-                RecolorIcon(ImageLoader.MakeImageIcon(theDir+"/port.png"),
+                RecolorIcon(ImageLoader.MakeImageIcon(IconManager.class,"port.png"),
                             Color.WHITE,
                             c)
                 );
@@ -189,7 +190,7 @@ class IconManager
     
     if (!icons.containsKey(t.GetEncoding()))
     {
-      ImageIcon newI = ImageLoader.MakeImageIcon(theDir+"/testPlanet.png");
+      ImageIcon newI = ImageLoader.MakeImageIcon(IconManager.class,"testPlanet.png");
       if (t.GetSizeClass().equals("relic")) newI = MakeRelicToken(t);
       else if (t.GetSizeClass().equals("iou")) newI = MakeIOUToken(t);
       // this one is doublewide

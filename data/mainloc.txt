@@ -1,2 +1,2 @@
-https://d1g3rnc919nzml.cloudfront.net
+https://legacy.albertsgamemachine.net
 rooms.xml

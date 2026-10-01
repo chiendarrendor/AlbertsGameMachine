@@ -1,0 +1,2 @@
+Outpost,https://legacy.albertsgamemachine.net,OutpostClient.xml,data/Outpost/Outpost
+MerchantOfVenus,https://legacy.albertsgamemachine.net,MerchantOfVenusClient.xml,data/MerchantOfVenus/MerchantOfVenus
