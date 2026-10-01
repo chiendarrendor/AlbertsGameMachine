@@ -5,6 +5,7 @@ import java.io.*;
 import NodeInterfacePackage.*;
 import DOMUtilities.*;
 import Utilities.StringUtility;
+import org.json.JSONObject;
 
 public class GameGui
 {
@@ -16,6 +17,7 @@ public class GameGui
   private AttributeChecker m_eventvarnames;
   private StatusWindows m_StatusWindows;
   private TabbedWindow m_tabs;
+  private String m_Namespace;
 
   public void ShowDebug(String i_message)
   {
@@ -57,17 +59,41 @@ public class GameGui
 
 
 
-  public void SendAction(String [] s)
+  // The 7 reserved room-management actions live in namespaces the server
+  // hardcodes ("roommanager"/"room" -- see RoomManager.cpp/Room::HandleAction)
+  // regardless of which GameGui instance (a real game, or the shared ROOMGUI
+  // instance) actually fires them -- so this split has to be hardcoded
+  // client-side too, mirroring the server exactly, rather than sourced from
+  // this instance's own identity.
+  private String ReservedNamespaceFor(String i_ActionName)
   {
-    String res = new String();
-    int i;
-    for (i = 0 ; i < s.length ; ++i)
+    if (i_ActionName.equals("NEWROOM") || i_ActionName.equals("CHANGEROOM") ||
+        i_ActionName.equals("ROOMTALK") || i_ActionName.equals("PLAYERTALK"))
     {
-	    if (i != 0) res += ",";
-	    res += StringUtility.UnComma(s[i]);
+      return "roommanager";
+    }
+    if (i_ActionName.equals("NEWGAME") || i_ActionName.equals("LOADGAME") ||
+        i_ActionName.equals("SAVEGAME"))
+    {
+      return "room";
+    }
+    return null;
+  }
+
+  public void SendAction(String i_ActionName, JSONObject i_Params)
+  {
+    String namespace = ReservedNamespaceFor(i_ActionName);
+    if (namespace == null)
+    {
+      namespace = m_Namespace;
     }
 
-    m_ostream.print(res);
+    JSONObject envelope = new JSONObject();
+    envelope.put("namespace",namespace);
+    envelope.put("action",i_ActionName);
+    envelope.put("params",i_Params);
+
+    m_ostream.print(envelope.toString());
     m_ostream.print("\n");
     m_ostream.flush();
   }
@@ -172,11 +198,13 @@ public class GameGui
 
   }
 
-  public GameGui(PrintWriter i_pw, StatusWindows i_StatusWindows, TabbedWindow i_tabs, ClassLoader i_remoteClassLoader)
+  public GameGui(PrintWriter i_pw, StatusWindows i_StatusWindows, TabbedWindow i_tabs, ClassLoader i_remoteClassLoader,
+                String i_namespace)
   {
     m_remoteClassLoader = i_remoteClassLoader;
     m_StatusWindows = i_StatusWindows;
     m_tabs = i_tabs;
+    m_Namespace = i_namespace;
     m_ActionManager = new ActionTransferManager();
     m_ostream = i_pw;
     m_EventTypes = new HashMap<String,GameEventType>();

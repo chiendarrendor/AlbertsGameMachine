@@ -144,22 +144,22 @@
 
     <action name= "REDEEMIOU" onstate= "statedalwayshidden"/>
     <action name= "TRADEINSHIP" onstate= "statedalwayshidden">
-      <var name= "TRADEINSHIP.ShipEncoding" text="Encoding of New Ship" noreset="y" hastextbox="n"/>
+      <var name= "TRADEINSHIP.ShipEncoding" paramname="i_newshipencoding" text="Encoding of New Ship" noreset="y" hastextbox="n"/>
     </action>
     <action name= "BUY" onstate= "statedalwayshidden">
-      <var name= "BUY.ItemEncoding" text="Encoding of Item to Purchase" noreset="y" hastextbox="n"/>
+      <var name= "BUY.ItemEncoding" paramname="i_item" text="Encoding of Item to Purchase" noreset="y" hastextbox="n"/>
     </action>
     <action name= "PICKUP" onstate= "statedalwayshidden">
-      <var name= "PICKUP.FareEncoding" text="Encoding of Fare to pick up" noreset="y" hastextbox="n"/>
+      <var name= "PICKUP.FareEncoding" paramname="i_item" text="Encoding of Fare to pick up" noreset="y" hastextbox="n"/>
     </action>
     <action name= "DROPOFF" onstate= "statedalwayshidden">
-      <var name= "DROPOFF.FareEncoding" text="Encoding of Fare to drop off" noreset="y" hastextbox="n"/>
+      <var name= "DROPOFF.FareEncoding" paramname="i_item" text="Encoding of Fare to drop off" noreset="y" hastextbox="n"/>
     </action>
     <action name= "JETTISON" onstate= "statedalwayshidden">
-      <var name= "JETTISON.ItemEncoding" text="Encoding of item to jettison" noreset="y" hastextbox="n"/>
+      <var name= "JETTISON.ItemEncoding" paramname="i_item" text="Encoding of item to jettison" noreset="y" hastextbox="n"/>
     </action>
     <action name= "SELL" onstate= "statedalwayshidden">
-      <var name= "SELL.ItemEncoding" text="Encoding of item to sell" noreset="y" hastextbox="n"/>
+      <var name= "SELL.ItemEncoding" paramname="i_item" text="Encoding of item to sell" noreset="y" hastextbox="n"/>
     </action>
     <action name= "ENDTURN" onstate= "statedalwayshidden"/>
 
@@ -167,28 +167,27 @@
     <action name= "GETRELIC" onstate= "statedalwayshidden"/>
     <action name= "LEAVERELIC" onstate="statedalwayshidden"/>
     <action name= "MULLIGAN" onstate= "statedalwayshidden">
-      <var name= "MULLIGAN.NumToReroll" text="Value of die to reroll" noreset="y" hastextbox="n"/>
+      <var name= "MULLIGAN.NumToReroll" paramname="i_numtoreroll" paramtype="int" text="Value of die to reroll" noreset="y" hastextbox="n"/>
     </action>
     <action name="NOMULLIGAN" onstate="statedalwayshidden"/>
     <action name= "SELECTSWITCHABLES" onstate="statedalwayshidden">
-      <var name= "SELECTSWITCHABLES.Switchables" text="set of on switchables" noreset="y" hastextbox="n"/>
+      <var name= "SELECTSWITCHABLES.Switchables" paramname="i_switchables" text="set of on switchables" noreset="y" hastextbox="n"/>
     </action>
     <action name="JOIN" onstate="statedalwayshidden"/>
     <action name="UNJOIN" onstate="statedalwayshidden"/>
     <action name="OPTIONS" onstate="statedalwayshidden">
-      <var name="OPTIONS.WinMoney" text="End of game win condition" noreset="y" hastextbox="n"/>
+      <var name="OPTIONS.WinMoney" paramname="winmoney" paramtype="int" text="End of game win condition" noreset="y" hastextbox="n"/>
     </action>
     <action name= "VALIDATESETUP" onstate="statedalwayshidden"/>
     <action name= "DONTLIKEOPTIONS" onstate="statedalwayshidden"/>
     <action name= "LIKEOPTIONS" onstate="statedalwayshidden"/>
 
-    <action name= "ENDMOVE" onstate="statedalwayshidden"/>
-    <action name= "SELECTDESTINATION" onstate="statedalwayshidden">
-      <var name= "SELECTDESTINATION.Destination" text="desired destination" noreset="y" hastextbox="n"/>
-      <var name= "SELECTDESTINATION.IsJump" text="whether desired destination is a telegate jump" noreset="y" hastextbox="n"/>
+    <action name= "ENDMOVE" onstate="statedalwayshidden"/>    <action name= "SELECTDESTINATION" onstate="statedalwayshidden">
+      <var name= "SELECTDESTINATION.Destination" paramname="i_destination" text="desired destination" noreset="y" hastextbox="n"/>
+      <var name= "SELECTDESTINATION.IsJump" paramname="i_destisjump" paramtype="bool" text="whether desired destination is a telegate jump" noreset="y" hastextbox="n"/>
     </action>
     <action name= "SELECTPILOTNUMBER" onstate= "statedalwayshidden">
-      <var name= "SELECTPILOTNUMBER.PilotNumber" text="Pilot Number" noreset="y" hastextbox="n"/>
+      <var name= "SELECTPILOTNUMBER.PilotNumber" paramname="i_pilotnumber" paramtype="int" text="Pilot Number" noreset="y" hastextbox="n"/>
     </action>
   </actions>
 

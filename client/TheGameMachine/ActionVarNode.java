@@ -10,6 +10,8 @@ public class ActionVarNode extends PanelNode implements ActionVariableConsumer
 {
   ActionNode m_Action;
   String m_Name;
+  String m_ParamName;
+  String m_ParamType;
   JLabel m_VarValueLabel;
   String m_defaultValue;
   boolean m_noReset;
@@ -17,11 +19,14 @@ public class ActionVarNode extends PanelNode implements ActionVariableConsumer
   ActionTransferManager m_actionmanager;
 
   public ActionVarNode(String i_name,String i_text,ActionNode i_ActionNode,
-                       GameGui i_gamegui,String i_Hidden,String i_noReset,String i_hasTextBox)
+                       GameGui i_gamegui,String i_Hidden,String i_noReset,String i_hasTextBox,
+                       String i_paramName,String i_paramType)
   {
     super(i_ActionNode,0,0,i_Hidden,null,null);
     m_Action = i_ActionNode;
     m_Name = i_name;
+    m_ParamName = (i_paramName != null && !i_paramName.equals("")) ? i_paramName : i_name;
+    m_ParamType = (i_paramType != null && !i_paramType.equals("")) ? i_paramType : "string";
     m_noReset = i_noReset != null && i_noReset.equals("y");
     m_hasTextBox = i_hasTextBox != null && i_hasTextBox.equals("y");
     m_actionmanager = i_gamegui.GetActionTransferManager();
@@ -74,6 +79,32 @@ public class ActionVarNode extends PanelNode implements ActionVariableConsumer
   public String GetName()
   {
     return m_Name;
+  }
+
+  public String GetParamName()
+  {
+    return m_ParamName;
+  }
+
+  public String GetParamType()
+  {
+    return m_ParamType;
+  }
+
+  // Converts this var's current raw String value into a properly-typed Java
+  // object for JSON serialization, per its paramtype (the client XML never
+  // declared an explicit type before Phase 2 -- see paramtype's own doc).
+  public Object ParseTypedValue(String i_rawValue)
+  {
+    if (m_ParamType.equals("bool"))
+    {
+      return Boolean.valueOf(i_rawValue);
+    }
+    if (m_ParamType.equals("int"))
+    {
+      return Integer.valueOf(i_rawValue);
+    }
+    return i_rawValue;
   }
 
   public void ReportNewVariableValue(String i_newvalue)

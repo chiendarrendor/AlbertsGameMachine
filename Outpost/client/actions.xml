@@ -43,17 +43,17 @@
 
 <actions>
   <action name="OPTIONS" text="Apply Option Changes">
-    <var name="Discard"       hidden="y" noreset="y" text="Discard Before Buy"/>
-    <var name="Refinery"      hidden="y" noreset="y" text="Refinery"/>
-    <var name="OneUpgrade"    hidden="y" noreset="y" text="One Upgrade Purchase Per Player Per Turn"/>
-    <var name="ActiveBid"     hidden="y" noreset="y" text="Only Active Players May Bid"/>
-    <var name="SupplyShipFilling" hidden="y" noreset="y" text="Ship Supply Loading Mechanism"/>
-    <var name="Robots"        hidden="y" noreset="y" text="Robot Mechanism"/>
-    <var name="ResearchMega"  hidden="y" noreset="y" text="Research has Mega"/>
-    <var name="SmallResearch" hidden="y" noreset="y" text="Research resources are zero size"/>
-    <var name="SmallMicro"    hidden="y" noreset="y" text="Microbiotics resources are zero size"/>
-    <var name="BlindDraws"    hidden="y" noreset="y" text="Draws only visible at end of draw phase"/>
-    <var name="Stocking"      hidden="y" noreset="y" text="Initial Item Stocking Mechanism"/>
+    <var name="Discard"       paramname="discard" paramtype="bool" hidden="y" noreset="y" text="Discard Before Buy"/>
+    <var name="Refinery"      paramname="refinery" paramtype="bool" hidden="y" noreset="y" text="Refinery"/>
+    <var name="OneUpgrade"    paramname="oneupgrade" paramtype="bool" hidden="y" noreset="y" text="One Upgrade Purchase Per Player Per Turn"/>
+    <var name="ActiveBid"     paramname="activebid" paramtype="bool" hidden="y" noreset="y" text="Only Active Players May Bid"/>
+    <var name="SupplyShipFilling" paramname="supplyharshness" paramtype="int" hidden="y" noreset="y" text="Ship Supply Loading Mechanism"/>
+    <var name="Robots"        paramname="robots" paramtype="int" hidden="y" noreset="y" text="Robot Mechanism"/>
+    <var name="ResearchMega"  paramname="researchmega" paramtype="bool" hidden="y" noreset="y" text="Research has Mega"/>
+    <var name="SmallResearch" paramname="smallresearch" paramtype="bool" hidden="y" noreset="y" text="Research resources are zero size"/>
+    <var name="SmallMicro"    paramname="smallmicro" paramtype="bool" hidden="y" noreset="y" text="Microbiotics resources are zero size"/>
+    <var name="BlindDraws"    paramname="blinddraws" paramtype="bool" hidden="y" noreset="y" text="Draws only visible at end of draw phase"/>
+    <var name="Stocking"      paramname="stock" paramtype="int" hidden="y" noreset="y" text="Initial Item Stocking Mechanism"/>
   </action>
   <action name="JOIN" text="Join Game"/>
   <action name="STANDARDBASIC" text="Select Basic Game Options"/>
@@ -65,58 +65,58 @@
   <action name="WATERMULLIGAN" text="Mulligan Water Factory" alerts="true"/>
 
   <action name="BUYMEN" text="Buy Men" alerts="true">
-    <var name="NumMen" text="Number of Men to Buy" noreset="y">
+    <var name="NumMen" paramname="i_nummen" paramtype="int" text="Number of Men to Buy" noreset="y">
       <named name="BuyMen" iOUTVARi="NumMen" iINVARi="NumPurMen" iIMAGEi="Man.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYROBOTS" text="Buy Robots" alerts="true">
-    <var name="NumRobots" text="Number of Robots to Buy" noreset="y">
+    <var name="NumRobots" paramname="i_numrobots" paramtype="int" text="Number of Robots to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumRobots" iINVARi="NumPurRobots" iCOSTi="10" iIMAGEi="Robot.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYOREFACTORIES" text="Buy Ore Factories" alerts="true">
-    <var name="NumOre" text="Number of Ore Factories to Buy" noreset="y">
+    <var name="NumOre" paramname="i_numfactories" paramtype="int" text="Number of Ore Factories to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumOre" iINVARi="NumPurOre" iCOSTi="10" iIMAGEi="Ore.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYWATERFACTORIES" text="Buy Water Factories" alerts="true">
-    <var name="NumWater" text="Number of Water Factories to Buy" noreset="y">
+    <var name="NumWater" paramname="i_numfactories" paramtype="int" text="Number of Water Factories to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumWater" iINVARi="NumPurWater" iCOSTi="20" iIMAGEi="Water.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYTITANIUMFACTORIES" text="Buy Titanium Factories" alerts="true">
-    <var name="NumTite" text="Number of Titanium Factories to Buy" noreset="y">
+    <var name="NumTite" paramname="i_numfactories" paramtype="int" text="Number of Titanium Factories to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumTite" iINVARi="NumPurTite" iCOSTi="30" iIMAGEi="Titanium.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYRESEARCHFACTORIES" text="Buy Research Centers" alerts="true">
-    <var name="NumResearch" text="Number of Research Factories to Buy" noreset="y">
+    <var name="NumResearch" paramname="i_numfactories" paramtype="int" text="Number of Research Factories to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumResearch" iINVARi="NumPurResearch" iCOSTi="40" iIMAGEi="Research.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYNEWCHEMFACTORIES" text="Buy New Chemical Factories" alerts="true">
-    <var name="NumNewChem" text="Number of NewChem Factories to Buy" noreset="y">
+    <var name="NumNewChem" paramname="i_numfactories" paramtype="int" text="Number of NewChem Factories to Buy" noreset="y">
       <named name="BuyThing" iOUTVARi="NumNewChem" iINVARi="NumPurNewChem" 
              iCOSTi="60, incl. 1 Research," iIMAGEi="NewChemicals.PNG"/>
     </var>
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="OPENBID" text="Open Bidding" alerts="true">
-    <var name="ShipSlot" text="Which Supply Ship Slot to bid on" noreset="y"/>
-    <var name="OpeningBid" text="Opening Bid" noreset="y">
+    <var name="ShipSlot" paramname="i_shipslot" paramtype="int" text="Which Supply Ship Slot to bid on" noreset="y"/>
+    <var name="OpeningBid" paramname="i_openingbid" paramtype="int" text="Opening Bid" noreset="y">
       <panel layout="hbox">
         <text>Opening Bid:</text>
 	<javaclass classname="StateSensitiveTextBox" varname="OpeningBid"/>
@@ -126,7 +126,7 @@
   </action>
 
   <action name="BID" text="Raise Bid" alerts="true">
-    <var name="Bid" text="New Bid" noreset="y">
+    <var name="Bid" paramname="i_bid" paramtype="int" text="New Bid" noreset="y">
       <panel layout="hbox">
         <text>Raise Bid To:</text>
 	<javaclass classname="StateSensitiveTextBox" varname="Bid"/>
@@ -139,7 +139,7 @@
   <action name="PASSOUT" text="Pass Out"/>
 
   <action name="NUMMEGAS" text="Select # of Megas" alerts="true">
-    <var name="MegaCount" text="Number of Megas to Draw" noreset="y">
+    <var name="MegaCount" paramname="i_count" paramtype="int" text="Number of Megas to Draw" noreset="y">
       <panel>
         <eventhandler>
           <passif eventname="MEGAREQUEST"/>
@@ -155,11 +155,11 @@
   </action>
 
   <action name="DISCARD" text="Discard to Hand Limit" alerts="true">
-    <var name="DiscardString" hidden="y" noreset="y" text="Discard String"/>
+    <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="PURCHASEBID" text="Purchase Item" alerts="true">
-    <var name="DiscardString" noreset="y" text="Discard String">
+    <var name="DiscardString" paramname="i_discardstring" noreset="y" text="Discard String">
       <text>
         <replace from="rCOSTr" eventvar="PurchasePrice" initial="0"/>
 	  Winning Bid will cost: rCOSTr
@@ -168,7 +168,7 @@
   </action>
 
   <action name="ALTERMANNING" text="Apply Manning Changes" onstate="statedalwayshidden">
-    <var name="ManString" hidden="y" noreset="y" text="Alter Manning String"/>
+    <var name="ManString" paramname="i_manningstring" hidden="y" noreset="y" text="Alter Manning String"/>
   </action>
 
   <action name="INTERNALIZE" text="Internalize"/>

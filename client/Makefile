@@ -9,12 +9,13 @@ CLASSDIR=classes
 
 JCMD=${JAVAC} -d ${CLASSDIR} -classpath . -Xlint:unchecked -Xlint:deprecation
 
-SUBDIRS = TheGameMachine NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi
+SUBDIRS = TheGameMachine NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi org/json
 SUBJAVA = $(SUBDIRS:%=%/*.java)
 
 all:
 	- rm -rf ${CLASSDIR}
 	- mkdir -p ${CLASSDIR}
+	${JCMD} org/json/*.java
 	${JCMD} TheGameMachine/GameClient.java
 	${JCMD} TheGameMachine/GUITester.java
 	${JCMD} TheGameMachine/ClientApplet.java

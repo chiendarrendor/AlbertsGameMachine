@@ -761,15 +761,19 @@ public class GameXMLWalker
     acheck.AddAttribute("hidden",false);
     acheck.AddAttribute("noreset",false);
     acheck.AddAttribute("hastextbox",false);
+    acheck.AddAttribute("paramname",false);
+    acheck.AddAttribute("paramtype",false);
     acheck.ValidateAttributes(i_XMLNode);
-	
+
     ActionVarNode avnode = new ActionVarNode(DOMUtil.GetAttributeWithName(i_XMLNode,"name"),
                                              DOMUtil.GetAttributeWithName(i_XMLNode,"text"),
                                              i_ActionNode,
                                              m_gamegui,
                                              DOMUtil.GetAttributeWithName(i_XMLNode,"hidden"),
                                              DOMUtil.GetAttributeWithName(i_XMLNode,"noreset"),
-                                             DOMUtil.GetAttributeWithName(i_XMLNode,"hastextbox"));
+                                             DOMUtil.GetAttributeWithName(i_XMLNode,"hastextbox"),
+                                             DOMUtil.GetAttributeWithName(i_XMLNode,"paramname"),
+                                             DOMUtil.GetAttributeWithName(i_XMLNode,"paramtype"));
 
     WalkPanelChildren(i_XMLNode,avnode);
   }

@@ -23,8 +23,7 @@ endif
 
 #DEFINES=-DSTATEDEBUG
 
-JAVADIR=/c/Program\ Files/Java/jdk-19
-JAVAC=${JAVADIR}/bin/javac
+JAVAC=javac -Xlint:unchecked
 
 CLIENTJAVADIR=../client
 CLIENTJAVALIB=../../client/classes

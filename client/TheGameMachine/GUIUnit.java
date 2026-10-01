@@ -41,7 +41,7 @@ public class GUIUnit
     try {
       URL[] urls = new URL[]{new URL(i_gpp.GetXMLLoc() + "/" + i_gpp.GetGuiName() + ".jar")};
       URLClassLoader classLoader = new URLClassLoader(urls, this.getClass().getClassLoader());
-      m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader);
+      m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader,i_gpp.GetGuiName());
     } catch (MalformedURLException e) {
       throw new RuntimeException("Couldn't create remote classloader:", e);
     }

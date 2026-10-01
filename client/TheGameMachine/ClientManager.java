@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import Utilities.StringUtility;
 import javax.swing.JOptionPane;
+import org.json.JSONObject;
 
 
 public class ClientManager
@@ -158,12 +159,17 @@ public class ClientManager
 
   private void SendLoginLikeString(String i_type,String i_username,String i_password)
   {
-    m_out.print(i_type+
-                "," + 
-                StringUtility.UnComma(i_username) + 
-                "," + 
-                StringUtility.UnComma(StringUtility.Mangle(i_password)) +
-                "\n");
+    JSONObject params = new JSONObject();
+    params.put("username",i_username);
+    params.put("password",StringUtility.Mangle(i_password));
+
+    JSONObject envelope = new JSONObject();
+    envelope.put("namespace","login");
+    envelope.put("action",i_type);
+    envelope.put("params",params);
+
+    m_out.print(envelope.toString());
+    m_out.print("\n");
     m_out.flush();
   }
 

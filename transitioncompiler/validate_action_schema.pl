@@ -9,17 +9,29 @@
 # Usage: perl -I<transitioncompiler dir> validate_action_schema.pl <ServerXML> <ClientXML>
 # Exits nonzero (and prints every mismatch found) if the two disagree.
 #
-# A server <transition> counts as player-triggerable unless it has a direct
-# <auto> child -- the established authoring convention in both real games:
-# every auto-fired transition pairs an <auto> block with <allowed>false</allowed>,
-# and is never meant to be reachable via a client action at all.
+# A server <transition> counts as player-triggerable unless its <allowed> is
+# literally "false" -- confirmed against the real engine (stateengine/
+# StateWalker.hpp): <auto> and direct player invocation are NOT mutually
+# exclusive. Execute() (a player firing a named action) only ever checks
+# IsLegal() (the <allowed> condition); it never looks at IsAuto() at all --
+# that's only consulted by the separate ExecuteAuto() pass that runs after
+# every transition. So a transition can legitimately be both auto-fired under
+# one condition and player-triggered under a different one (MerchantOfVenus's
+# ENDMOVE: <auto>AutoStop()</auto> for a forced stop, <allowed>...&&
+# ManualStop()</allowed> for a voluntary one -- initially missed here by
+# wrongly keying this off "<auto> present" instead of "<allowed> is false",
+# which almost shipped a wrong deletion of ENDMOVE's client action; see
+# .claude/TODO.md). A transition with no <allowed> at all defaults to "true"
+# per Transition.pm::HandleVar -- NOT auto-only, even if it also has <auto>.
 #
-# Only var *names* (as a set) are compared -- not order, not type. Order
-# stopped being load-bearing once the wire went JSON-keyed (see Phase 2), and
-# the client's <var> declarations don't carry an explicit type attribute at
-# all (a var's type is implicit in whichever widget tag is nested inside it),
-# so type-checking isn't attempted here -- see .claude/TODO.md's long-term
-# "unify the two action schemas" item for that harder problem.
+# Compares the actual wire contract, not the client's internal widget-wiring
+# label: a client <var>'s wire key is its paramname attribute if present,
+# else its name (the two are allowed to differ -- see the client-side Phase 2
+# plan's finding on why the client's name can't safely be renamed to match
+# the server). Likewise paramtype (bool/int/string, defaulting to "string")
+# is checked against the server's declared type. Only the *set* of (paramname,
+# paramtype) pairs per action is compared, not order -- order stopped being
+# load-bearing once the wire went JSON-keyed (Phase 2).
 
 use strict;
 use warnings;
@@ -73,20 +85,42 @@ if (@problems)
 print "Action schema OK: ", scalar(keys %serveractions), " actions match between $serverxml and $clientxml.\n";
 exit(0);
 
+sub ServerTypeToParamType
+{
+    my ($t) = @_;
+    return "bool" if $t eq "bool";
+    return "int" if $t eq "int" || $t eq "size_t";
+    return "string" if $t eq "std::string";
+    return "unknown($t)";
+}
+
 sub CompareVars
 {
     my ($name,$servervars,$clientvars,$problems) = @_;
 
-    my %sset = map { $_ => 1 } @$servervars;
-    my %cset = map { $_ => 1 } @$clientvars;
+    my %sbyname = map { $_->[0] => ServerTypeToParamType($_->[1]) } @$servervars;
+    my %cbyname = map { $_->[0] => $_->[1] } @$clientvars;
 
-    my @missingonclient = grep { !exists $cset{$_} } @$servervars;
-    my @extraonclient   = grep { !exists $sset{$_} } @$clientvars;
+    my @servernames = sort keys %sbyname;
+    my @clientnames = sort keys %cbyname;
+
+    my @missingonclient = grep { !exists $cbyname{$_} } @servernames;
+    my @extraonclient   = grep { !exists $sbyname{$_} } @clientnames;
 
     if (@missingonclient || @extraonclient)
     {
 	push @$problems,
-	    "Action '$name' var mismatch: server has [@$servervars], client has [@$clientvars].";
+	    "Action '$name' param-name mismatch: server has [@servernames], client has [@clientnames].";
+	return;
+    }
+
+    for my $pname (@servernames)
+    {
+	if ($sbyname{$pname} ne $cbyname{$pname})
+	{
+	    push @$problems,
+		"Action '$name' param '$pname' type mismatch: server declares '$sbyname{$pname}', client paramtype is '$cbyname{$pname}'.";
+	}
     }
 }
 
@@ -109,6 +143,17 @@ sub DirectChildren
     return @result;
 }
 
+sub IsAutoOnly
+{
+    my ($trans) = @_;
+    my @allowednodes = DirectChildren($trans,"allowed");
+    return 0 if !@allowednodes; # no <allowed> at all -> defaults to "true" -> not auto-only.
+    my $text = GetNodeText($allowednodes[0]);
+    return 0 if !defined $text;
+    $text =~ s/^\s+|\s+$//g;
+    return $text eq "false";
+}
+
 sub ParseServerActions
 {
     my ($doc) = @_;
@@ -121,19 +166,22 @@ sub ParseServerActions
 	my $name = $trans->getAttribute("name");
 	next if !$name;
 
-	next if DirectChildren($trans,"auto"); # automatic-only transition -- no client action expected.
+	next if IsAutoOnly($trans); # <allowed>false</allowed> -- no client action expected.
 
 	my @actionnodes = DirectChildren($trans,"action");
-	my @varnames;
+	my @vars;
 	if (@actionnodes)
 	{
 	    for my $var (DirectChildren($actionnodes[0],"var"))
 	    {
 		my $varname = $var->getAttribute("name");
-		push @varnames, $varname if $varname;
+		next if !$varname;
+		my $vartype = $var->getAttribute("type");
+		$vartype = "int" if !$vartype; # matches Transition.pm::HandleVar's own default.
+		push @vars, [$varname,$vartype];
 	    }
 	}
-	$result{$name} = \@varnames;
+	$result{$name} = \@vars;
     }
     return %result;
 }
@@ -150,13 +198,18 @@ sub ParseClientActions
 	my $name = $action->getAttribute("name");
 	next if !$name;
 
-	my @varnames;
+	my @vars;
 	for my $var (DirectChildren($action,"var"))
 	{
 	    my $varname = $var->getAttribute("name");
-	    push @varnames, $varname if $varname;
+	    next if !$varname;
+	    my $paramname = $var->getAttribute("paramname");
+	    $paramname = $varname if !$paramname;
+	    my $paramtype = $var->getAttribute("paramtype");
+	    $paramtype = "string" if !$paramtype;
+	    push @vars, [$paramname,$paramtype];
 	}
-	$result{$name} = \@varnames;
+	$result{$name} = \@vars;
     }
     return %result;
 }

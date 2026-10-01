@@ -7,6 +7,7 @@ import java.util.*;
 import java.awt.event.*;
 
 import NodeInterfacePackage.*;
+import org.json.JSONObject;
 
 
 public class ActionNode extends GameNode implements DoActionHandler
@@ -162,17 +163,16 @@ public class ActionNode extends GameNode implements DoActionHandler
 
   public void ActionGo()
   {
-    String [] actstrings = new String[1 + GetNumChildren()];
-    actstrings[0] = m_Name;
+    JSONObject params = new JSONObject();
 
     int i;
     for(i = 0 ; i < GetNumChildren() ; i++)
     {
-      String varname = ((ActionVarNode)GetChild(i)).GetName();
-	    String val = m_curvarvals.get(varname);
-	    actstrings[i+1] = val;
+      ActionVarNode avn = (ActionVarNode)GetChild(i);
+      String val = m_curvarvals.get(avn.GetName());
+      params.put(avn.GetParamName(),avn.ParseTypedValue(val));
     }
-    m_gamegui.SendAction(actstrings);
+    m_gamegui.SendAction(m_Name,params);
     ResetVars();
     GetCurVarVals();
 

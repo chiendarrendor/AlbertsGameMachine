@@ -978,6 +978,7 @@
 
   <transition name="ISTRADEBASE">
     <transit from="AutoTradePhaseSelect" to="TradePhase"/>
+    <allowed>false</allowed>
     <auto>
       <![CDATA[
       GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == CITY ||
@@ -993,6 +994,7 @@
 
   <transition name="ISRELIC">
     <transit from="AutoTradePhaseSelect" to="AsteroidPhase"/>
+    <allowed>false</allowed>
     <auto>
       <![CDATA[
         GetMapOverlay().HasRelic(GetPlayers().GetCurPlayer().GetLocation())
@@ -1002,6 +1004,7 @@
       
   <transition name="INSPACE">
     <transit from="AutoTradePhaseSelect" to="TurnEnd"/>
+    <allowed>false</allowed>
     <auto>
       <![CDATA[
       GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type != CITY &&
@@ -1442,6 +1445,7 @@
     
   <transition name="GAMENOTOVER">
     <transit from="TurnEnd" to="StartTurn"/>
+    <allowed>false</allowed>
     <auto>
       <![CDATA[
         GetPlayers().GetCurPlayer().GetNetWorth() < GetOptions().GetWinMoney()
@@ -1456,6 +1460,7 @@
 
   <transition name="GAMEOVER">
     <transit from="TurnEnd" to="TerminalState"/>
+    <allowed>false</allowed>
     <auto>
       <![CDATA[
         GetPlayers().GetCurPlayer().GetNetWorth() >= GetOptions().GetWinMoney()
