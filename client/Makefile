@@ -1,6 +1,7 @@
 INSTALLTARGET=/c/apache/htdocs/client
 
 AWSBUCKET = albertsgamemachine
+CFDISTID = E1TUM5W71MF59M
 
 JAVAC=javac
 JAVAJAR=jar
@@ -33,3 +34,4 @@ install: jar
 
 awsinstall: jar
 	aws s3 cp Client.jar s3://${AWSBUCKET}/
+	aws cloudfront create-invalidation --distribution-id ${CFDISTID} --paths "/*"

@@ -1,5 +1,6 @@
 
 AWSBUCKET=albertsgamemachine
+CFDISTID=E1TUM5W71MF59M
 BOOSTINC=/usr/include
 GAMECOMMON=../../gamecommon
 COMMON=../../common
@@ -107,6 +108,7 @@ clientinstall: OutpostClient.xml clientjava
 	cd ${CLIENTINSTALL} ; jar -cf ../Outpost.jar *
 	aws s3 cp OutpostClient.xml s3://${AWSBUCKET}/
 	aws s3 cp Outpost.jar s3://${AWSBUCKET}/
+	aws cloudfront create-invalidation --distribution-id ${CFDISTID} --paths "/*"
 
 
 stageclient: OutpostClient.xml clientjava

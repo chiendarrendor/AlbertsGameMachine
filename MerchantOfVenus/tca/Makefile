@@ -26,6 +26,7 @@ endif
 JAVAC=javac -Xlint:unchecked
 
 AWSBUCKET=albertsgamemachine
+CFDISTID=E1TUM5W71MF59M
 
 CLIENTJAVADIR=../client
 CLIENTJAVALIB=../../client/classes
@@ -113,6 +114,7 @@ clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
 	aws s3 cp ${CLIENTJAVADIR}/MerchantOfVenusClient.xml s3://${AWSBUCKET}/
 	aws s3 cp MerchantOfVenus.jar s3://${AWSBUCKET}/
 	aws s3 cp ../MerchantOfVenusMap.xml s3://${AWSBUCKET}/
+	aws cloudfront create-invalidation --distribution-id ${CFDISTID} --paths "/*"
 
 MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml 
 	${CPP} -I../client -P ../client/MerchantOfVenusClient.xml > MerchantOfVenusClient.xml

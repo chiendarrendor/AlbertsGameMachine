@@ -21,7 +21,7 @@ import java.awt.geom.*;
 
 public class Board
 {
-  public enum SpaceType { DOT,ASTEROID,QBOX,PENALTY,CITY,STATION,TELEGATE};
+  public enum SpaceType { DOT,ASTEROID,QBOX,PENALTY,CITY,STATION,SPACECITY,TELEGATE};
   public enum SpaceColor { BLUE,RED,YELLOW };
 
   public class SolarSystemIcon
@@ -529,6 +529,7 @@ public class Board
     if (t.equals("penalty")) return SpaceType.PENALTY;
     if (t.equals("city")) return SpaceType.CITY;
     if (t.equals("station")) return SpaceType.STATION;
+    if (t.equals("spacecity")) return SpaceType.SPACECITY;
     throw new NodeInterfacePackageException("unknown space type: " + t);
   }
 
@@ -592,6 +593,7 @@ public class Board
     case QBOX:
     case ASTEROID:
     case STATION:
+    case SPACECITY:
       ach = new AttributeChecker();
       ach.AddAttribute("name",true);
       ach.AddAttribute("type",true);
