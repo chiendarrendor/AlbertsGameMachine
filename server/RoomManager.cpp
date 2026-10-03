@@ -326,8 +326,6 @@ void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_a
   {
     if (i_ap.GetActionName() == "NEWROOM") HandleNewRoom(i_Name,i_ap,i_Connections);
     else if (i_ap.GetActionName() == "CHANGEROOM") HandleChangeRoom(i_Name,i_ap,i_Connections);
-    else if (i_ap.GetActionName() == "ROOMTALK") HandleRoomTalk(i_Name,i_ap,i_Connections);
-    else if (i_ap.GetActionName() == "PLAYERTALK") HandlePlayerTalk(i_Name,i_ap,i_Connections);
     else
     {
       i_Connections.SendLineToName(i_Name,"ERROR,Unknown roommanager action " + i_ap.GetActionName());
@@ -416,64 +414,6 @@ void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser 
 
 }
 
-
-void RoomManager::HandleRoomTalk(const std::string &i_Name,const ActionParser &i_ap,
-                     GameServerConnectionHandlerFactory &i_Connections)
-{
-  if (i_ap.GetParams().size() != 1)
-  {
-    i_Connections.SendLineToName(i_Name,"ERROR,Bad ROOMTALK action");
-    return;
-  }
-
-  Room *pRoom = GetRoomOf(i_Name);
-  if (!pRoom) return;
-
-  std::string message;
-  message += "(";
-  message += i_Name;
-  message += " to room '";
-  message += pRoom->GetName();
-  message += "') ";
-  message += ExtractJsonParam<std::string>(i_ap.GetParams(),"RoomMessage");
-
-  std::string packet;
-  packet += "MESSAGE,";
-  packet += UnComma(message);
-
-  std::set<std::string>::iterator beginit = pRoom->GetInhabitantSet().begin();
-  std::set<std::string>::iterator endit = pRoom->GetInhabitantSet().end();
-
-  for (; beginit != endit ; ++beginit)
-  {
-    i_Connections.SendLineToName(*beginit,packet);
-  }
-}
-
-void RoomManager::HandlePlayerTalk(const std::string &i_Name,const ActionParser &i_ap,
-                     GameServerConnectionHandlerFactory &i_Connections)
-{
-  if (i_ap.GetParams().size() != 2)
-  {
-    i_Connections.SendLineToName(i_Name,"ERROR,Bad PLAYERTALK action");
-    return;
-  }
-
-  std::string target = ExtractJsonParam<std::string>(i_ap.GetParams(),"TalkPlayer");
-
-  std::string message;
-  message += "(";
-  message += i_Name;
-  message += ") ";
-  message += ExtractJsonParam<std::string>(i_ap.GetParams(),"PlayerMessage");
-
-  std::string packet;
-  packet += "MESSAGE,";
-  packet += UnComma(message);
-
-
-  i_Connections.SendLineToName(target,packet);
-}
 
 void RoomManager::HandleDisconnect(const std::string &i_Name,GameServerConnectionHandlerFactory &i_Connections)
 {

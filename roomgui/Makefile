@@ -9,7 +9,7 @@ INSTALLDIR=/c/apache/htdocs/client/ROOMGUI
 
 CLASSDIR=classes
 
-JAVAS=MainPage.java RoomPage.java
+JAVAS=RoomPage.java
 
 JAVALOCS=$(JAVAS:%=ROOMGUI/%)
 

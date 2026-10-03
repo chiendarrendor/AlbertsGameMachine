@@ -9,13 +9,6 @@
   <action name="CHANGEROOM" onstate="alwayshidden" text="Move To Selected Room">
     <var name="TargetRoom" text="Name of Target Room"/>
   </action>
-  <action name="ROOMTALK" onstate="alwayshidden" text="Send Message to Room">
-    <var name="RoomMessage" text="Message Body"  noreset="y"/>
-  </action>
-  <action name="PLAYERTALK" onstate="alwayshidden" text="Send Message to Player">
-    <var name="TalkPlayer" text="Target Player"/>
-    <var name="PlayerMessage" text="Message Body"  noreset="y"/>
-  </action>
   <action name="NEWGAME" onstate="alwayson" text="Start New Game">
     <var name="NewGame" text="Name of New Game">
       <varselection varname="NewGame" listvar="gamenames"/>
@@ -61,10 +54,6 @@
 
 <tab title="Room Info">
   <javaclass classname="RoomPage"/>
-</tab>
-
-<tab title="Player Messaging" layout="border">
-  <javaclass classname="MainPage"/>
 </tab>
 
 </gameboard>

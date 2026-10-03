@@ -30,9 +30,10 @@ Once named, all lines forward to `ActionManager::HandleAction`.
   `UniCast`/`BroadCast`/`VariCast`. This is how a `Game` object pushes state back out;
   `RoomOutputPort` adapts it to a set of named socket connections within one room.
 
-**Room orchestration (`RoomManager`/`Room`):** rooms are lightweight chat-room-like containers;
-each hosts at most one active `Game`. `RoomManager` handles `NEWROOM`/`CHANGEROOM`/`ROOMTALK`/
-`PLAYERTALK`, and forwards anything else to the player's current `Room`, which itself intercepts
+**Room orchestration (`RoomManager`/`Room`):** rooms are lightweight containers;
+each hosts at most one active `Game`. `RoomManager` handles `NEWROOM`/`CHANGEROOM`
+(`ROOMTALK`/`PLAYERTALK` also lived here until the chat facility was removed 2026-10-03 — see
+`.claude/TODO.md`), and forwards anything else to the player's current `Room`, which itself intercepts
 `NEWGAME`/`LOADGAME`/`SAVEGAME` and forwards everything else straight into the active
 `Game::HandleAction`.
 

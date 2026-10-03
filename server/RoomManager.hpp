@@ -62,10 +62,6 @@ private:
                      GameServerConnectionHandlerFactory &i_Connections);
   void HandleChangeRoom(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections);
-  void HandleRoomTalk(const std::string &i_Name,const ActionParser &i_ap,
-                     GameServerConnectionHandlerFactory &i_Connections);
-  void HandlePlayerTalk(const std::string &i_Name,const ActionParser &i_ap,
-                     GameServerConnectionHandlerFactory &i_Connections);
 
   Room *GetRoomOf(const std::string &i_Name);
 

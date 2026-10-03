@@ -258,8 +258,10 @@ as any per-game client, under its own gui name (distinct `GUIUnit`/`GameGui`/`Ac
 instance, per the normal one-`GUIUnit`-per-gui-name rule). `roomgui/rooms.xml` itself nicely
 demonstrates both authoring styles side by side: `NEWROOM`/`NEWGAME`/`LOADGAME`/`SAVEGAME` are
 `onstate="alwayson"` (genuinely using the framework's visible auto-built button UI, Outpost-style),
-while `CHANGEROOM`/`ROOMTALK`/`PLAYERTALK` are `alwayshidden` and hand-driven by custom `<javaclass>`
-widgets (`RoomWidget`, `TalkPanel`, MoV-style). One new `ActionTransferManager` mechanic this surfaced:
+while `CHANGEROOM` is `alwayshidden` and hand-driven by a custom `<javaclass>`
+widget (`RoomWidget`, MoV-style). (`ROOMTALK`/`PLAYERTALK` were a second `alwayshidden`/`TalkPanel`
+example here too, until the whole chat facility was removed 2026-10-03 — see `.claude/TODO.md`.)
+One new `ActionTransferManager` mechanic this surfaced:
 `RoomWidget` (one instance per known room) registers as generator/button-presser under the *same*
 names (`"TargetRoom"`/`"CHANGEROOM"`) for every room simultaneously — confirming
 `GetVariableGeneratorValue`'s `if (v.size() != 1) return null` guard is a real, exercised case, not

@@ -800,7 +800,9 @@ else if (i_ap.GetActionName() == "LOADGAME") ...
 else if (i_ap.GetActionName() == "SAVEGAME") ...
 else { m_pGame->HandleAction(i_Name, i_ap, m_Inhabitants); }  // only now reaches the live game
 ```
-Seven reserved names (`NEWROOM`/`CHANGEROOM`/`ROOMTALK`/`PLAYERTALK`/`NEWGAME`/`LOADGAME`/`SAVEGAME`)
+Seven reserved names at the time (`NEWROOM`/`CHANGEROOM`/`ROOMTALK`/`PLAYERTALK`/`NEWGAME`/`LOADGAME`/
+`SAVEGAME`; **`ROOMTALK`/`PLAYERTALK` removed 2026-10-03** — the whole chat facility was dropped, see
+`.claude/TODO.md` — leaving five: `NEWROOM`/`CHANGEROOM`/`NEWGAME`/`LOADGAME`/`SAVEGAME`)
 are silently intercepted before ever reaching a game process — any game transition that happens to
 share one of these names (`CHANGEROOM` is a plausible real collision: any game with its own in-game
 "move between areas" concept) would never fire at all, with no error, just the wrong handler quietly
@@ -900,8 +902,9 @@ need to reuse this envelope.
 not symmetrically. Confirmed 2026-09-29 by tracing the real code, both directions of both wires
 involved:**
 - **Client → server:** `RoomManager`/`Room::HandleAction` must parse the incoming JSON enough to read
-  `namespace` — mandatory for every action, since routing depends on it. For the 7 reserved actions
-  (`NEWROOM`/`CHANGEROOM`/`ROOMTALK`/`PLAYERTALK`/`NEWGAME`/`LOADGAME`/`SAVEGAME`), the server also
+  `namespace` — mandatory for every action, since routing depends on it. For the reserved actions
+  (five since `ROOMTALK`/`PLAYERTALK` were removed 2026-10-03: `NEWROOM`/`CHANGEROOM`/`NEWGAME`/
+  `LOADGAME`/`SAVEGAME`), the server also
   needs `action` and `params` fully, since it executes those itself. For a game-bound action, the
   server needs `namespace` (to validate against the room's live game) but never needs to interpret
   `action`/`params` at all — those get passed through opaquely, matching the standing principle that

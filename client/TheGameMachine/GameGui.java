@@ -59,7 +59,7 @@ public class GameGui
 
 
 
-  // The 7 reserved room-management actions live in namespaces the server
+  // The 5 reserved room-management actions live in namespaces the server
   // hardcodes ("roommanager"/"room" -- see RoomManager.cpp/Room::HandleAction)
   // regardless of which GameGui instance (a real game, or the shared ROOMGUI
   // instance) actually fires them -- so this split has to be hardcoded
@@ -67,8 +67,7 @@ public class GameGui
   // this instance's own identity.
   private String ReservedNamespaceFor(String i_ActionName)
   {
-    if (i_ActionName.equals("NEWROOM") || i_ActionName.equals("CHANGEROOM") ||
-        i_ActionName.equals("ROOMTALK") || i_ActionName.equals("PLAYERTALK"))
+    if (i_ActionName.equals("NEWROOM") || i_ActionName.equals("CHANGEROOM"))
     {
       return "roommanager";
     }
