@@ -53,9 +53,27 @@ bool LoginManager::IsValid()
 	return m_IsValid;
 }
 
+bool LoginManager::IsIllegalUsernameFormat(const std::string &i_Str) const
+{
+	return i_Str.find('\n') != std::string::npos ||
+	       i_Str.find('\r') != std::string::npos ||
+	       i_Str.find(':') != std::string::npos;
+}
+
+bool LoginManager::IsIllegalPasswordFormat(const std::string &i_Str) const
+{
+	return i_Str.find('\n') != std::string::npos ||
+	       i_Str.find('\r') != std::string::npos;
+}
+
 bool LoginManager::ValidateLogin(const std::string &i_Name,const std::string &i_Password)
 {
 	if (!m_IsValid)
+	{
+		return false;
+	}
+
+	if (IsIllegalUsernameFormat(i_Name) || IsIllegalPasswordFormat(i_Password))
 	{
 		return false;
 	}
