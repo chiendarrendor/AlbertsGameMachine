@@ -180,6 +180,57 @@ BOOST_AUTO_TEST_CASE( TestStartMove )
   BOOST_CHECK(mm.CanMulligan() == true);
 }
 
+BOOST_AUTO_TEST_CASE( TestGetDiceStringAutoPilotVisibility )
+{
+  // GetDiceString() hides every die behind '?' until MakeDiceVisible() --
+  // except the Auto Pilot relic's forced die (always slot 0, see
+  // StartMove()), which should read as its real value immediately, even
+  // before the reveal: it's never actually a secret, since
+  // SELECTSWITCHABLES already broadcasts which switchables (Auto Pilot
+  // included) a player activated before the move ever starts (Albert,
+  // 2026-10-07/08).
+  Players pls;
+  pls.add("Foo Bar");
+  pls[0].AddToken(Ship::GetShipOfClass(FREIGHTER));
+  pls.RandomizeTurnOrder();
+  MapData md("../MerchantOfVenusMap.xml");
+  MapOverlay mo(md,g_TestOptions);
+
+  MoveMediator mm(pls,mo);
+
+  // No Auto Pilot at all: both dice (genuine random rolls) stay fully
+  // hidden pre-reveal, regardless of their actual values.
+  mm.StartMove();
+  BOOST_CHECK_EQUAL(mm.GetDiceString(),std::string(mm.GetDice().size(),'?'));
+
+  // Owning the Auto Pilot relic isn't enough on its own -- it has to be
+  // switched on (HasAutoPilot() checks the active switchable, not mere
+  // possession) -- so StartMove() doesn't force a 4 into slot 0 yet, and
+  // every die is still a genuine, fully-hidden roll.
+  pls[0].AddToken(Token::Relic("Auto Pilot",150));
+  mm.StartMove();
+  BOOST_CHECK_EQUAL(mm.GetDiceString(),std::string(mm.GetDice().size(),'?'));
+
+  // Switched on: slot 0 is deterministically 4 (StartMove() forces it) and
+  // should show "4" right away; the other, genuinely-rolled die stays
+  // hidden behind '?'.
+  pls[0].GetAdvances().SetSwitchables("AP");
+  mm.StartMove();
+  BOOST_REQUIRE_EQUAL(mm.GetDice()[0],4);
+  BOOST_CHECK_EQUAL(mm.GetDiceString(),"4" + std::string(mm.GetDice().size() - 1,'?'));
+
+  // Once dice become visible, slot 0 is handled by the ordinary
+  // m_dicevisible path like every other die -- still correctly "4" here,
+  // but via the real value, not the early-reveal special case.
+  mm.MakeDiceVisible();
+  std::string expected;
+  for (size_t i = 0 ; i < mm.GetDice().size() ; ++i)
+  {
+    expected += char('0' + mm.GetDice()[i]);
+  }
+  BOOST_CHECK_EQUAL(mm.GetDiceString(),expected);
+}
+
 BOOST_AUTO_TEST_CASE( TestGetPenaltyCost )
 {
   Players pls;

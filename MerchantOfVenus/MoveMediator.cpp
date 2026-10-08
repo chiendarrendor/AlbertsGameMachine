@@ -139,17 +139,19 @@ std::string MoveMediator::GetDiceString() const
 {
   std::ostringstream oss;
   std::vector<int>::const_iterator dit;
-  for (dit = GetDice().begin() ; dit != GetDice().end() ; ++dit)
-  {
-    if (m_dicevisible)
-    {
-      oss << *dit;
-    }
-    else
-    {
-      oss << '?';
+
+  for (size_t i = 0 ; i < GetDice().size() ; ++i) {
+    int curdie = GetDice().at(i);
+
+    if (m_dicevisible) {
+      oss << curdie;
+    } else if (i == 0 && m_players.GetCurPlayer().GetAdvances().HasAutoPilot()) {
+      oss << "4";
+    } else {
+      oss << "?";
     }
   }
+
   return oss.str();
 }
 
