@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MerchantOfVenusClientState",
+  "description": "Data Description Language for the Merchant Of Venus full-state-send",
+  "type": "object",
+  "$defs": {
+    "Token": {
+      "type": "object",
+      "description": "A single purchasable/ownable game item -- a good, fare, demand, relic, piece of equipment, drive, deed, IOU, or ship. Which fields are actually meaningful depends on sizeClass; every field is still always present, with a harmless default (0/\"\"/false/[]) when it doesn't apply, same convention as elsewhere in this schema.",
+      "properties": {
+        "name": {"type": "string"},
+        "sizeClass": {"type": "string", "enum": ["ship","good","equip","drive","fare","relic","deed","iou","demand"]},
+        "buyPrice": {"type": "integer"},
+        "sellPrice": {"type": "integer", "description": "Meaning varies by sizeClass: cash/barter value for most tokens, trade-in value for a ship, jettison value for a fare, bonus add-on for a demand."},
+        "sellType": {"type": "string", "enum": ["cash","barter","none"], "description": "\"none\" means this token can't be sold at all (e.g. a deed)."},
+        "sellDestination": {"type": "string", "enum": ["cup","culture","nowhere"], "description": "Where this token goes when sold: into the Cup, back onto its own culture's stock, or simply gone."},
+        "isFactoryGood": {"type": "boolean", "description": "Meaningful only when sizeClass is \"good\"."},
+        "isUnlimited": {"type": "boolean", "description": "True if buying this from a culture doesn't remove it from that culture's stock (e.g. ships)."},
+        "buyers": {"type": "array", "items": {"type": "string"}, "description": "Culture ids (tradeBases keys) willing to buy this token."},
+        "source": {"type": "string", "description": "Culture id this token returns to when drawn from the Cup. Only meaningful for goods/fares/demands; empty string otherwise."},
+        "deedType": {"type": "string", "enum": ["notdeed","factory","spaceport"]},
+        "defenseValue": {"type": "integer"},
+        "attackValue": {"type": "integer"},
+        "isDisposable": {"type": "boolean", "description": "True if using this item consumes it (e.g. a Nova Ball)."},
+        "skipsYellow": {"type": "boolean", "description": "Drive property: ignores movement cost onto a yellow penalty space."},
+        "skipsRed": {"type": "boolean", "description": "Drive property: ignores movement cost onto a red penalty space."},
+        "speed": {"type": "integer", "description": "Number of dice rolled per move. Only meaningful for a ship."},
+        "holdCount": {"type": "integer", "description": "Cargo capacity. Only meaningful for a ship."}
+      },
+      "required": ["name","sizeClass","buyPrice","sellPrice","sellType","sellDestination","isFactoryGood","isUnlimited","buyers","source","deedType","defenseValue","attackValue","isDisposable","skipsYellow","skipsRed","speed","holdCount"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "myPlayerId": {
+        "description": "index of the individual receiving this JSON in the players array, or null if individual is not a player",
+        "type": ["integer","null"]
+    },
+    "curPlayerId": {
+        "description": "index of the current player in the player's array, or null if game has not started yet.",
+        "type": ["integer","null"]
+    },
+    "options": {
+        "type": "object",
+        "description": "Contains parameters adjustable during game setup, and then fixed thereafter.",
+        "properties": {
+            "winMoney": { "type": "integer" }
+        },
+        "required": ["winMoney"],
+        "additionalProperties": false
+    },
+    "players": {
+        "type": "array",
+        "description": "Every player currently joined, in join order. This order is fixed for the life of the game; it is not turn order (turn order is a separate, dynamically-computed array -- see the existing TURNORDER event, not yet part of this schema). okStartup is meaningless (false) before ValidateSetup.",
+        "items": {
+            "type": "object",
+            "description": "Every field is always present; most are simply harmless pre-game defaults (e.g. victoryPoints 0, purchaseState DONE) before the game actually starts, same as okStartup.",
+            "properties": {
+                "name": { "type": "string" },
+                "id": { "type": "integer" },
+                "race": {"type" : ["string", "null"] },
+                "okStartup": {"type": "boolean"},
+                "money": {"type": "integer"},
+                "barter": {"type": "integer"},
+                "worth": {"type": "integer"},
+                "location": {"type": "string"},
+                "switchables": {
+                    "type":"object",
+                    "description": "dict of player-owned relics that can be switched on and off at the beginning of player turn.",
+                    "additionalProperties": {"type":"boolean"}
+                },
+                "tokens":{
+                    "type":"array",
+                    "description": "This player's full inventory, including their ship (see Player::GetShip()'s index-0 convention -- deliberately staying implicit, not a separate field).",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "token": { "$ref": "#/$defs/Token" },
+                            "isNew": { "type": "boolean" }
+                        },
+                        "required": ["token", "isNew"],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": ["name","id","race","okStartup","money","barter","worth","location","switchables","tokens"],
+            "additionalProperties": false
+        }
+    },
+    "turnOrder": {
+        "type":["array", "null"],
+        "description": "Player ids in turn order; null before turn order has been determined.",
+        "items": {"type":"integer"}
+    },
+    "tradeBases": {
+        "type":"object",
+        "description":"dict keyed by race name of what's there",
+        "additionalProperties":{
+            "type":"object",
+            "properties": {
+                "factoryOwner": {"type":["integer","null"]},
+                "tokens": {
+                    "type":"array",
+                    "description": "This culture's current sellable stock, plus any demand tokens sitting on it.",
+                    "items": { "$ref": "#/$defs/Token" }
+                }
+            },
+            "required":["factoryOwner","tokens"],
+            "additionalProperties":false
+        }
+    },
+    "solarSystems": {
+        "type":"object",
+        "additionalProperties": {
+            "type": "object",
+            "properties": {
+                "race":{"type":["string", "null"]},
+                "secrecy": {"type":"string"}
+            },
+            "required": ["race","secrecy"],
+            "additionalProperties": false
+        }
+    },
+    "qboxes": {
+        "type":"object",
+        "additionalProperties": {
+            "type": "object",
+            "properties": {
+                "contents":{"type":["string","null"]},
+                "secrecy": {"type":"string"}
+            },
+            "required": ["contents","secrecy"],
+            "additionalProperties": false
+        }
+    },
+    "moveMediator": {
+        "type":"object",
+        "properties": {
+            "isFirst": {"type":"boolean"},
+            "currentDests": {
+                "type":"array",
+                "items": { "type":"string"}
+            },
+            "currentDest": {"type":["string","null"]},
+            "dice": {
+                "type":"array",
+                "items":{"type":["integer","null"]}
+            },
+            "mpLeft": {"type":"integer"},
+            "pilotNumberChoice": {
+                "type":"array",
+                "items": {"type":"integer"}
+            },
+            "currentPilotNumber":{"type":"integer"},
+            "pilotNumberPermanent":{"type":"boolean"},
+            "blindMoveRejected":{"type":"boolean"}
+        },
+        "required":["initialPenaltyCost","isFirst","currentDests","dice","mpLeft","pilotNumberChoice","currentPilotNumber","pilotNumberPermanent","blindMoveRejected"],
+        "additionalProperties": false
+    },
+    "trading": {
+        "type":"object",
+        "properties": {
+            "remainingBuys":{"type":"integer"},
+            "remainingSells":{"type":"integer"}
+        },
+        "required":["remainingBuys","remainingSells"],
+        "additionalProperties":false
+    },
+    "winner": {"type":["integer","null"]}
+  },
+  "required": ["myPlayerId","curPlayerId","options","players","turnOrder","tradeBases","solarSystems","qboxes","moveMediator","trading", "winner"],
+  "additionalProperties" : false
+}

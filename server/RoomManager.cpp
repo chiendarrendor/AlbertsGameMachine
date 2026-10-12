@@ -2,6 +2,7 @@
 #include "GameServerConnectionHandler.hpp"
 #include "StringUtilities.hpp"
 #include "JsonParamExtraction.hpp"
+#include "OutputPort.hpp"
 #include <sstream>
 #include <iostream>
 #include <time.h>
@@ -59,58 +60,20 @@ void Room::AddPlayerToRoom(const std::string &i_Name)
   m_Connections.AddBroadcastTarget(i_Name);
   m_Inhabitants.insert(i_Name);
 
-  if (m_RoomName == INITIALROOM)
-  {
-    m_Connections.UniCast(i_Name,std::string("GAMES, "));
-    m_Connections.UniCast(i_Name,"SAVEGAMES,");
-    return;
-  }
-
-  std::string gamelist;
-
-  std::set<std::string>::const_iterator nameit;
-  bool firsttime = true;
-
-  for (nameit = s_pGameCloset->GetGameBoxNames().begin() ; 
-       nameit != s_pGameCloset->GetGameBoxNames().end() ; ++nameit)
-  {
-    if (firsttime)
-    {
-      firsttime = false;
-    }
-    else
-    {
-      gamelist += ",";
-    }
-    gamelist += UnComma(*nameit);
-  }
-  gamelist = UnComma(gamelist);
-  m_Connections.UniCast(i_Name,std::string("GAMES,") + gamelist);
-
+  // The available-games list and saved-game list are now both part of
+  // ROOMGUI (per-room gameTypes/savedGames, empty for a gameless room, and
+  // gameTypes empty for Great Hall); NEWGUI is retired entirely -- a
+  // per-game full-state already self-describes via its own layers 3+4, so a
+  // client bootstraps it by inference, no separate signal needed. See
+  // .claude/server_game_interface_spec.md.
   if (m_pGame != NULL)
   {
-    std::string newguievent = 
-      std::string("NEWGUI,") +
-      m_pGame->GetServerGameInfo().GetName() + std::string(",") +
-      m_pGame->GetServerGameInfo().GetXMLLoc() + std::string(",") +
-      m_pGame->GetServerGameInfo().GetXMLFile();
-    m_Connections.UniCast(i_Name,newguievent);
     m_pGame->SendFullState(i_Name);
-    m_Connections.UniCast(i_Name,GetSavedGameString());
-  }
-  else
-  {
-    m_Connections.UniCast(i_Name,"SAVEGAMES,");
   }
 }
 
 void Room::RemovePlayerFromRoom(const std::string &i_Name)
 {
-
-  if (m_pGame != NULL)
-  {
-    m_Connections.UniCast(i_Name,std::string("DROPGUI,") + m_pGame->GetServerGameInfo().GetName());
-  }
   m_Inhabitants.erase(i_Name);
   m_Connections.RemoveBroadcastTarget(i_Name);
 }
@@ -134,36 +97,30 @@ void Room::BroadcastFullState()
   }
 }
 
-std::string Room::GetSavedGameString()
+boost::json::array Room::GetSavedGameNames()
 {
+  boost::json::array result;
+
   if (!m_pGame)
   {
-    return "ERROR,Request for Saved Games with no game!";
+    return result;
   }
 
   std::vector<std::string> dirents;
 
   if (!GetDirectoryContents(m_pGame->GetServerGameInfo().GetSaveDir(),dirents))
   {
-    return std::string("ERROR,Can't read Save Game Directory for Game ") + m_pGame->GetServerGameInfo().GetName();
+    std::cerr << "Can't read Save Game Directory for Game " << m_pGame->GetServerGameInfo().GetName() << std::endl;
+    return result;
   }
-
-  bool first = true;
 
   std::vector<std::string>::iterator dirit;
-  std::string args;
   for (dirit = dirents.begin() ; dirit != dirents.end() ; dirit++)
   {
-    if (!first)
-    {
-      args += ",";
-    }
-    first = false;
-
-    args += *dirit;
+    result.push_back(boost::json::value(*dirit));
   }
 
-  return std::string("SAVEGAMES,") + UnComma(args);
+  return result;
 }
 
 
@@ -209,7 +166,6 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 
   if (m_pGame != NULL)
   {
-    m_Connections.BroadCast(std::string("DROPGUI,") + m_pGame->GetServerGameInfo().GetName());
     delete m_pGame;
     m_pGame = NULL;
   }
@@ -218,15 +174,7 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 
   ROOMVALIDATE(m_pGame,"Unknown Error: could not create game!");
 
-  std::string newguievent =
-    std::string("NEWGUI,") +
-    pGameBox->GetName() + std::string(",") +
-    pGameBox->GetXMLLoc() + std::string(",") +
-    pGameBox->GetXMLFile();
-
-  m_Connections.BroadCast(newguievent);
   BroadcastFullState();
-  m_Connections.BroadCast(GetSavedGameString());
 }
 
 void Room::HandleLoadGame(const std::string &i_Name,const ActionParser &i_ap)
@@ -244,7 +192,6 @@ void Room::HandleSaveGame(const std::string &i_Name,const ActionParser &i_ap)
   std::string fileName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NameToSave");
   ROOMVALIDATE(m_pGame,"No Game to Save.");
   ROOMVALIDATE(m_pGame->Save(fileName),"Game " + fileName + " failed to save.");
-  m_Connections.BroadCast(GetSavedGameString());
 }
 
 std::string Room::GetGameName()
@@ -253,15 +200,16 @@ std::string Room::GetGameName()
   return m_pGame->GetName();
 }
 
-std::string Room::GetGameStatus()
+bool Room::GetGameIsDone()
 {
-  if (!m_pGame) return "";
-  return m_pGame->GetStatusString();
+  if (!m_pGame) return true;
+  return m_pGame->IsDone();
 }
 
 
 
 RoomManager::RoomManager(const std::string &i_XMLLoc,const std::string &i_XMLName,const GameCloset &i_rGameCloset) :
+  m_rGameCloset(i_rGameCloset),
   m_XMLLoc(i_XMLLoc),
   m_XMLName(i_XMLName)
 {
@@ -278,16 +226,71 @@ RoomManager::~RoomManager()
   }
 }
 
+boost::json::object RoomManager::BuildRoomGuiState()
+{
+  boost::json::array gameTypes;
+  std::set<std::string>::const_iterator gameit;
+  for (gameit = m_rGameCloset.GetGameBoxNames().begin() ;
+       gameit != m_rGameCloset.GetGameBoxNames().end() ; ++gameit)
+  {
+    gameTypes.push_back(boost::json::value(*gameit));
+  }
+
+  boost::json::array rooms;
+  std::map<std::string,Room *>::iterator roomit;
+  for (roomit = m_Rooms.begin() ; roomit != m_Rooms.end() ; ++roomit)
+  {
+    Room *pRoom = roomit->second;
+    boost::json::object roomobj;
+    roomobj["name"] = roomit->first;
+    roomobj["gameName"] = pRoom->GetGameName();
+    roomobj["isDone"] = pRoom->GetGameIsDone();
+    // Great Hall never allows a game to start in it -- the client's own
+    // available-games list is empty/greyed out there, driven purely by this
+    // being empty (there's no separate server-side NEWGAME block; it's
+    // enforced by never offering a choice).
+    roomobj["gameTypes"] = (roomit->first == INITIALROOM) ? boost::json::array() : gameTypes;
+    roomobj["savedGames"] = pRoom->GetSavedGameNames();
+    rooms.push_back(roomobj);
+  }
+
+  boost::json::array inhabitants;
+  std::set<std::string>::const_iterator nameit;
+  for (nameit = m_Inhabitants.begin() ; nameit != m_Inhabitants.end() ; ++nameit)
+  {
+    Room *pRoom = GetRoomOf(*nameit);
+    boost::json::object inhab;
+    inhab["name"] = *nameit;
+    inhab["room"] = pRoom ? pRoom->GetName() : "";
+    inhabitants.push_back(inhab);
+  }
+
+  boost::json::object state;
+  state["rooms"] = rooms;
+  state["inhabitants"] = inhabitants;
+  return state;
+}
+
+void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &i_Connections)
+{
+  boost::json::object current = BuildRoomGuiState();
+  if (current == m_LastRoomGuiState)
+  {
+    return;
+  }
+  m_LastRoomGuiState = current;
+
+  std::set<std::string>::const_iterator nameit;
+  for (nameit = m_Inhabitants.begin() ; nameit != m_Inhabitants.end() ; ++nameit)
+  {
+    i_Connections.SendLineToName(*nameit,
+        boost::json::serialize(WrapFullStateEnvelope(*nameit,"ROOMGUI",m_XMLLoc,m_XMLName,current)));
+  }
+}
+
 void RoomManager::HandleInitialConnection(const std::string &i_Name,
                           GameServerConnectionHandlerFactory &i_Connections)
 {
-  std::string initialPacket;
-  initialPacket += "NEWGUI,ROOMGUI,";
-  initialPacket += m_XMLLoc;
-  initialPacket += ",";
-  initialPacket += m_XMLName;
-
-  i_Connections.SendLineToName(i_Name,initialPacket);
   m_Inhabitants.insert(i_Name);
 
   if (m_Rooms.size() == 0)
@@ -296,27 +299,7 @@ void RoomManager::HandleInitialConnection(const std::string &i_Name,
   }
   m_Rooms[INITIALROOM]->AddPlayerToRoom(i_Name);
 
-  // tell new player what their name is
-  SENDLINE(i_Name,"GUIIAM," << UnComma(i_Name));
-
-  // tell new player about rooms
-  std::map<std::string,Room *>::iterator roomit;
-  for (roomit = m_Rooms.begin() ; roomit != m_Rooms.end(); ++roomit)
-  {
-    Room *pRoom = roomit->second;
-    SENDLINE(i_Name, "GUIROOM," << UnComma(roomit->first) 
-             << "," << UnComma(pRoom->GetGameName())
-             << "," << UnComma(pRoom->GetGameStatus()));
-  }
-
-
-  // tell everyone about new player, and tell new player about everyone
-  std::set<std::string>::iterator setit;
-  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
-  {
-    SENDLINE(*setit,"INHABITANT," << i_Name << "," << INITIALROOM );
-    SENDLINE(i_Name,"INHABITANT," << *setit << "," << GetRoomOf(*setit)->GetName() );
-  }
+  BroadcastRoomGuiIfChanged(i_Connections);
 }
 
 void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_ap,
@@ -337,14 +320,7 @@ void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_a
   if (!pRoom) return;
   pRoom->HandleAction(i_Name,i_ap);
 
-  // disseminate new room state ROOMSTATE
-  std::set<std::string>::iterator setit;
-  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
-  {
-    SENDLINE(*setit, "GUIROOM," << UnComma(pRoom->GetName())
-             << "," << UnComma(pRoom->GetGameName())
-             << "," << UnComma(pRoom->GetGameStatus()));
-  }
+  BroadcastRoomGuiIfChanged(i_Connections);
 }
 
 void RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_ap,
@@ -372,12 +348,7 @@ void RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_
 
   m_Rooms[newName] = new Room(newName,i_Connections);
 
-  // tell everyone about new room ROOMINDEX
-  std::set<std::string>::iterator setit;
-  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
-  {
-    SENDLINE(*setit,"GUIROOM," << UnComma(newName) << ",,");
-  }
+  BroadcastRoomGuiIfChanged(i_Connections);
 }
 
 void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser &i_ap,
@@ -405,13 +376,7 @@ void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser 
   Room *pNewRoom = findit->second;
   pNewRoom->AddPlayerToRoom(i_Name);
 
-  // tell everyone that player has new room INHABITANT
-  std::set<std::string>::iterator setit;
-  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
-  {
-    SENDLINE(*setit,"INHABITANT," << UnComma(i_Name) << "," << UnComma(newRoomName));
-  }
-
+  BroadcastRoomGuiIfChanged(i_Connections);
 }
 
 
@@ -422,13 +387,7 @@ void RoomManager::HandleDisconnect(const std::string &i_Name,GameServerConnectio
   if (!pRoom) return;
   pRoom->RemovePlayerFromRoom(i_Name);
 
-  // tell everyone player is gone DROPINHABITANT
-  std::set<std::string>::iterator setit;
-  for (setit = m_Inhabitants.begin() ; setit != m_Inhabitants.end() ; ++setit)
-  {
-    SENDLINE(*setit,"DROPINHABITANT," << i_Name);
-  }
-
+  BroadcastRoomGuiIfChanged(i_Connections);
 }
 
 Room *RoomManager::GetRoomOf(const std::string &i_Name)

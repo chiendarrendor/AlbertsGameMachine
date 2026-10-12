@@ -216,9 +216,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   ogi.GetPlayers()[5].SetLastBid(25);
 
   ActionParser ap1 = MakeAction("OPENBID",{{"i_shipslot",2},{"i_openingbid",30}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap1) , false); // fail, slot is not valid
-  BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_shipslot has illegal value\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap1) , false); // fail, slot is not valid
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 25);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 25);
@@ -229,9 +227,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
 
 
   ActionParser ap2 = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",90}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap2) , false); // fail, less than face cost
-  BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_openingbid is below minimum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap2) , false); // fail, less than face cost
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 25);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 25);
@@ -241,9 +237,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetLastBid() , 25);
 
   ActionParser ap2a = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",106}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap2a) , false); // fail, above funds + discounts (90 + 15)
-  BOOST_CHECK_EQUAL( top.GetOutput(),"unicast: Player4 -- ERROR,Action OPENBID variable i_openingbid is above maximum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap2a) , false); // fail, above funds + discounts (90 + 15)
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 25);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 25);
@@ -284,7 +278,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetPurchaseState() , UNPLAYED );
 
   ActionParser ap3 = MakeAction("OPENBID",{{"i_shipslot",1},{"i_openingbid",100}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap3) , true); // should work...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap3) , true); // should work...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetBidState() , UNBID);     BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetBidState() , HASBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetHighBid() , 100 );
@@ -305,23 +299,12 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
 
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,0,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,2,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,0,10,0,0,4,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,1,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,9,165,8,10,0,10,0,0,1,4,0,100,100\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,3,0,0,-1,-1\n"
-                     "broadcast: BIDITEM,1\n"
-                     "broadcast: PURCHASEPRICE,90\n"
-                     );
-  top.ResetOutput();
 
   ogi.GetOptions().SetOneUpgradePerTurn(false);
   ogi.GetOptions().SetMustBeActiveToBid(true);
   ogi.GetOptions().SetRobotMechanism(ALWAYS_MULTIPLICATIVE);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap3) , true); // should work...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap3) , true); // should work...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetBidState() , PASS_OUT);  BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetBidState() , HASBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetHighBid() , 100 );
@@ -334,23 +317,12 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetUnownedItems().GetBidIndex() , (size_t)1);
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,0,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,2,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,0,10,0,0,4,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,1,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,9,165,8,10,0,10,0,0,1,4,0,100,100\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,3,3,0,-1,-1\n"
-                     "broadcast: BIDITEM,1\n"
-                     "broadcast: PURCHASEPRICE,90\n"
-                     );
-  top.ResetOutput();
 
   ogi.GetOptions().SetOneUpgradePerTurn(true);
   ogi.GetOptions().SetMustBeActiveToBid(false);
   ogi.GetOptions().SetRobotMechanism(SECOND_UNLIMITED);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap3) , true); // should work...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap3) , true); // should work...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetBidState() , UNBID);     BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetBidState() , HASBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetHighBid() , 100 );
@@ -363,21 +335,10 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetUnownedItems().GetBidIndex() , (size_t)1);
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,0,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,2,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,0,10,0,0,4,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,1,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,9,165,8,10,0,10,0,0,1,4,0,100,100\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,3,0,0,-1,-1\n"
-                     "broadcast: BIDITEM,1\n"
-                     "broadcast: PURCHASEPRICE,90\n"
-                     );
-  top.ResetOutput();
 
   ogi.GetPlayers()[5].SetHasPurchased(true);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap3) , true); // should work...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap3) , true); // should work...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetBidState() , PASS_OUT);  BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetBidState() , HASBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetHighBid() , 100 );
@@ -390,17 +351,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPENBIDDING )
   BOOST_CHECK_EQUAL( ogi.GetUnownedItems().GetBidIndex() , (size_t)1);
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,0,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,2,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,0,10,0,0,4,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,1,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,9,165,8,10,0,10,0,0,1,4,0,100,100\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,3,3,1,-1,-1\n"
-                     "broadcast: BIDITEM,1\n"
-                     "broadcast: PURCHASEPRICE,90\n"
-                     );
-  top.ResetOutput();
 }
 
 BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
@@ -569,34 +519,26 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
   ActionParser ap3 = MakeAction("PURCHASEBID",{{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player4 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap3) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
   ActionParser ap4 = MakeAction("PURCHASEBID",{{"i_discardstring","11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player4 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap4) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
   ActionParser ap5 = MakeAction("PURCHASEBID",{{"i_discardstring","11V"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player4 -- ERROR,Illegal characters in delete string\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap5) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
   ActionParser ap6 = MakeAction("PURCHASEBID",{{"i_discardstring","110"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player4 -- ERROR,You need to spend more to buy that.\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap6) , false); // didn't spend enough.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player4","Bid",ogi) , true); // active
   ActionParser ap7 = MakeAction("PURCHASEBID",{{"i_discardstring","111"}});
 
   ogi.GetPlayers()[4].AddHumans(1);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap7) , true); // should be fine
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap7) , true); // should be fine
 
   //
   // Factory newfac = player.GetOwnedItems().AddItem(item bid on)
@@ -621,31 +563,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEBID )
   BOOST_CHECK_EQUAL( ogi.GetUnownedItems().GetShipItem(1) , NO_ITEM );
   BOOST_CHECK_EQUAL( ogi.GetUnownedItems().GetBidIndex() , NO_BID_INDEX );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,4,1,8,90,|OR40-OR30-OR20|\n"
-                    "broadcast: SUPPLYSHIP,1,0\n"
-                    "broadcast: PLAYERCARDBACKS,4,||\n"
-                    "unicast: Player4 -- PLAYERCARDS,||\n"
-                    "unicast: Player4 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                    "broadcast: PLAYERITEMS,4,0,10\n"
-                    "broadcast: PLAYERITEMS,4,1,7\n"
-                    "broadcast: PLAYERITEMS,4,2,1\n"
-                    "broadcast: PLAYERITEMS,4,3,8\n"
-                    "broadcast: PLAYERFACTORIES,4,|RH|\n"
-                    "broadcast: PLAYERSTATE,4,16,265,8,10,-1,10,1,0,1,3,1,-1,-1\n"
-                    "broadcast: BIDITEM,1000\n"
-                    "broadcast: COMMODITYSTOCK,1,26,3,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    "broadcast: PURCHASEDATA,1,4,8,90\n"
-                    );
-  top.ResetOutput();
 }
 
 
@@ -758,9 +675,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
 
 
   ActionParser ap1 = MakeAction("BID",{{"i_bid",50}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap1) , false); // should be fine
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player3 -- ERROR,Action BID variable i_bid is below minimum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player3",ap1) , false); // should be fine
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 10);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 11);
@@ -771,9 +686,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
 
 
   ActionParser ap2 = MakeAction("BID",{{"i_bid",62}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap2) , false); // should be fine
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player3 -- ERROR,Action BID variable i_bid is above maximum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player3",ap2) , false); // should be fine
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 10);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 11);
@@ -784,7 +697,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
 
 
   ActionParser ap3 = MakeAction("BID",{{"i_bid",55}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap3) , true); // should be fine
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player3",ap3) , true); // should be fine
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetLastBid() , 10);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetLastBid() , 11);
@@ -815,12 +728,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestBID )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetBidState() , CURBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurBidPlayer().GetId() , 0 );
   
-  BOOST_CHECK_EQUAL( top.GetOutput() ,
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,1,4,0,-1,14\n"
-                     "broadcast: PLAYERSTATE,3,9,115,5,5,0,5,0,0,0,4,0,55,55\n"
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,1,0,-1,10\n"
-                     "broadcast: PURCHASEPRICE,45\n"
-                     );
 
 }
 
@@ -909,7 +816,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASS )
   ogi.GetPlayers()[3].SetHighBid(NOT_HIGH_BID);
 
   ActionParser ap3 = MakeAction("PASS");
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player4",ap3) , true); // should be fine
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player4",ap3) , true); // should be fine
 
   // body:
   //   i_PlayerName's bid state becomes PASS
@@ -926,10 +833,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASS )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetBidState() , CURBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurBidPlayer().GetId() , 0 );
   
-  BOOST_CHECK_EQUAL( top.GetOutput() ,
-                     "broadcast: PLAYERSTATE,3,9,115,5,5,0,5,0,0,0,2,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,1,0,-1,-1\n"
-                     );
 
 }
 
@@ -1019,7 +922,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
 
   ActionParser ap3 = MakeAction("PASS");
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player5",ap3) , true); // should be fine
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player5",ap3) , true); // should be fine
   // body for non-active player passing out:
   //   i_PlayerName's bid state becomes PASS_OUT
   // 
@@ -1032,13 +935,9 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetBidState() , UNBID);     BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurBidPlayer().GetId() , 3 );
 
-  BOOST_CHECK_EQUAL( top.GetOutput() ,
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,3,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Bid",ogi,"Player3",ap3) , true); // should be fine
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Bid",ogi,"Player3",ap3) , true); // should be fine
 
   // body:
   //   i_PlayerName's bid state becomes PASS_OUT
@@ -1055,10 +954,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestPASSOUT )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetBidState() , CURBID);    BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetHighBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurBidPlayer().GetId() , 0 );
   
-  BOOST_CHECK_EQUAL( top.GetOutput() ,
-                     "broadcast: PLAYERSTATE,3,9,115,5,5,0,5,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,1,0,-1,-1\n"
-                     );
 
 }
 

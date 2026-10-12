@@ -8,6 +8,7 @@ in-process; this only needs to prove the real wire protocol (spawn, JOIN,
 roster-based LEGALACTION, status refresh) works end-to-end through the
 real compiled gameserver binary.
 """
+import json
 import shutil
 import subprocess
 
@@ -22,15 +23,43 @@ MOV_SERVER = REPO_ROOT + "/MerchantOfVenus/tca/MerchantOfVenus"
 MOV_MAP_XML = REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusMap.xml"
 
 
-def drain_until(client, expected_line, max_lines=200):
+def recv_envelope(client, timeout=2.0):
+    """See test_server_e2e.py's identical helper."""
+    line = client.recv(timeout=timeout)
+    msg = json.loads(line)
+    assert isinstance(msg, dict) and "fullState" in msg, "not a full-state envelope: %r" % (line,)
+    return msg
+
+
+def room_state(fullstate, name):
+    for room in fullstate["rooms"]:
+        if room["name"] == name:
+            return room
+    return None
+
+
+def inhabitant_room(fullstate, name):
+    for inhab in fullstate["inhabitants"]:
+        if inhab["name"] == name:
+            return inhab["room"]
+    return None
+
+
+def drain_until_roomgui(client, predicate, max_lines=200):
     """See test_server_e2e.py's identical helper -- real games generate far
-    more LEGALACTION/state traffic than the scripted mock, so this needs a
+    more full-state traffic than the scripted mock, so this needs a
     generous max_lines, but the content-matching approach is the same."""
     for _ in range(max_lines):
         line = client.recv()
-        if line == expected_line:
-            return
-    raise AssertionError("never saw %r within %d lines" % (expected_line, max_lines))
+        try:
+            msg = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(msg, dict) or msg.get("gui") != "ROOMGUI":
+            continue
+        if predicate(msg["fullState"]):
+            return msg["fullState"]
+    raise AssertionError("never saw a matching ROOMGUI state within %d lines" % max_lines)
 
 
 @pytest.fixture
@@ -75,21 +104,28 @@ def _connect(port, name):
 def test_real_game_join_round_trip(real_games_server, game_name):
     port = real_games_server
     alice = _connect(port, "alice")
-    drain_until(alice, "INHABITANT,alice,Great Hall")
+    drain_until_roomgui(alice, lambda fs: True)
 
     alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
-    drain_until(alice, "GUIROOM,GameRoom,,")
+    drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom") is not None)
     alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
-    drain_until(alice, "INHABITANT,alice,GameRoom")
+    drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "alice") == "GameRoom")
 
     alice.send_action("room", "NEWGAME", NewGame=game_name)
-    drain_until(alice, "GUIROOM,GameRoom,%s,Starting up." % game_name)
+    envelope = recv_envelope(alice)
+    assert envelope["gui"] == game_name
+    assert envelope["fullState"]["state"] == "InitialState"
+    drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom")["gameName"] == game_name)
 
-    # JOIN is a self-loop back to InitialState in both games' XML (<cyclic
-    # state="InitialState"/>), so status stays "Starting up." afterward --
-    # seeing this line again (not an ERROR, not a hang, not a differently
-    # worded status) is real confirmation the roster-based LEGALACTION
+    # JOIN is a self-loop back to InitialState in Outpost's XML (<cyclic
+    # state="InitialState"/>), so seeing a clean full-state envelope back
+    # (not an ERROR, not a hang, state still InitialState, alice now in the
+    # body's players list) is real confirmation the roster-based full-state
     # rewrite and the whole spawn/dispatch loop worked correctly for a real
     # game, not just the scripted mock.
     alice.send_action(game_name, "JOIN")
-    drain_until(alice, "GUIROOM,GameRoom,%s,Starting up." % game_name)
+    envelope = recv_envelope(alice)
+    assert envelope["gui"] == game_name
+    assert envelope["fullState"]["state"] == "InitialState"
+    player_names = [p["name"] for p in envelope["fullState"]["body"]["players"]]
+    assert "alice" in player_names

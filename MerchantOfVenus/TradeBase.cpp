@@ -7,7 +7,8 @@ TradeBase::TradeBase() :
   m_demandtokens(),
   m_spaceportdeeds(),
   m_factorygood(),
-  m_secret()
+  m_secret(),
+  m_factoryowner(-1)
 {
 }
 
@@ -18,7 +19,8 @@ TradeBase::TradeBase(const std::string& i_id,const std::string& i_name) :
   m_demandtokens(),
   m_spaceportdeeds(),
   m_factorygood(),
-  m_secret()
+  m_secret(),
+  m_factoryowner(-1)
 {
 }
 
@@ -38,6 +40,7 @@ TradeBase& TradeBase::operator=(const TradeBase& i_right)
   m_spaceportdeeds = i_right.m_spaceportdeeds;
   m_factorygood = i_right.m_factorygood;
   m_secret = i_right.m_secret;
+  m_factoryowner = i_right.m_factoryowner;
 
   return *this;
 }
@@ -113,5 +116,11 @@ void TradeBase::RemoveDemandToken(size_t i_index)
 const Secret& TradeBase::GetSecret() const { return m_secret; }
 Secret& TradeBase::GetSecret() { return m_secret; }
   
+void TradeBase::SetFactoryOwner(int playerid) {
+  m_factoryowner = playerid;
+}
 
+int TradeBase::GetFactoryOwner() const {
+  return m_factoryowner;
+}
   

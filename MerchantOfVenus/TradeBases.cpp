@@ -40,7 +40,7 @@ TradeBase TradeBases::MakeBase(const std::string& i_id,const std::string& i_name
     result.AddToken(Token::Drive(false,true,false,80));
     // the Laser is mechanically inert without the (unimplemented) combat
     // ruleset -- see .claude/MerchantOfVenus/IMPLEMENTATION_STATUS.md
-    if (!m_hideunusedweapons)
+    if (!m_options.GetHideUnusedWeapons())
     {
       result.AddToken(Token::Laser(false,100));
     }
@@ -49,7 +49,7 @@ TradeBase TradeBases::MakeBase(const std::string& i_id,const std::string& i_name
     result.AddToken(Ship::GetShipOfClass(SCOUT));
     result.AddToken(Ship::GetShipOfClass(CLIPPER));
     result.AddToken(Token::Drive(true,false,false,120));
-    if (!m_hideunusedweapons)
+    if (!m_options.GetHideUnusedWeapons())
     {
       result.AddToken(Token::NovaBall());
     }
@@ -88,8 +88,13 @@ TradeBase TradeBases::MakeBase(const std::string& i_id,const std::string& i_name
 
 TradeBases::TradeBases(const MapData& i_mapdata,const Options& i_options) :
   m_mapdata(i_mapdata),
-  m_hideunusedweapons(i_options.GetHideUnusedWeapons())
+  m_options(i_options)
 {
+}
+
+void TradeBases::Initialize()
+{
+  const MapData& i_mapdata = m_mapdata;
   std::vector<std::string> habitablenames;
   std::string galbasename;
 
@@ -210,6 +215,11 @@ TradeBases::TradeBases(const MapData& i_mapdata,const Options& i_options) :
 TradeBase& TradeBases::GetTradeBaseBySolarSystemName(const std::string& i_ssname)
 {
   return m_bases[i_ssname];
+}
+
+const TradeBase& TradeBases::GetTradeBaseBySolarSystemName(const std::string& i_ssname) const
+{
+  return m_bases.at(i_ssname);
 }
 
 const std::map<std::string,TradeBase>& TradeBases::GetBaseMap() const

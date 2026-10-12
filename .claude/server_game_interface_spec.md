@@ -553,6 +553,181 @@ footing as in-game actions. `ClientManager.SendLoginLikeString` never going near
 `ActionTransferManager` is still true structurally (it's a separate code path), it just no longer
 means "separate scope" — both paths get the identical JSON-wrap treatment, independently.
 
+**Server-side design for Phase 3, resolved end-to-end (Albert + Claude, 2026-10-03/2026-10-04),
+started once Phase 2's client side (and the `ROOMTALK`/`PLAYERTALK` chat removal — see `.claude/
+TODO.md`) shipped and MoV's client ran against the live server for the first time. This is a
+breaking change with no backwards compatibility, exactly like Phase 2** — there's no version
+negotiation anywhere in this protocol, old and new clients/servers simply can't talk to each other
+once this ships, the same way Phase 2's `CONNECTSTRING` version bump (`V1.0`→`V2.0`) was a marker of
+that fact, not a real compatibility mechanism. `CONNECTSTRING` should bump again (`V2.0`→`V3.0`) when
+this phase actually ships, per the same reasoning recorded for Phase 2 above.
+
+**Two independent full-state message types, never merged into one — `ROOMGUI` and per-game.**
+Investigated the real architecture before designing further, confirming this isn't just convenient
+but structurally necessary: `RoomOutputPort` (wrapping a game DLL's `BroadcastXXX`/`UnicastXXX`
+calls) and `Room`/`RoomManager`'s own broadcasts both write straight to the same
+`GameServerConnectionHandlerFactory`, with zero shared code path or common aggregation point between
+them — there's no natural call site where a combined blob could even be assembled. More fundamental:
+the two audiences aren't the same set of people at all. `RoomManager::HandleInitialConnection`
+confirms today's `ROOMGUI`-equivalent state is a genuine **global lobby view** — every connected
+player sees every room's status and everyone else's current room (`GUIROOM` sent once per *existing*
+room, `INHABITANT` sent bidirectionally across *all* connected players), not just their own room's
+occupants. A game's full-state, by contrast, only ever reaches that game's own room's inhabitants.
+Two message types that don't share a recipient list can't coherently be one message. Final shape:
+- **One `ROOMGUI` full-state, broadcast to every connected player**, whenever anything lobby-relevant
+  changes (new room, a room's occupants changing, login, disconnect, a game being created/loaded, or
+  a room's game finishing — see `IsDone()` below). Per-room record: room name, current game name (or
+  empty), and `IsDone()` — **not** the free-text `GetGameStatus()`/`GetStatusString()`, deliberately
+  dropped from this blob (see next paragraph). Plus the full inhabitant list (name→room) and the
+  list of available game types. Cached and diffed against the last broadcast value before resending
+  (one global cache suffices, since every recipient gets identical content) — cheap to implement,
+  and a real reduction in redundant broadcasts, since most game actions don't touch anything
+  `ROOMGUI`-relevant at all.
+- **One full-state per live game, sent only to that game's room's inhabitants**, computed per-viewer
+  via the game developer's `GetClientState(name)`. **No caching here** — deliberately decided
+  against, not overlooked. A game's payload is large (more to seemingly "save" by skipping a
+  redundant send) but the probability of an actual cache hit is near zero (nearly every action
+  changes something nearly every viewer can see — confirmed by walking concrete cases: MoV's
+  Qbox/culture-box secrets are "everyone knows a secret exists, only some know its content," not
+  "nothing visible changed"; hidden-hand card draws still change a public hand-size count; "move
+  units on the board" actions are fully public). A cache that almost always misses anyway isn't
+  worth the real cost of maintaining per-recipient copies of a large, nested structure. Accepted
+  as a deliberate risk at this project's actual scale (a personal/friends server, not a public
+  service) — not something to design defensively around now.
+
+**`GetGameStatus()`/`IsDone()` ownership, resolved via a sharp distinction Albert drew (2026-10-03):**
+both are *queryable properties*, not push events — detecting either one changed requires checking
+after every action regardless of which field it is, so "one is cheaper to check" is false; the real
+difference is only how often the *value* changes. `GetStatusString()` is free text a game author can
+update on every single action (turn counters, phase descriptions); `IsDone()` (confirmed by tracing
+it to `DLLGame::IsDone()` → `m_StateWalker.IsAtEnd()`) flips exactly once, ever, per game — a genuine,
+discrete lifecycle transition, not noise. Given that, and given a full `ROOMGUI` resend is cheap at
+this project's scale regardless (a couple KB to a handful of recipients — sized concretely during
+this design pass, see below), the deciding factor isn't performance at all: it's that the detailed
+status string is the *game's own* business, computed from its own internal state, and belongs in
+that game's own full-state (seen by people actually watching it) — while "can a new game start in
+this room" (`IsDone()`) is a genuinely lobby-level question, already treated that way by
+`Room::HandleNewGame`'s own guard (`m_pGame == NULL || m_pGame->IsDone()`). So `ROOMGUI` carries
+`IsDone()`, not `GetGameStatus()`.
+
+**Rough size estimate for a full `ROOMGUI` blob** (to ground the caching/broadcast-cost reasoning
+above in something concrete rather than a vibe): roughly 150-200 bytes per room record, 50-80 bytes
+per inhabitant record. Even a generous 10 rooms / 20 connected players — already well beyond this
+project's realistic concurrency — comes to roughly 2-3 KB of JSON. Realistic concurrency for a
+personal/friends game server is probably more like 2-6 rooms and single-digit-to-low-teens players.
+
+**Nested envelope structure for a game's full-state-send, innermost to outermost (resolved
+2026-10-03, refining and resolving the open questions in "Layered JSON composition" above):**
+1. The game developer's `GetClientState(name)` — game-specific payload only, nested under a `body`
+   key (see the next paragraph for why `body` specifically, not flattened).
+2. The generic StateWalker/FSM wrapper — adds current state name, current legal-action list (this is
+   where `LEGALACTION`, above, actually comes from — still zero game-specific knowledge needed), and
+   nests the developer's `body` inside itself. **Resolves "layer 3 — possibly an intermediate
+   generic-game-code layer, floated as a maybe" from the note above**: that layer is real, and its
+   job is exactly this StateWalker wrapping, now with a concrete, decided shape.
+3. The game-process's own client-install-config wrapper — adds the game's own `Name`/`XMLLoc`/
+   `XMLFile`, already available to the subprocess for free (`GameProcessProxy.cpp`'s `execlp` call
+   already passes these as argv, confirmed in code — originally plumbed through for an unrelated
+   reason, reused here). This is what makes `NEWGUI` retirement (below) possible.
+4. The server's outer envelope, added at the one point it's actually writing to a specific socket —
+   adds the recipient's own name (`IAM`/`GUIIAM` retirement, per the note above) and which GUI this
+   blob is for. **This collapses what the older note above called "layer 4 (room) + layer 5
+   (outermost server)" into one layer** — a separate room-level wrap turned out not to be needed;
+   name + GUI identity is sufficient for the client to route a blob correctly.
+Every outer layer wraps the inner one opaquely, per the already-established never-inspect-inner-
+layers principle — still true, just now a concrete 4-layer structure instead of an open "layers 1-5"
+sketch.
+
+**Rejected actions produce no full-state churn at all (Albert, 2026-10-03) — "rejected actions
+change the state of nothing" is treated as a truism; if that's ever false, that's a consistency bug,
+not a case to design around.** The StateWalker wrapper (layer 2 above) carries *either* a `body`
+object (success) *or* an `error` string — never both, and the developer's own contribution is always
+nested inside `body`, so there's no way for it to ever collide with the wrapper's own `error` key
+even by accident (no separate discriminator field needed; the nesting itself makes the two cases
+unambiguous). On rejection: the developer's `GetClientState` is never even called, exactly one
+message is produced (targeted at the acting player only, not one per room inhabitant), and the
+server — which must fully handle and inspect the game process's response before deciding anything
+about `ROOMGUI` — detects the `error` shape and skips the `ROOMGUI` recompute/broadcast entirely,
+since by definition nothing lobby-relevant could have changed either.
+
+**`WELCOME` and the "already logged in" response stay special, hand-constructed, outside this whole
+mechanism (Albert, 2026-10-03) — confirmed by tracing exactly why.** `GameServerConnectionHandler::
+HandleLine` sends `WELCOME` via `SendLine` directly on `this`, never through any `OutputPort` at all
+— structurally unavoidable, since at that point in the code there's no `Room`/`RoomOutputPort`
+relationship yet (`RoomManager::HandleInitialConnection`, which actually creates one, runs *after*
+`WELCOME` is sent). The "someone's already logged in under this name" rejection is the same situation
+for the same reason (also pre-naming, also about a connection that's being rejected rather than
+registered). Both become a small, fixed, enumerable set of hand-constructed JSON lines at their one
+call site each, bypassing the generic per-GUI full-state mechanism entirely — not every wire message
+needs to go through one shared helper.
+
+**`NEWGUI`/`DROPGUI` retired entirely in favor of client-side inference (Albert, 2026-10-03) — a
+late "brainwave" that turned out to already be fully plumbed, not just a good idea in theory.** Since
+every game full-state-send's layer-3 envelope (above) already carries that game's own `Name`/
+`XMLLoc`/`XMLFile`, a client receiving a full-state blob for a GUI it doesn't yet recognize can
+simply bootstrap it right there (fetch the jar, parse the XML, construct the `GameGui` instance) —
+no separate, order-dependent `NEWGUI` signal needs to arrive first. `DROPGUI` dissolves the same way,
+closing a gap in the first version of this idea: `ROOMGUI`'s own state already needs a per-room
+"current game name" field (the `ROOMGUI` design above), and a viewer can already find their own
+current room in it (via the inhabitant list, cross-referenced against their own name) — so "my
+current room's game field is empty/different, and I have a game GUI loaded that doesn't match" is a
+sufficient signal to drop it, with no new field required. Confirmed self-
+consistent: the one thing that necessitates a drop (`CHANGEROOM` away from a room with an active
+game) is itself a `roommanager` action that already triggers a `ROOMGUI` refresh to everyone
+including the mover, so the signal arrives exactly when needed. Also confirmed *not* to need special
+handling for a game simply finishing (`IsDone()` going true) — `Room::HandleNewGame` only ever
+clears/replaces `m_pGame` when a *new* game actually starts, so a finished game's GUI correctly stays
+on-screen (final board state visible) until something new actually replaces it, which falls out of
+the existing object lifecycle with no special-casing needed.
+
+**Game-process↔server wire protocol: the existing interleaved-event mechanism is reused as-is, not
+redesigned.** Traced the real code to confirm: `GameProcessProxy::SendRequest` already sends id-
+tagged requests (e.g. `"handleAction"`) and, while blocked waiting for the matching-id response,
+already drains and immediately dispatches any unsolicited `{"method":"event","params":{"message":
+...,"target":...}}` notification the subprocess emits in the meantime (`GameServerMainOutputPort`'s
+`UniCast`/`BroadCast` both funnel into this same `EmitEvent` today, one call per `UnicastXXX`/
+`BroadcastXXX` in a transition's `<body>`). Phase 3 changes only what goes in the existing slots, not
+the mechanism: `params["message"]` becomes the real nested envelope object (above) instead of a
+legacy comma-line string, and every FSS-carrying event now always has a real, specific `target` —
+one per roster member on success, exactly one (to the acting player) on rejection — never a true
+broadcast, since `ROOMGUI` never travels this pipe at all (it's purely server-side, computed by
+`RoomManager`/`Room`, nothing to do with any game process). Consequence: `DispatchEvent`'s dispatch
+call changes from forwarding a raw string (`GetOutputPort().UniCast(target, message)`) to
+`GetOutputPort().UniCastFullState(target, parsedObject)` (the new `OutputPort`-layer method below),
+and the game-process side's `BroadCast` path (`GameServerMainOutputPort::BroadCast`, `DispatchEvent`'s
+`isBroadcast` branch) becomes dead code, since no FSS-carrying event is ever untargeted. **One shared
+construction function, not two**: the existing `"sendFullState"` RPC (today's late-join-catch-up
+trigger) and the post-`"handleAction"` per-roster-member loop both call the *same* function — call it
+`BuildFullStateMessage(playerName)` — which does the full job (author's `GetClientState` → StateWalker
+wrap → client-install-config wrap) and is emitted as one `event` message; the only differences
+between the two call sites are cardinality (one name vs. the whole roster) and that `"sendFullState"`
+never has an `error`-shaped variant, since it's never tied to an action attempt at all.
+
+**New `OutputPort`-layer mechanism for per-recipient name/GUI annotation (Albert, 2026-10-03) — "it
+would be lovely if this were a natural effect of something at the `OutputPort` layer, so we don't
+have to write it multiple times."** `OutputPort` is a pure abstract interface today (`UniCast`/
+`BroadCast`, both pure virtual). Add one new, *concrete* method on the base class itself —
+`UniCastFullState(name, pureStateObject)` — implemented once, in terms of the existing pure-virtual
+`UniCast`: clone the object, stamp the recipient's name and the GUI's identity onto it, serialize,
+call `this->UniCast(name, serialized)`. Every concrete subclass (`RoomOutputPort` today) inherits
+this for free, with zero duplicated code; callers (room code, game-process dispatch) only ever build
+the pure, name-free/GUI-free state object. Note `RoomOutputPort::BroadCast` is already implemented as
+a loop over known targets doing individual `SendLineToName` calls (there's no such thing as a literal
+network broadcast over independent TCP sockets) — so a `BroadCastFullState` variant isn't new in
+kind, just reuses that same loop, re-annotating a once-computed pure object per recipient rather than
+reusing one literal string.
+
+**Login-name format validation, implemented 2026-10-04 as prerequisite groundwork (not yet wired to
+an actual `SPECTATOR` sentinel, since no code uses one yet)** — see `.claude/TODO.md`'s dated entry
+and `server/LoginManager.hpp`/`.cpp`'s `IsIllegalUsernameFormat`/`IsIllegalPasswordFormat`. Rejects
+`'\n'`/`'\r'` in both username and password (a real, independent bug fix — an embedded newline
+previously corrupted `data/passwd`'s strict alternating-line format on write, silently desyncing
+every subsequent entry and eventually setting `LoginManager::m_IsValid = false`, locking out *every*
+user on the next restart, not just the offending one) and additionally rejects `':'` in usernames
+specifically, so a human-readable sentinel like `SPECTATOR:` can be used later for Phase 3's
+collective-spectator audience — guaranteed unregistrable by this general rule, with no separate
+exact-string check ever needed.
+
 **Staging — revised to three explicit phases (Albert, 2026-09-24), each independently shippable and
 validatable, one variable changed at a time:**
 
@@ -1059,3 +1234,268 @@ what it actually needs to prove works:
   `GAMES,` list) with more than one entry, and a field value containing a literal comma or `%` —
   exactly the case the discovered `Room::AddPlayerToRoom` double-`UnComma` bug never got exercised
   by, since no game name today contains either character.
+
+## Phase 3 spike: Outpost setup-phase conversion, first real validation (Albert + Claude, 2026-10-04)
+
+Built the first real, bottom-up slice of Phase 3 against Outpost, per Albert's explicit request to
+work from real code rather than design further in the abstract: `Outpost/OutpostSchema.json` (a real
+JSON Schema, scoped to just the game-specific `GetClientState` body, not the generic StateWalker/
+envelope wrapper — the shared descriptor file both the game process and the client-side game GUI will
+eventually validate against), plus the matching `<refresh>` rewrite and transition cleanup in
+`Outpost/OutpostServer.xml`, scoped to exactly the "setup phase" slice (`JOIN`/`UNJOIN`/`OPTIONS`/
+`STANDARDBASIC`/`STANDARDEXPERT`/`VALIDATESETUP`/`DONTLIKEOPTIONS`/`LIKEOPTIONS`, i.e. everything
+before `STARTGAME` transitions into `TurnOrder`) as a bounded, tractable spike rather than converting
+the whole game at once.
+
+Concrete design decision made along the way: `PLAYER` and `PLAYEROKSTARTUP` are two separate events
+today purely because the old wire protocol is event-shaped (sent at different times by different code
+paths) — not a meaningful data boundary. In the new schema, `okstartup` is just a field directly on
+each player object in the `players` array, same as `id`. This is the concrete first instance of a
+general principle for every future game's conversion: **don't let today's event boundaries dictate
+tomorrow's JSON shape** — a full-state snapshot has no reason to preserve splits that only existed
+because of how/when the old events fired.
+
+The actual validation result, in Albert's words, having built real games against the old
+event-per-field model for years: "figuring out what state gets modified in each transition and how
+to keep `<refresh>` up to date was the biggest headache in developing these games." The concrete
+mechanism behind that relief: with per-field events, every transition that touched state had to
+remember to fire the matching `Broadcast`/`Unicast` call, *and* `<refresh>` had to independently know
+how to reconstruct equivalent state for a late joiner — two separate places that could silently drift
+out of sync (a real bug class, not hypothetical). With `GetClientState`, there is exactly one place
+that knows how to render state as JSON; transitions just mutate state and stop caring about who needs
+to be told. This is the first real evidence (not just a design hope) that Phase 3's core premise holds
+up in practice.
+
+Scope notes for this spike, so future work on it isn't confused about what's done:
+- `OutpostServer.xml`'s setup-phase transitions had their now-unnecessary `Broadcast`/`SingleCast`/
+  `AllCast` calls removed entirely (they just mutate state and `return true` now).
+- `<refresh>`'s setup-phase prefix (everything down through the old
+  `if (i_StateName == InitialState || i_StateName == ValidateSetup) return;` early return) now builds
+  and returns a `boost::json::object` matching `OutpostSchema.json`.
+- The in-game remainder of `<refresh>` (turn/purchase/bid/commodity data, past that early return) is
+  deliberately **untouched** — still the old `UnicastXXX`-per-field style. Not yet converted.
+- This does **not compile yet** — the generated function is still declared `void SendFullState(...)`
+  (see `transitioncompiler/FileWriter.pm`), and the in-game remainder falls off the end without
+  returning anything. Wiring up the actual signature/return-type change (and what calls it —
+  `DLLGame<T,T>::SendFullState`, which also layers on `UnicastNEWSTATE`/`UnicastLEGALACTION` today,
+  i.e. is itself a real, already-compiling partial instance of the layer-2 StateWalker wrapper from
+  the design above) was deliberately deferred so the schema/XML content could be worked out on its
+  own first. AOR was confirmed out of consideration entirely for this work — its code was abandoned
+  at least three server generations ago and must never be treated as a compatibility concern or
+  exemplar.
+
+## `ROOMGUI`'s per-room `savedGames`, folded in from the legacy `SAVEGAMES` line (Albert, 2026-10-07)
+
+Surfaced by Albert's own hands-on testing of a new client against the real server: `SAVEGAMES` was
+left out of the Phase 3 full-state mechanism entirely when `ROOMGUI` was built (grouped at the time
+with `CONNECTSTRING`/`WELCOME`/`ALREADYLOGGEDIN` as "stays a legacy line"), but on inspection it
+doesn't belong in that bucket — those others are pre-login or deliberately-generic lines; `SAVEGAMES`
+is genuinely per-room content (which save files exist depends entirely on which game is currently
+attached to *that* room) that was only ever a separate line because of the old event-at-a-time wire
+protocol, the same root cause as the `PLAYER`/`PLAYEROKSTARTUP` split resolved in the Outpost spike
+above. Decision: fold it into `ROOMGUI` as a `savedGames` array on each room's own record (alongside
+`name`/`gameName`/`isDone`/`gameTypes`), not as a separate global or per-room message. Implemented in
+`RoomManager::BuildRoomGuiState()`/`Room::GetSavedGameNames()` — empty array for a room with no
+attached game (consistent with "a full-state blob is a complete snapshot," same reasoning as
+`okstartup` defaulting to `false` pre-`ValidateSetup`), one real directory-listing call for a room
+with a game. The three old special-cased `SAVEGAMES`/`GetSavedGameString()` send sites
+(`Room::AddPlayerToRoom`, `Room::HandleNewGame`, `Room::HandleSaveGame`) were deleted outright —
+`RoomManager::HandleAction`'s existing unconditional post-action `BroadcastRoomGuiIfChanged` already
+picks up and (diff-permitting) broadcasts the change, so no explicit resend call was needed at any of
+those three sites once the data lived inside the cached/diffed blob.
+
+While making this change, Albert also decided `gameTypes` should **stay** a per-room field (it already
+was, mechanically) even though nothing today varies it room-to-room except the Great-Hall-is-always-
+empty special case — reasoning explicitly volunteered: there's no reason to assume no *future* feature
+would want to vary which games a given room can host (his example: BrettSpielWelt's room-ownership
+metagame, where players can "own" a room tied to one specific purchased game — not something being
+proposed for implementation here, just the rationale for why the schema shouldn't collapse "list of
+available games" down to one project-wide constant now, when it's already naturally per-room).
+
+## Pre-login redesigned as its own hand-written `LOGIN`-gui mini-FSM (Albert, 2026-10-07)
+
+Surfaced by the same round of hands-on client testing as the `savedGames` fold-in above: Albert found
+`CONNECTSTRING`/`ALREADYLOGGEDIN` not being JSON, `WELCOME` appearing as its own bare line after a
+successful login, and — the real bug — **no response at all to a successful `LOGOUTOTHER`**, which
+only ever shut down the *other*, stale connection and never logged the caller in, despite looking from
+the client's perspective like a login attempt that silently vanished. Root cause, confirmed by tracing
+`GameServerConnectionHandler::HandleLine`: `LOGOUTOTHER` and `LOGIN` were two entirely separate, non-
+composing code paths — `LOGOUTOTHER` re-validated credentials (redundant, since this is the same
+account the connection is about to log in as) and called `Shutdown()` on the other handler, full stop;
+only `LOGIN` itself ever called `NameMe`/sent `WELCOME`/called `InitialConnection`. A client was
+expected to figure out, with no server signal, that it should now retry a fresh `LOGIN` — and even
+then `m_NamedHandlers.erase(...)` for the kicked connection doesn't happen until the next `Sweep()`
+pass after `Shutdown()`'s synchronous socket close triggers `HandleDisconnect`, a real race window.
+
+Decided design: pre-login becomes its own tiny, explicitly **hand-written** mini-FSM — per Albert,
+it *can't* be transitioncompiler-generated like a real game, because the entire rest of this redesign
+(full-state sends, `GetClientState`, roster-based `HandleAction`) assumes a known player identity to
+key everything off of, which doesn't exist yet at this point in the connection's life. One flat JSON
+object, sent on connect and after every login-phase action (no recipient/`XMLLoc`/`XMLFile` envelope —
+there's no identity or per-game client-install config to report yet):
+```json
+{"connectstring": "Welcome to Albert's Game Server, V3.0!", "gui": "LOGIN",
+ "authenticated": false, "otherconnections": -1, "error": null}
+```
+`"gui": "LOGIN"` is deliberate — every other message in this protocol already carries a `gui` field,
+so a client can dispatch on that one field uniformly, pre- or post-login, with no special case for the
+handshake phase. Two states:
+- **Unauthenticated** (`authenticated: false`, `otherconnections` always `-1`). Only legal action:
+  `AUTHENTICATE(username, password)`. Bad credentials → re-send this same state with `error` set.
+  `LOGOUTOTHER` here is explicitly rejected, not merely unsupported — Albert, 2026-10-07: allowing it
+  pre-authentication "is very poor security" (anyone could kick anyone's session for free), and also
+  impossible to make sense of practically (no proven identity yet to know *whose* other session to
+  kick).
+- **Authenticated** (`authenticated: true`, `otherconnections` is `0` or `1`). `otherconnections: 0`
+  (no conflicting session) means login is already complete — this is the terminal state of the FSM,
+  immediately followed by the normal post-login sequence (`NameMe`/`InitialConnection`/`ROOMGUI`).
+  `otherconnections: 1` means the only legal next action is `LOGOUTOTHER` — **with no username/
+  password params anymore**, since this connection already proved its identity via `AUTHENTICATE`;
+  on success it shuts down the stale connection and completes login the same way. A repeated
+  `AUTHENTICATE` from this state is also rejected (re-sends this state with `error` set) — while still
+  inside the FSM, `authenticated == true` always implies `otherconnections == 1` by construction,
+  since reaching `0` immediately exits the FSM for good.
+
+Errors here reuse the same "full-state's own `error` field" convention already used for a rejected
+game action's `envelope["error"]`, per Albert — not a parallel plain-line `ERROR,...` mechanism; the
+FSM's own JSON state always carries an `error` field (`null` when nothing's wrong), since there's no
+per-game envelope to hang an error off of the way `DLLGame::HandleAction` does for a real game. One
+subtlety worth remembering for future edits: `CompleteLogin()` always reports `otherconnections: 0`
+explicitly rather than ever recomputing it from `GetNamedHandler()` at that moment — right after
+`Shutdown()` on the stale connection, `m_NamedHandlers` can still contain the (now-doomed, but not yet
+`Sweep()`-reaped) old entry, so a fresh lookup there would wrongly still say `1`.
+
+Implemented entirely by hand in `GameServerConnectionHandler`/`.cpp` (`SendLoginState`/
+`SendCurrentLoginState`/`CompleteLogin`, plus new `m_Authenticated`/`m_PendingName` members) — no
+`transitioncompiler` involvement, confirming Albert's structural reasoning above. `CONNECTSTRING`'s
+bare line, `WELCOME`, and `ALREADYLOGGEDIN` are all retired outright; `LOGIN` the action is renamed
+`AUTHENTICATE` (same reserved `"login"` namespace). Test coverage: `server/tests/client.py`'s
+`Client.connect()` now drives this whole exchange to completion (most tests just want a logged-in
+client and shouldn't have to know the handshake exists); `Client.raw_connect()` was added for tests
+that need to inspect the handshake itself. `test_server_e2e.py` gained
+`test_logoutother_drops_stale_session`, covering the conflict path end-to-end (including confirming
+the stale connection's socket is actually closed, not left dangling) and the pre-authentication
+`LOGOUTOTHER` rejection.
+
+## Phase 3 test-coverage audit closed two real gaps (Albert, 2026-10-07)
+
+Albert asked directly whether the three broadcast-shaped mechanisms Phase 3 depends on actually had
+test coverage: (1) `ROOMGUI` reaching players sitting in a *different* room than the one that changed,
+(2) a *successful* in-room action's full-state resend reaching every room occupant (not just the
+actor), and (3) a late joiner into a room with an *existing* game getting a targeted per-game
+full-state while everyone else already there sees nothing beyond the ordinary `ROOMGUI` update. (1) was
+already covered incidentally by the existing multi-player tests' room-navigation sequencing. (2) and
+(3) were not — every existing "successful action" scenario only ever had one player present at the
+moment of success, and no test had ever joined a room that already had a game running in it. Added
+`test_successful_action_reaches_every_room_occupant` and
+`test_late_joiner_gets_targeted_full_state_not_a_room_broadcast` to `test_server_e2e.py` to close both.
+One real wrinkle hit while writing (3): `RoomManager::BuildRoomGuiState()` rechecks `IsDone()` for
+*every* room with an active game on *every* lobby-relevant event, so even a second player's own
+unrelated `HandleInitialConnection` into Great Hall triggers an extra `isDone` RPC against a
+completely different, already-running game in another room — correct, "cheap at this project's scale"
+behavior per the design above, just an easy thing to miss when scripting a mock's expected RPC sequence.
+
+## Generator cleanup: the old built-in standard events, and a real bug it exposed (Albert, 2026-10-07)
+
+Albert noticed `OutpostDLL.cpp` (the generated file) still had `Unicast`/`Broadcast`/`Make*Message`
+methods for `MESSAGE`/`NEWSTATE`/`RESET`/`LEGALACTION`/`ERROR`, despite every call site in
+`Outpost/OutpostServer.xml` having been removed earlier this session. Root cause: these five aren't
+XML-declared events at all -- `TransitionCompiler.pm`'s constructor hardcoded them onto *every* game's
+event table unconditionally, regardless of what that game's own XML declares (confirmed via `grep`:
+`AOR`/`MerchantOfVenusServer.xml` still call them, `OutpostServer.xml` no longer does). All five are
+fully superseded by Phase 3 machinery (`state`/`legalActions` live in the StateWalker envelope now,
+`ERROR` is a thrown `GameActionError` surfaced via the envelope's own `error` field, `RESET` is
+meaningless once a full-state blob is always a complete snapshot by construction, `MESSAGE`'s only
+caller was the chat facility removed 2026-10-03) — removed the hardcoded block outright. Safe for AOR
+(permanently out of scope, never rebuilt) and MoV (already broken against current `FileWriter.pm`,
+not newly broken by this).
+
+Removing it surfaced a real, pre-existing bug: `gamecommon/DLLGame.hpp`'s `HandleAction` had **three
+call sites that were never actually converted** during the earlier full `HandleAction` rewrite this
+session — `NO_STATE`/`RECURSION_LIMIT`/`default` still called `m_GameInfo.BroadcastERROR(...)` (only
+the thrown-`GameActionError`/`TRANSITION_NOT_FOUND`/`EXECUTE_FAILED` paths had been converted to the
+envelope's `error` field). This compiled fine as long as the generator still emitted `BroadcastERROR`
+for every game, masking the gap entirely; deleting the now-dead generated method turned it into a link
+error, which is how it was actually caught. Fixed all three to use the same
+`BuildStateWalkerEnvelope`/`UniCastJson` pattern as the other error paths. `RECURSION_LIMIT` needed
+care: unlike `NO_STATE`/`default`, it `break`s rather than `return`s (the auto-transition chain hit its
+safety limit but the resulting state is still valid) — it falls through into the normal roster
+broadcast below, so the actor gets this warning envelope and then the real post-action full-state
+moments later, same ordering the old `BroadcastERROR` fall-through implied. Verified: regenerated
+`OutpostDLL.cpp` has zero `Unicast`/`Broadcast`/`Make*Message` methods left; full `Outpost` rebuild,
+`outposttest` (83 cases), `servertest` (8 cases), and the full Python e2e suite (14 passed, 1 skipped
+for MoV) all still pass.
+
+## MerchantOfVenus's own Phase 3 conversion, completed (Albert + Claude, 2026-10-09–2026-10-12)
+
+Albert did the actual conversion himself this time (all 24 transitions' `Unicast`/`Broadcast` calls
+removed, `ERROUT`'s `UnicastMOVERROR(...); return false;` converted to `throw GameActionError(...)`,
+`<refresh>` rewritten to build and return a `boost::json::object` against `MerchantOfVenusSchema.json`),
+using a temporary hand-written compile shim (`Phase3CompileShim.hpp`, `#include`d from `<preface>`,
+deleted once the conversion finished) so the file could keep test-compiling incrementally as events got
+deleted one at a time — free functions shadow the real generated members only once an event's `<event>`
+declaration (and therefore its generated method) is actually gone, so already-converted call sites never
+silently kept working against a stale generated signature.
+
+Schema design surfaced real domain questions along the way, each resolved and worth remembering:
+**the Factory Deed has no dedicated accessor at all** (unlike the Spaceport Deed's own `m_spaceportdeeds`/
+`GetSpaceportDeeds()`/`TransferDeeds()`) — it's created once per culture in `TradeBases::MakeBase()` and
+folds anonymously into the same `m_sellabletokens` vector every ordinary good lives in, because nothing
+about buying a Factory Deed touches the board (unlike `PlaceStation()`, which reveals a real qbox) or
+needs to stay secret (the trade-base shopping list itself was never secret, only *where* a culture
+physically is). **`TradeBase::TransferDeeds()`'s whole job is gating Spaceport Deeds behind culture
+discovery** — held in a quarantined `m_spaceportdeeds` list and only migrated into the sellable list (and
+announced) once `ENDMOVE` reveals that solar system, specifically because `PlaceStation()`'s own
+public-reveal side effect would otherwise leak an undiscovered solar system's board location as a side
+channel. This directly mirrors the physical game's own practice (Albert: all Spaceport Deeds for the
+whole board live off to the side in one alphabetized stack — you only know to reach for one once you know
+which culture, and therefore which orbit box, you're buying for). Also resolved: `MerchantOfVenusSchema.json`
+needed a `$defs`/`$ref`-based shared `Token` definition once `players[].tokens`/`tradeBases[x].tokens` both
+needed the same decomposed shape — `allOf` plus a closed (`additionalProperties:false`) referenced schema
+doesn't work (each `allOf` branch validates against the *whole* instance independently, so the closed
+`Token` schema rejects the sibling `isNew` field); the fix was the simpler nested form
+(`{"token": {"$ref": "#/$defs/Token"}, "isNew": {...}}`) instead of trying to flatten the two together.
+A real, pre-existing ordering/secrecy bug was caught and fixed before it shipped: building `solarSystems`
+and `tradeBases` from one shared loop (iterating `GetBaseMap()`, keyed by solar system name) meant
+`tradeBases`' race-id keys got inserted in solar-system-alphabetical order — and since `boost::json::object`
+preserves insertion order on serialize (confirmed empirically), that let a player reconstruct the secret
+race↔solar-system mapping purely from JSON key order, with zero actual discovery. Fixed by splitting into
+two loops, each driven by the map matching its own key (`GetBaseMap()` for `solarSystems`,
+`GetSolarSystemByRaceMap()` + `GetTradeBaseBySolarSystemName()` for `tradeBases`, mirroring the old
+`CastAllTradeBases`'s already-safe pattern).
+
+**Five real bugs found and fixed via review, after the conversion looked complete:**
+1. `TradeBase::m_factoryowner` (new member, backing the new `tradeBases[x].factoryOwner` field) was never
+   initialized by either constructor and never copied by `operator=` — indeterminate garbage on every
+   culture until its factory was actually bought, since `TradeBases::Initialize()` populates `m_bases` via
+   copy-assignment for all 14 cultures. Fixed: `m_factoryowner(-1)` in both constructors' init lists, plus
+   copying it in `operator=`.
+2. `<refresh>`'s `dice` array used `bjv(c)` (wraps a char as a one-character *string*) instead of `bjvi(c)`
+   (converts a digit-char to its *integer* value) — visible dice silently serialized as `"4"` instead of
+   `4`, contradicting the schema.
+3. A typo in the new `Advances::GetSwitchableList()`: `"S"` instead of `"JS"` for Jump Start, inconsistent
+   with `Advances.cpp`'s own `*switchit == "JS"` check elsewhere in the same file — `IsActiveSwitchable()`
+   could never match a player's real activation.
+4. **`MoveMediator::IsPilotNumberPermanent()` segfaulted** on `sendFullState` for a spectator of a
+   brand-new, not-yet-started game: it called `m_players.GetCurPlayer()` *before* its own
+   `if (m_pnumber == 0) return false;` early-out, even though that check doesn't need `cp` at all. Fixed by
+   reordering the two lines.
+5. **`MerchantOfVenusState::GetRemainingBuys()`/`GetRemainingSells()`/`HasRemainingBuy()`/`HasRemainingSell()`
+   segfaulted the same way** — their existing `GetMoveMediator().IsFirst()` guard doesn't actually mean "a
+   valid current player exists" (it's `false` by coincidence before any move has ever started, for an
+   unrelated reason), so execution fell through into `GetCurPlayer()` on an empty turn order. Both bugs
+   (#4 and #5) were only reachable because `<refresh>` now runs *unconditionally* for every state,
+   including pre-`STARTGAME`, unlike Outpost's `<refresh>` (which has an explicit early return for
+   `InitialState`/`ValidateSetup` before touching any in-game-only accessor) — MoV's schema instead keeps
+   `moveMediator`/`trading` always present with harmless defaults, so the underlying accessors themselves
+   needed to tolerate being called with no current player, not just the caller. Fixed by adding an explicit
+   `GetPlayers().GetTurnOrder().size() == 0` guard (the same check `<refresh>` already uses correctly for
+   `curPlayerId`) as the first line of all four functions.
+
+Found via real end-to-end testing, not inspection: both segfaults were invisible to `MoVunittests.exe`
+(which exercises `MoveMediator`/`MerchantOfVenusState` directly, never through a fresh `sendFullState` on
+an unstarted game) and only surfaced once `server/tests/test_real_games_e2e.py`'s MoV case was unskipped
+and run against the real compiled binary — confirming via `gdb` (installed fresh via `dnf` for this, not
+previously available) rather than guessing from the backtrace-free raw `SIGSEGV`. All 5 fixes verified:
+`MoVunittests.exe` (37 cases) and the full `server/tests/` suite (15 cases, MoV no longer skipped) both
+pass; `MerchantOfVenus`/`MoVunittests.exe` rebuild clean from scratch.

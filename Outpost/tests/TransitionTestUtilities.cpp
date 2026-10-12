@@ -38,3 +38,17 @@ ActionParser MakeAction(const std::string &i_ActionName,
   return ActionParser(i_ActionName,obj);
 }
 
+bool TryExecuteAction(const TransitionType *i_pTrans, const std::string &i_StateName,
+                      OutpostGameInfo &i_gi, const std::string &i_PlayerName, const ActionParser &i_ap)
+{
+  try
+  {
+    i_pTrans->ExecuteAction(i_StateName,i_gi,i_PlayerName,i_ap);
+    return true;
+  }
+  catch (const GameActionError &)
+  {
+    return false;
+  }
+}
+

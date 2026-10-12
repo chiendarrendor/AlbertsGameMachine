@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OutpostClientState",
+  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId only) and the full in-game snapshot (everything else too, some fields nullable depending on state).",
+  "type": "object",
+  "properties": {
+    "options": {
+      "type": "object",
+      "description": "Game options as agreed during setup; fixed once the game starts.",
+      "properties": {
+        "discard": { "type": "boolean" },
+        "refinery": { "type": "boolean" },
+        "oneupgrade": { "type": "boolean" },
+        "activebid": { "type": "boolean" },
+        "supplyharshness": { "type": "integer" },
+        "robots": { "type": "integer" },
+        "researchmega": { "type": "boolean" },
+        "smallresearch": { "type": "boolean" },
+        "smallmicro": { "type": "boolean" },
+        "blinddraws": { "type": "boolean" },
+        "stock": { "type": "integer" }
+      },
+      "required": [
+        "discard", "refinery", "oneupgrade", "activebid", "supplyharshness",
+        "robots", "researchmega", "smallresearch", "smallmicro", "blinddraws", "stock"
+      ],
+      "additionalProperties": false
+    },
+    "players": {
+      "type": "array",
+      "description": "Every player currently joined, in join order. This order is fixed for the life of the game; it is not turn order (turn order is a separate, dynamically-computed array -- see the existing TURNORDER event, not yet part of this schema). okstartup is meaningless (false) before ValidateSetup.",
+      "items": {
+        "type": "object",
+        "description": "Every field is always present; most are simply harmless pre-game defaults (e.g. victoryPoints 0, purchaseState DONE) before the game actually starts, same as okstartup.",
+        "properties": {
+          "name": { "type": "string" },
+          "id": { "type": "integer" },
+          "okstartup": { "type": "boolean" },
+          "victoryPoints": { "type": "integer" },
+          "itemCostSum": { "type": "integer" },
+          "handLimit": { "type": "integer" },
+          "popLimit": { "type": "integer" },
+          "robotLimit": { "type": "integer" },
+          "manCost": { "type": "integer" },
+          "numHumans": { "type": "integer" },
+          "numRobots": { "type": "integer" },
+          "purchaseState": { "type": "integer" },
+          "bidState": { "type": "integer" },
+          "hasPurchased": { "type": "boolean" },
+          "highBid": { "type": "integer" },
+          "lastBid": { "type": "integer" },
+          "factoryDescription": { "type": "string", "description": "Compact per-slot factory/manning summary, see Factories::GetFactoryDescription." },
+          "cardBackDescription": { "type": "string", "description": "Public (non-secret) commodity-hand summary visible to all viewers." },
+          "items": {
+            "type": "array",
+            "description": "Owned ItemType ids (purchased ships/upgrades).",
+            "items": { "type": "integer" }
+          }
+        },
+        "required": [
+          "name", "id", "okstartup", "victoryPoints", "itemCostSum", "handLimit", "popLimit",
+          "robotLimit", "manCost", "numHumans", "numRobots", "purchaseState", "bidState",
+          "hasPurchased", "highBid", "lastBid", "factoryDescription", "cardBackDescription", "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "myPlayerId": {
+      "description": "This viewer's own player id, or null if the viewer is watching but not seated.",
+      "type": ["integer", "null"]
+    },
+    "turnNum": { "type": "integer" },
+    "itemStock": {
+      "type": "array",
+      "description": "Remaining count in the central item supply per ItemType (NO_ITEM excluded).",
+      "items": {
+        "type": "object",
+        "properties": { "itemId": {"type":"integer"}, "count": {"type":"integer"} },
+        "required": ["itemId", "count"], "additionalProperties": false
+      }
+    },
+    "turnOrder": {
+      "type": "array",
+      "description": "Player ids in turn order for this round; array position is the turn rank -- the old TURNORDER event's separate i_turnorder field was redundant with that position, so it's dropped here.",
+      "items": { "type": "integer" }
+    },
+    "supplyShip": {
+      "type": "array",
+      "description": "The current supply ship's slots in order; itemId is an ItemType, NO_ITEM meaning empty.",
+      "items": {
+        "type": "object",
+        "properties": { "slot": {"type":"integer"}, "itemId": {"type":"integer"} },
+        "required": ["slot", "itemId"], "additionalProperties": false
+      }
+    },
+    "commodityStock": {
+      "type": "array",
+      "description": "Central commodity market state per CommodityType (NO_COMMODITY excluded).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "commodityId": {"type":"integer"},
+          "drawCount": {"type":"integer"},
+          "discardCount": {"type":"integer"},
+          "megaValue": {"type":"integer"},
+          "averageValue": {"type":"integer"}
+        },
+        "required": ["commodityId","drawCount","discardCount","megaValue","averageValue"],
+        "additionalProperties": false
+      }
+    },
+    "purchaseData": {
+      "type": "array",
+      "description": "What's been purchased from each supply-ship slot so far this turn; parallel to supplyShip by shipIndex.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "shipIndex": {"type":"integer"},
+          "playerId": {"type":"integer"},
+          "itemId": {"type":"integer"},
+          "cost": {"type":"integer"}
+        },
+        "required": ["shipIndex","playerId","itemId","cost"],
+        "additionalProperties": false
+      }
+    },
+    "spends": {
+      "type": "array",
+      "description": "Historical log of every commodity-hand spend this game.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "turnNum": {"type":"integer"},
+          "playerId": {"type":"integer"},
+          "spendType": {"type":"integer"},
+          "spendItem": {"type":"integer"},
+          "spendCost": {"type":"integer"},
+          "resources": {"type":"string", "description": "Public (non-secret) description of the commodities spent."}
+        },
+        "required": ["turnNum","playerId","spendType","spendItem","spendCost","resources"],
+        "additionalProperties": false
+      }
+    },
+    "myHand": {
+      "description": "This viewer's own real commodity hand (never another player's) -- null if the viewer isn't seated.",
+      "type": ["string", "null"]
+    },
+    "myPurchaseInfo": {
+      "description": "This viewer's own current purchase limits -- null if the viewer isn't seated.",
+      "type": ["object", "null"],
+      "properties": {
+        "numRobots": {"type":"integer"}, "numMen": {"type":"integer"}, "numOre": {"type":"integer"},
+        "numWater": {"type":"integer"}, "numTitanium": {"type":"integer"}, "numResearch": {"type":"integer"},
+        "numNewChem": {"type":"integer"}
+      },
+      "required": ["numRobots","numMen","numOre","numWater","numTitanium","numResearch","numNewChem"],
+      "additionalProperties": false
+    },
+    "megaRequest": {
+      "description": "Present only in state MegaResources, and only for the current-turn player being prompted -- null otherwise, including for every other viewer at the same moment.",
+      "type": ["object", "null"],
+      "properties": { "resourceType": {"type":"integer"}, "maxMegas": {"type":"integer"} },
+      "required": ["resourceType", "maxMegas"],
+      "additionalProperties": false
+    },
+    "bidInfo": {
+      "description": "Present only in state Bid; same for every viewer (not viewer-specific, unlike megaRequest).",
+      "type": ["object", "null"],
+      "properties": { "itemId": {"type":"integer"}, "price": {"type":"integer"} },
+      "required": ["itemId", "price"],
+      "additionalProperties": false
+    },
+    "winners": {
+      "description": "Winning player ids; empty except in TerminalState (more than one entry on a tie).",
+      "type": "array",
+      "items": { "type": "integer" }
+    }
+  },
+  "required": ["options", "players", "myPlayerId"],
+  "additionalProperties": false
+}

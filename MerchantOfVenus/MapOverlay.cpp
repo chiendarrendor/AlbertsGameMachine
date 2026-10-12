@@ -92,12 +92,18 @@ namespace
 
 MapOverlay::MapOverlay(const MapData& i_mapdata,const Options& i_options) :
   m_mapdata(i_mapdata),
+  m_options(i_options),
   m_overrides(),
   m_relics(),
   m_stationowners(),
   m_factoryowners(),
   m_orbitlocations()
 {
+}
+
+void MapOverlay::Initialize()
+{
+  const MapData& i_mapdata = m_mapdata;
   // get list of all qbox names and orbit locations.
   std::map<std::string,MapSpace *>::const_iterator spaceit;
   std::vector<std::string> qboxnames;
@@ -110,7 +116,7 @@ MapOverlay::MapOverlay(const MapData& i_mapdata,const Options& i_options) :
 
   // make list of all relics (go on qbox asteroids) -- built first so we
   // know exactly how many asteroid qboxes to generate to match
-  MakeRelicList(m_allrelics,i_options.GetHideUnusedWeapons());
+  MakeRelicList(m_allrelics,m_options.GetHideUnusedWeapons());
   myshuffle(m_allrelics.begin(),m_allrelics.end());
 
   // make list of all qbox objects.
@@ -308,5 +314,4 @@ const std::map<std::string,size_t>& MapOverlay::GetFactoryOwners() const
 {
   return m_factoryowners;
 }
-
 

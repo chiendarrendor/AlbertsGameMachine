@@ -106,6 +106,7 @@ BOOST_AUTO_TEST_CASE( TestStartMove )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -195,6 +196,7 @@ BOOST_AUTO_TEST_CASE( TestGetDiceStringAutoPilotVisibility )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -239,6 +241,7 @@ BOOST_AUTO_TEST_CASE( TestGetPenaltyCost )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -278,6 +281,7 @@ BOOST_AUTO_TEST_CASE( TestAddAdjacents )
   pls.RandomizeTurnOrder();
   MapData md("../MerchantOfVenusMap.xml");
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
   mm.StartMove();
@@ -319,6 +323,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPilotless )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -390,6 +395,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartPiloted )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0,0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -466,6 +472,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGate )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
 
   MoveMediator mm(pls,mo);
 
@@ -543,6 +550,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesTeleGateJumpStart )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   pls[0].AddToken(Token::Relic("Jump Start",100));
@@ -583,6 +591,7 @@ BOOST_AUTO_TEST_CASE( TestAddTelegatesJumpStartFromCityMPCost )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   pls[0].SetLocation("Rumble City");
@@ -611,6 +620,7 @@ BOOST_AUTO_TEST_CASE( TestRemoveBacktracks )
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   mo.MakeSpacePublic("AS_3_4");
@@ -652,6 +662,7 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberNoPilotNumbers)
   // below depend on the exact set of pilot numbers this roll produces.
   ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   // test set 1. a set with only pilotless items should be unchanged.
@@ -712,6 +723,7 @@ BOOST_AUTO_TEST_CASE(TestCullByPilotNumberWithPilotNumbers)
   // below depend on the exact set of pilot numbers this roll produces.
   ScopedFixedRandom randomguard(BuildDraws({0,3,2}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
   pls[0].SetLocation("cloud_body_8");
 
@@ -771,6 +783,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPSimple)
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -840,6 +853,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPToCity)
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -879,6 +893,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPFromCity)
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -907,6 +922,7 @@ BOOST_AUTO_TEST_CASE(TestApplyMPNextToColoredQBoxPenalty)
 
   ScopedFixedRandom randomguard(BuildDraws({0,0,0}));
   MapOverlay mo(md,g_TestOptions);
+  mo.Initialize();
   MoveMediator mm(pls,mo);
 
   mm.StartMove();
@@ -943,6 +959,7 @@ BOOST_AUTO_TEST_CASE( TestHideUnusedWeaponsRemovesLaserRelic )
   Options hiddenoptions;
   hiddenoptions.SetHideUnusedWeapons(true);
   MapOverlay mo(md,hiddenoptions);
+  mo.Initialize();
 
   BOOST_CHECK(mo.GetRelicList().size() == 9);
   for (size_t i = 0 ; i < mo.GetRelicList().size() ; ++i)
@@ -958,6 +975,7 @@ BOOST_AUTO_TEST_CASE( TestShowUnusedWeaponsIncludesLaserRelic )
   Options shownoptions;
   shownoptions.SetHideUnusedWeapons(false);
   MapOverlay mo(md,shownoptions);
+  mo.Initialize();
 
   BOOST_CHECK(mo.GetRelicList().size() == 10);
   bool foundlaser = false;

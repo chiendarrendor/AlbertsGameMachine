@@ -166,19 +166,33 @@ void GameProcessProxy::Terminate(const std::string &i_Reason) const
 
 void GameProcessProxy::DispatchEvent(const boost::json::object &i_Params) const
 {
-  std::string message(i_Params.at("message").as_string().c_str());
-
   boost::json::object::const_iterator targetIt = i_Params.find("target");
   bool isBroadcast = (targetIt == i_Params.end()) || (targetIt->value().as_string() == "*");
 
   if (isBroadcast)
   {
+    // Legacy plain-text event (e.g. BroadcastERROR for a whole-game
+    // invalid-state signal) -- no FSS-carrying event is ever untargeted, so
+    // message is always a string here, never a JSON object.
+    std::string message(i_Params.at("message").as_string().c_str());
     GetOutputPort().BroadCast(message);
   }
   else
   {
     std::string target(targetIt->value().as_string().c_str());
-    GetOutputPort().UniCast(target, message);
+
+    // Every targeted event is a full-state envelope now: a native JSON
+    // object (the game process's pure layers-1+2 state/legalActions/
+    // body-or-error), not a legacy comma-line string. The server already
+    // has Name/XMLLoc/XMLFile authoritatively via its own
+    // GetServerGameInfo() -- it's literally what spawned this game process
+    // with that exact data -- so it adds layers 3+4 here in one place via
+    // UniCastFullState, rather than having the game process redundantly
+    // echo static data back on every message. See
+    // .claude/server_game_interface_spec.md's Phase 3 envelope design.
+    GetOutputPort().UniCastFullState(target,GetServerGameInfo().GetName(),
+                                     GetServerGameInfo().GetXMLLoc(),GetServerGameInfo().GetXMLFile(),
+                                     i_Params.at("message").as_object());
   }
   // Note: a "SPECTATOR" target is phase-3-only (see the interface spec) --
   // not reachable from any phase-1 game, so not handled here yet.

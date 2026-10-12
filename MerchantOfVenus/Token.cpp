@@ -2,6 +2,51 @@
 #include <boost/algorithm/string.hpp>
 #include "MerchantOfVenus.hpp"
 
+std::string SellTypeString(SellType st) {
+  switch(st)
+  {
+  case CASH: return "cash" ; 
+  case BARTER: return "barter" ; 
+  case NONE: return "none" ; 
+  default: return "????";
+  }
+}
+
+std::string SellDestinationString(SellDestination sd) {
+ switch(sd)
+  {
+  case CUP: return "cup";
+  case CULTURE: return "culture"; 
+  case NOWHERE: return "nowhere"; 
+  default: return "????";
+  }
+}
+
+std::string DeedTypeString(DeedType dt) {
+  switch(dt) {
+    case NOT_DEED: return "notdeed";
+    case FACTORY_DEED: return "factory";
+    case SPACEPORT_DEED: return "spaceport";
+    default: return "????";
+  }
+}
+
+std::string SizeClassString(SizeClass sc) {
+  switch(sc) {
+    case SHIP_SIZE: return "ship";
+    case GOOD_SIZE: return "good";
+    case EQUIPMENT_SIZE: return "equip";
+    case DRIVE_SIZE: return "drive";
+    case FARE_SIZE: return "fare";
+    case RELIC_SIZE: return "relic";
+    case DEED_SIZE: return "deed";
+    case IOU_SIZE: return "iou";
+    case DEMAND_SIZE: return "demand";
+    default: return "????";
+  }
+}
+
+
 std::vector<std::string> Token::s_allbuyers;
 
 Token::Token() :
@@ -269,36 +314,15 @@ std::string Token::Encoding() const
 
   result << m_name << '|';
 
-  switch(m_sizeclass)
-  {
-  case SHIP_SIZE: result << "ship"; break;
-  case GOOD_SIZE: result << "good"; break;
-  case EQUIPMENT_SIZE: result << "equip"; break;
-  case DRIVE_SIZE: result << "drive"; break;
-  case FARE_SIZE: result << "fare"; break;
-  case RELIC_SIZE: result << "relic"; break;
-  case DEED_SIZE: result << "deed"; break;
-  case IOU_SIZE: result << "iou";  break;
-  case DEMAND_SIZE: result << "demand";  break;
-  }
+  result << SizeClassString(m_sizeclass);
 
   result << '|' << m_buyprice << '|' << m_sellprice << '|';
 
-  switch(m_selltype)
-  {
-  case CASH: result << "cash" ; break;
-  case BARTER: result << "barter" ; break;
-  case NONE: result << "none" ; break;
-  }
+  result << SellTypeString(m_selltype);
 
   result << '|';
 
-  switch(m_selldestination)
-  {
-  case CUP: result << "cup"; break;
-  case CULTURE: result << "culture"; break;
-  case NOWHERE: result << "nowhere"; break;
-  }
+  result << SellDestinationString(m_selldestination);
 
   result << '|' << (m_isfactorygood ? "fg" : "notfg") << '|';
   result << (m_isunlimited ? "unlimited" : "limited") << '|';
@@ -310,12 +334,7 @@ std::string Token::Encoding() const
   }
   result << '|' << m_source << '|';
 
-  switch(m_deedtype)
-  {
-  case NOT_DEED: result << "notdeed"; break;
-  case FACTORY_DEED: result << "factory"; break;
-  case SPACEPORT_DEED: result << "spaceport" ; break;
-  }
+  result << DeedTypeString(m_deedtype);
   
   result << '|' << m_defensevalue << '|' << m_attackvalue << '|';
   result << (m_isdisposable ? "disposable" : "reusable") << '|';
@@ -341,6 +360,36 @@ bool Token::IsNew() const
 
 void Token::MakeNew() { m_isnew = true; }
 void Token::MakeOld() { m_isnew = false; }
+
+boost::json::object Token::ToJSON() const {
+  boost::json::object result;
+  result["name"] = m_name;
+  result["sizeClass"] = SizeClassString(m_sizeclass);
+  result["buyPrice"] = m_buyprice;
+  result["sellPrice"] = m_sellprice;
+  result["sellType"] = SellTypeString(m_selltype);
+  result["sellDestination"] = SellDestinationString(m_selldestination);
+  result["isFactoryGood"] = m_isfactorygood;
+  result["isUnlimited"] = m_isunlimited;
+  boost::json::array buyers;
+  for (std::string buyer : m_buyers) {
+    // arrays must take json objects, so you have to wrap string in json value
+    buyers.push_back(boost::json::value(buyer));
+  }
+  // don't forget, this is a copy, not a reference, so you have to fill it first then give it to the parent.
+  result["buyers"] = buyers;
+  result["source"] = m_source;
+  result["deedType"] = DeedTypeString(m_deedtype);
+  result["defenseValue"] = m_defensevalue;
+  result["attackValue"] = m_attackvalue;
+  result["isDisposable"] = m_isdisposable;
+  result["skipsYellow"] = m_skipcolors == 1 || m_skipcolors == 3;
+  result["skipsRed"] = m_skipcolors == 2 || m_skipcolors == 3;
+  result["speed"] = m_speed;
+  result["holdCount"] = m_holdcount;
+
+  return result;
+}
     
 
 

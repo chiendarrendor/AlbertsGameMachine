@@ -24,9 +24,23 @@ public:
 	const std::string &GetName();
 
 private:
+	// Pre-login mini-FSM, hand-written (not transitioncompiler-generated --
+	// unlike every real game, there's no known player identity yet for any
+	// of the usual per-player machinery to hang off of). Two states: not yet
+	// authenticated (m_Authenticated == false, i_OtherConnections always -1),
+	// and authenticated (m_PendingName holds the proven identity) -- which
+	// either completes login immediately (no conflicting session) or waits
+	// for LOGOUTOTHER (i_OtherConnections == 1). See
+	// .claude/server_game_interface_spec.md.
+	void SendLoginState(bool i_Authenticated,int i_OtherConnections,const std::string &i_Error);
+	void SendCurrentLoginState(const std::string &i_Error);
+	void CompleteLogin();
+
 	GameServerConnectionHandlerFactory &m_fac;
 	bool m_Named;
 	std::string m_Name;
+	bool m_Authenticated;
+	std::string m_PendingName;
 };
 
 class GameServerConnectionHandlerFactory : public ConnectionHandlerFactory

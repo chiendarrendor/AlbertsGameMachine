@@ -54,6 +54,7 @@ int MerchantOfVenusState::GetIndexOfAppropriateIOU() const
 
 bool MerchantOfVenusState::HasRemainingBuy() const
 {
+  if (GetPlayers().GetTurnOrder().size() == 0) return true;
   if (GetMoveMediator().IsFirst()) return true;
   if (GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION) return true;
   return GetPlayers().GetCurPlayer().GetBuyCount() == 0;
@@ -61,7 +62,24 @@ bool MerchantOfVenusState::HasRemainingBuy() const
 
 bool MerchantOfVenusState::HasRemainingSell() const
 {
+  if (GetPlayers().GetTurnOrder().size() == 0) return true;
   if (GetMoveMediator().IsFirst()) return true;
   if (GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION) return true;
   return GetPlayers().GetCurPlayer().GetSellCount() == 0;
+}
+
+int MerchantOfVenusState::GetRemainingBuys() const
+{
+  if (GetPlayers().GetTurnOrder().size() == 0) return -1;
+  if (GetMoveMediator().IsFirst()) return -1;
+  if (GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION) return -1;
+  return 1 - GetPlayers().GetCurPlayer().GetBuyCount();
+}
+
+int MerchantOfVenusState::GetRemainingSells() const
+{
+  if (GetPlayers().GetTurnOrder().size() == 0) return -1;
+  if (GetMoveMediator().IsFirst()) return -1;
+  if (GetMapOverlay().GetMapSpace(GetPlayers().GetCurPlayer().GetLocation()).first.m_type == STATION) return -1;
+  return 1 - GetPlayers().GetCurPlayer().GetSellCount();
 }

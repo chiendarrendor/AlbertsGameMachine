@@ -15,21 +15,16 @@ sub new
     $this->{STATE}->{"TerminalState"} = "End Of Game State";
     $this->{AUTOLIMIT} = "10";
 
-    $this->{EVENTS}->{NEWSTATE} = new ManualEvent("NEWSTATE");
-    $this->{EVENTS}->{NEWSTATE}->AddVar("i_EventName","std::string");
-    $this->{EVENTS}->{NEWSTATE}->AddVar("i_EventDesc","std::string");
-    
-    $this->{EVENTS}->{LEGALACTION} = new ManualEvent("LEGALACTION");
-    $this->{EVENTS}->{LEGALACTION}->AddVar("i_ActionName","std::string");
-
-    $this->{EVENTS}->{ERROR} = new ManualEvent("ERROR");
-    $this->{EVENTS}->{ERROR}->AddVar("i_ErrorText","std::string");
-
-    $this->{EVENTS}->{MESSAGE} = new ManualEvent("MESSAGE");
-    $this->{EVENTS}->{MESSAGE}->AddVar("i_MessageText","std::string");
-
-    $this->{EVENTS}->{RESET} = new GlobalEvent("RESET");
-    $this->{EVENTS}->{RESET}->AddVar("i_GameName","std::string","m_ServerGameInfo.GetName()");
+    # The old built-in standard events (NEWSTATE/LEGALACTION/ERROR/MESSAGE/
+    # RESET), unconditionally added here regardless of what a game's own XML
+    # declares, are gone -- Phase 3 superseded every one of them (state/
+    # legalActions live in the StateWalker envelope now, ERROR is a thrown
+    # GameActionError surfaced via the envelope's own "error" field, RESET is
+    # meaningless once a full-state blob is always a complete snapshot by
+    # construction, and MESSAGE's only caller was the chat facility removed
+    # 2026-10-03). A fully-converted game's XML no longer calls any of these,
+    # so generating their Unicast/Broadcast/Make*Message methods was just
+    # dead code (Albert, 2026-10-07, caught surviving in OutpostDLL.cpp).
 
     if (!$basenode)
     {

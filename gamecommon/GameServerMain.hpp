@@ -85,19 +85,31 @@ public:
 
   virtual void UniCast(const std::string &i_Name,const std::string &i_Message) const
   {
-    EmitEvent(i_Message,&i_Name);
+    EmitEvent(boost::json::value(i_Message),&i_Name);
   }
 
   virtual void BroadCast(const std::string &i_Message) const
   {
-    EmitEvent(i_Message,NULL);
+    EmitEvent(boost::json::value(i_Message),NULL);
+  }
+
+  // Nests i_Value natively into params.message instead of serializing it to
+  // a string first -- a structured JSON payload (e.g. a Phase 3 full-state
+  // envelope) should arrive as real nested JSON, not an escaped string
+  // containing JSON text. The base class's default UniCastJson would
+  // stringify and go through UniCast above, which is wrong here: this
+  // class's whole job is producing one JSON-RPC notification object for the
+  // server to unwrap, not a client-facing text line.
+  virtual void UniCastJson(const std::string &i_Name,const boost::json::value &i_Value) const
+  {
+    EmitEvent(i_Value,&i_Name);
   }
 
 private:
-  void EmitEvent(const std::string &i_Message,const std::string *i_pTarget) const
+  void EmitEvent(const boost::json::value &i_MessageValue,const std::string *i_pTarget) const
   {
     boost::json::object params;
-    params["message"] = i_Message;
+    params["message"] = i_MessageValue;
     if (i_pTarget)
     {
       params["target"] = *i_pTarget;

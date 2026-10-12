@@ -13,7 +13,7 @@ sub new
     $this->{TRANSITIONS} = [];
     $this->{AUTO} = "false";
     $this->{ALLOWED} = "true";
-    $this->{BODY} = "return true;";
+    $this->{BODY} = "";
 
     if (!$node)
     {

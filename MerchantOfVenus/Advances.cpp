@@ -60,14 +60,26 @@ void Append(std::string& i_result,const std::string& i_new)
 std::string Advances::GetSwitchables() const
 {
   std::string result;
-  if (HasDrive(RED_DRIVE)) Append(result,"RD");
-  if (HasDrive(YELLOW_DRIVE)) Append(result,"YD");
-  if (HasDrive(COMBINED_DRIVE)) Append(result,"CD");
-  if (HasRelic("Auto Pilot")) Append(result,"AP");
-  if (HasRelic("Gate Lock")) Append(result,"GL");
-  if (HasRelic("Jump Start")) Append(result,"JS");
-
+  for(const std::string &item : GetSwitchableList()) {
+    Append(result,item);
+  }
   return result;
+}
+
+std::vector<std::string> Advances::GetSwitchableList() const {
+  std::vector<std::string> result;
+  if (HasDrive(RED_DRIVE)) result.push_back("RD");
+  if (HasDrive(YELLOW_DRIVE)) result.push_back("YD");
+  if (HasDrive(COMBINED_DRIVE)) result.push_back("CD");
+  if (HasRelic("Auto Pilot")) result.push_back("AP");
+  if (HasRelic("Gate Lock")) result.push_back("GL");
+  if (HasRelic("Jump Start")) result.push_back("JS");
+
+  return result; 
+}
+
+bool Advances::IsActiveSwitchable(const std::string &swname) const {
+  return m_onswitchables.find(swname) != m_onswitchables.end();
 }
 
 std::string Advances::GetActiveSwitchables() const

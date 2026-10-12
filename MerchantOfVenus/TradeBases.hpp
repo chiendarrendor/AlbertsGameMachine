@@ -8,7 +8,13 @@ class TradeBases
 public:
   TradeBases(const MapData& i_mapdata,const Options& i_options);
 
+  // Does the actual population work the constructor used to do directly --
+  // deferred so it runs at STARTGAME, once options are actually locked in,
+  // rather than at construction time (before any player has even joined).
+  void Initialize();
+
   TradeBase& GetTradeBaseBySolarSystemName(const std::string& i_ssname);
+  const TradeBase &GetTradeBaseBySolarSystemName(const std::string & i_ssname) const;
   const std::string& GetSolarSystemOfRace(const std::string& i_raceid) const;
 
   const std::map<std::string,TradeBase>& GetBaseMap() const;
@@ -30,10 +36,10 @@ private:
                      const std::string& i_regionname) const;
 
   const MapData& m_mapdata; // set in constructor call, not serialized.
-  bool m_hideunusedweapons; // set in constructor call, not serialized.
+  const Options& m_options; // set in constructor call, not serialized.
 
-  std::map<std::string,TradeBase> m_bases;
-  std::map<std::string,std::string> m_solarsystembyrace;
+  std::map<std::string,TradeBase> m_bases;                  // solar system -> TradeBase (->race in TradeBase)
+  std::map<std::string,std::string> m_solarsystembyrace;    // race -> solar system
 
   SERIALIZE_FUNC
   {

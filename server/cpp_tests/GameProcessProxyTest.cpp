@@ -44,9 +44,13 @@ BOOST_AUTO_TEST_CASE( GetNameNeverTouchesTheWire )
 
 BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
 {
+  // The targeted event is a full-state envelope now (a native JSON object,
+  // not a legacy comma-line string) -- every targeted event is, post
+  // Phase 3. The untargeted one is still legacy plain text (e.g.
+  // BroadcastERROR), which stays a string.
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
-    "\"emit\":[{\"target\":\"alice\",\"message\":\"NEWSTATE,Playing,desc\"},"
+    "\"emit\":[{\"target\":\"alice\",\"message\":{\"state\":\"Playing\",\"legalActions\":[],\"body\":{}}},"
     "{\"message\":\"TURNORDER,alice\"}],"
     "\"then\":{\"result\":{}}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
@@ -60,7 +64,19 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
 
   BOOST_REQUIRE_EQUAL(port.m_UniCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].first, "alice");
-  BOOST_CHECK_EQUAL(port.m_UniCasts[0].second, "NEWSTATE,Playing,desc");
+
+  // UniCastFullState (layers 3+4, added here at the server's own dispatch
+  // point) should have stamped recipient/gui/XMLLoc/XMLFile from this
+  // GameProcessProxy's own ServerGameInfo, and nested the game process's
+  // pure envelope unchanged under "fullState".
+  boost::json::value wrapped = boost::json::parse(port.m_UniCasts[0].second);
+  const boost::json::object &outer = wrapped.as_object();
+  BOOST_CHECK_EQUAL(outer.at("recipient").as_string(), "alice");
+  BOOST_CHECK_EQUAL(outer.at("gui").as_string(), "TestGame");
+  BOOST_CHECK_EQUAL(outer.at("XMLLoc").as_string(), "https://example.invalid/");
+  BOOST_CHECK_EQUAL(outer.at("XMLFile").as_string(), "TestGameClient.xml");
+  BOOST_CHECK_EQUAL(outer.at("fullState").as_object().at("state").as_string(), "Playing");
+
   BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_BroadCasts[0], "TURNORDER,alice");
 }
@@ -114,7 +130,7 @@ BOOST_AUTO_TEST_CASE( SendFullStateEmitsToRequestedPlayer )
 {
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"sendFullState\",\"params\":{\"player\":\"bob\"}},"
-    "\"emit\":[{\"target\":\"bob\",\"message\":\"NEWSTATE,Playing,desc\"}],"
+    "\"emit\":[{\"target\":\"bob\",\"message\":{\"state\":\"Playing\",\"legalActions\":[],\"body\":{}}}],"
     "\"then\":{\"result\":{}}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
   RecordingOutputPort port;
@@ -124,6 +140,14 @@ BOOST_AUTO_TEST_CASE( SendFullStateEmitsToRequestedPlayer )
 
   BOOST_REQUIRE_EQUAL(port.m_UniCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].first, "bob");
+
+  boost::json::value wrapped = boost::json::parse(port.m_UniCasts[0].second);
+  const boost::json::object &outer = wrapped.as_object();
+  BOOST_CHECK_EQUAL(outer.at("recipient").as_string(), "bob");
+  BOOST_CHECK_EQUAL(outer.at("gui").as_string(), "TestGame");
+  BOOST_CHECK_EQUAL(outer.at("XMLLoc").as_string(), "https://example.invalid/");
+  BOOST_CHECK_EQUAL(outer.at("XMLFile").as_string(), "TestGameClient.xml");
+  BOOST_CHECK_EQUAL(outer.at("fullState").as_object().at("state").as_string(), "Playing");
 }
 
 BOOST_AUTO_TEST_CASE( LoadAndSaveReturnSuccessFlag )

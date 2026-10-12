@@ -25,9 +25,11 @@ class Advances
   // turned on or off at the beginning of the turn.
   // these are: drives, AP, GL, JS
   std::string GetSwitchables() const;
+  std::vector<std::string> GetSwitchableList() const;
   // similar to above, but string contains only those
   // advances that _are_ currently turned on.
   std::string GetActiveSwitchables() const;
+  bool IsActiveSwitchable(const std::string &swname) const;
 
   // this function takes a string as represented above.
   // items present in PlayerTokenVector that are switchable

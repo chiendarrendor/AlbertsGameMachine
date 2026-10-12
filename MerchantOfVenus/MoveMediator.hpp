@@ -64,6 +64,17 @@ public:
   // a dest is <name>!<jump/walk>!<cost>![<pilot numbers>]
   std::string GetCurrentDests() const;
 
+  // True until ClearFirst() is called -- which happens exactly once per
+  // turn, inside EXECUTEMOVE, the moment a real move actually executes.
+  // So mechanically this means "no move has happened yet this turn."
+  // That's also why MerchantOfVenusServer.xml's SendTransCount can safely
+  // read it as "is this my first turn in the space I'm currently in" for
+  // the one-buy/one-sell-per-arrival rule: every SENDTRANSCOUNT call site
+  // fires only after this turn's movement (if any) is already settled, so
+  // by then, IsFirst() still being true can only mean zero moves happened
+  // this turn -- which means the player is still wherever they started the
+  // turn, i.e. this isn't a newly-arrived space at all. Same boolean, two
+  // equivalent descriptions depending on when/where it's read.
   bool IsFirst() const;
 
   // true if result of PrepareForStep produces no dests

@@ -2,6 +2,7 @@
 #define TOKENHPP
 
 #include "Serialize.hpp"
+#include <boost/json.hpp>
 
 enum SellType{ CASH,BARTER,NONE};
 enum SellDestination { CUP, CULTURE, NOWHERE };
@@ -53,6 +54,9 @@ public:
   bool IsNew() const;
   void MakeNew();
   void MakeOld();
+
+  boost::json::object ToJSON() const;
+
 
 
   Token();

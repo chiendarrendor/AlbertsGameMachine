@@ -5,15 +5,13 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/json.hpp>
 
-const char *ALREADYLOGGEDIN = "This User Name is already Logged in!";
-
-
-GameServerConnectionHandler::GameServerConnectionHandler(int i_Socket,ServerSocket &i_SSock,GameServerConnectionHandlerFactory &i_fac) : 
+GameServerConnectionHandler::GameServerConnectionHandler(int i_Socket,ServerSocket &i_SSock,GameServerConnectionHandlerFactory &i_fac) :
 	ConnectionHandler(i_Socket,i_SSock),
 	m_fac(i_fac),
-	m_Named(false)
+	m_Named(false),
+	m_Authenticated(false)
 {
-  SendLine("CONNECTSTRING,Welcome to Albert's Game Server, V2.0!");
+  SendCurrentLoginState("");
 }
 
 GameServerConnectionHandler::~GameServerConnectionHandler()
@@ -44,61 +42,107 @@ void GameServerConnectionHandler::HandleLine(const std::string &i_Line)
 			return;
 		}
 
-		// Pre-login: LOGIN/LOGOUTOTHER live in their own reserved "login"
-		// namespace -- absolutely fixed shape (always exactly username/
-		// password), but still the same envelope/parser as every other
+		// Pre-login: AUTHENTICATE/LOGOUTOTHER live in their own reserved
+		// "login" namespace -- still the same envelope/parser as every other
 		// Action, per Albert 2026-09-29 (see
-		// .claude/server_game_interface_spec.md's Action-namespacing section).
-		if (ap.GetNamespace() == "login" && ap.GetActionName() == "LOGIN")
+		// .claude/server_game_interface_spec.md's Action-namespacing
+		// section), but drive the hand-written LOGIN-gui mini-FSM above
+		// instead of a real game's state machine.
+		if (ap.GetNamespace() != "login")
 		{
-			std::string username = ExtractJsonParam<std::string>(ap.GetParams(),"username");
-			std::string password = ExtractJsonParam<std::string>(ap.GetParams(),"password");
-
-			if (!m_fac.ValidateLogin(username,password))
-			{
-				SendLine("ERROR,Can't login with name " + username + ": User Name/Password not validated");
-				return;
-			}
-
-			if (m_fac.GetNamedHandler(username) != NULL)
-			{
-				SendLine("ALREADYLOGGEDIN");
-				return;
-			}
-
-			m_fac.NameMe(*this,username);
-			SendLine("WELCOME");
-			m_Named = true;
-			m_Name = username;
-			m_fac.InitialConnection(m_Name);
+			SendCurrentLoginState("Unknown Initialization Packet " + ap.GetActionName());
+			return;
 		}
-		else if (ap.GetNamespace() == "login" && ap.GetActionName() == "LOGOUTOTHER")
+
+		if (ap.GetActionName() == "AUTHENTICATE")
 		{
+			if (m_Authenticated)
+			{
+				SendCurrentLoginState("Already authenticated; waiting on LOGOUTOTHER for the existing session.");
+				return;
+			}
+
 			std::string username = ExtractJsonParam<std::string>(ap.GetParams(),"username");
 			std::string password = ExtractJsonParam<std::string>(ap.GetParams(),"password");
 
 			if (!m_fac.ValidateLogin(username,password))
 			{
-				SendLine("ERROR,Can't logout name " + username + ": User Name/Password not validated");
+				SendCurrentLoginState("User Name/Password not validated for " + username);
 				return;
 			}
 
-			GameServerConnectionHandler *pgsch = m_fac.GetNamedHandler(username);
-			if (pgsch == NULL)
+			m_PendingName = username;
+			m_Authenticated = true;
+
+			if (m_fac.GetNamedHandler(m_PendingName) == NULL)
 			{
+				CompleteLogin();
+			}
+			else
+			{
+				SendCurrentLoginState("");
+			}
+		}
+		else if (ap.GetActionName() == "LOGOUTOTHER")
+		{
+			// Only legal once this connection has proven its own identity --
+			// otherwise there's no way to know which session to kick, and
+			// allowing it pre-authentication would mean anyone could kick
+			// anyone's session for free (Albert, 2026-10-07).
+			if (!m_Authenticated)
+			{
+				SendCurrentLoginState("Must authenticate before logging out another session.");
 				return;
 			}
-			pgsch->Shutdown();
+
+			GameServerConnectionHandler *pgsch = m_fac.GetNamedHandler(m_PendingName);
+			if (pgsch != NULL)
+			{
+				pgsch->Shutdown();
+			}
+
+			CompleteLogin();
 		}
 		else
 		{
-			SendLine("ERROR,Unknown Initialization Packet " + ap.GetActionName());
+			SendCurrentLoginState("Unknown Initialization Packet " + ap.GetActionName());
 		}
 	}
 	catch (const std::exception &e)
 	{
-		SendLine("ERROR,Malformed action: " + std::string(e.what()));
+		SendCurrentLoginState(std::string("Malformed action: ") + e.what());
 	}
+}
+
+void GameServerConnectionHandler::SendLoginState(bool i_Authenticated,int i_OtherConnections,const std::string &i_Error)
+{
+	boost::json::object state;
+	state["connectstring"] = "Welcome to Albert's Game Server, V3.0!";
+	state["gui"] = "LOGIN";
+	state["authenticated"] = i_Authenticated;
+	state["otherconnections"] = i_OtherConnections;
+	state["error"] = i_Error.empty() ? boost::json::value() : boost::json::value(i_Error);
+	SendLine(boost::json::serialize(state));
+}
+
+void GameServerConnectionHandler::SendCurrentLoginState(const std::string &i_Error)
+{
+	// Invariant: while still inside this FSM (m_Named == false), being
+	// authenticated always means a conflicting session is still pending --
+	// resolving that (otherconnections hitting 0) immediately calls
+	// CompleteLogin() and leaves the FSM for good, so there's no "already
+	// authenticated, no conflict" state left to redisplay here.
+	SendLoginState(m_Authenticated,m_Authenticated ? 1 : -1,i_Error);
+}
+
+void GameServerConnectionHandler::CompleteLogin()
+{
+	SendLoginState(true,0,"");
+
+	m_fac.NameMe(*this,m_PendingName);
+	m_Named = true;
+	m_Name = m_PendingName;
+	m_fac.InitialConnection(m_Name);
 }
 
 void GameServerConnectionHandler::CleanUp()

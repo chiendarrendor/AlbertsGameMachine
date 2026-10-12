@@ -22,6 +22,11 @@ class MapOverlay
 public:
   MapOverlay(const MapData& i_mapdata,const Options& i_options);
 
+  // Does the actual population work the constructor used to do directly --
+  // deferred so it runs at STARTGAME, once options are actually locked in,
+  // rather than at construction time (before any player has even joined).
+  void Initialize();
+
   // argument is station name
   // return value is name of space station got placed on.
   std::string PlaceStation(const std::string& i_stationname,int i_owner);
@@ -50,6 +55,7 @@ public:
 
 private:
   const MapData& m_mapdata; // set in constructor call, not serialized.
+  const Options& m_options; // set in constructor call, not serialized.
 
   // map by space name of MapSpace objects where we are
   // overriding what is in the MapData map.

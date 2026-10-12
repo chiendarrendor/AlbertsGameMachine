@@ -55,6 +55,9 @@ class ServerHarness:
     def connect(self, name, password="password"):
         return Client.connect(HOST, self._port, name, password)
 
+    def raw_connect(self):
+        return Client.raw_connect(HOST, self._port)
+
     def arm_mock(self):
         self.mock_game.write_script(str(self._game_dir / "script.json"))
 

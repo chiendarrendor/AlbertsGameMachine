@@ -80,7 +80,7 @@ ${COMMON}/libCommon.a:
 ${GAMECOMMON}/libGameCommon.a:
 	- (cd ${GAMECOMMON} ; make)
 
-OutpostDLL.cpp OutpostEventGenerator.hpp OutpostGameInfo.hpp: ../OutpostServer.xml .actionschema.validated
+OutpostDLL.cpp OutpostGameInfo.hpp: ../OutpostServer.xml .actionschema.validated
 	${TCOM} ../OutpostServer.xml
 
 # Cross-validates ../OutpostServer.xml's transition/action schema against
@@ -137,7 +137,7 @@ clientjava: .actionschema.validated
 
 clean:
 	@- rm -f ${OBJS} ${TESTOBJS} OutpostDLL.cpp ${MAINTESTOBJ}
-	@- rm -f outposttest.exe OutpostClient.xml OutpostEventGenerator.hpp OutpostGameInfo.hpp
+	@- rm -f outposttest.exe OutpostClient.xml OutpostGameInfo.hpp
 	@- rm -f Outpost
 	@- rm -f ${ALLOBJS:.o=.d}
 

@@ -11,6 +11,7 @@ BOOST_AUTO_TEST_CASE( TestHideUnusedWeaponsRemovesLaserAndNovaBall )
   Options hiddenoptions;
   hiddenoptions.SetHideUnusedWeapons(true);
   TradeBases tb(md,hiddenoptions);
+  tb.Initialize();
 
   std::map<std::string,TradeBase>::const_iterator baseit;
   for (baseit = tb.GetBaseMap().begin() ; baseit != tb.GetBaseMap().end() ; ++baseit)
@@ -31,6 +32,7 @@ BOOST_AUTO_TEST_CASE( TestShowUnusedWeaponsIncludesLaserAndNovaBall )
   Options shownoptions;
   shownoptions.SetHideUnusedWeapons(false);
   TradeBases tb(md,shownoptions);
+  tb.Initialize();
 
   bool foundlaser = false;
   bool foundnovaball = false;

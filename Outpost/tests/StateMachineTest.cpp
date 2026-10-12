@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "ActionParser.hpp"
+#include "DLLGame.hpp"
 #include "ServerGameInfo.hpp"
 #include "TestOutputPort.hpp"
 #include "TransitionTestUtilities.hpp"
@@ -13,6 +14,77 @@
 
 const int numInitialStateTransitions = 6;
 
+
+// Exercises DLLGame::HandleAction directly (every other test here calls
+// Transition::ExecuteAction directly, bypassing it) -- this is the one test
+// that actually verifies Phase 3's core mechanism: a successful action
+// resends full state to every roster member, not just the actor. See
+// .claude/server_game_interface_spec.md's Phase 3 design.
+BOOST_AUTO_TEST_CASE( HandleActionSendsFullStateToRoster )
+{
+  OutpostSet oset("");
+  ServerGameInfo sgi("Outpost","testOutpost","XMLLOC","XMLFILE");
+  TestOutputPort top;
+  OutpostStateMachine osm;
+  DLLGame<OutpostSet,OutpostGameInfo> game(sgi,top,oset,osm,60);
+
+  ActionParser ap = MakeAction("JOIN");
+  std::set<std::string> roster;
+  roster.insert("Player1");
+  roster.insert("Spectator1");
+
+  game.HandleAction("Player1",ap,roster);
+
+  std::istringstream iss(top.GetOutput());
+  std::string line;
+  std::set<std::string> seenRecipients;
+  while (std::getline(iss,line))
+  {
+    BOOST_REQUIRE_EQUAL(line.substr(0,9) , "unicast: ");
+    size_t dashpos = line.find(" -- ",9);
+    BOOST_REQUIRE(dashpos != std::string::npos);
+    std::string recipient = line.substr(9,dashpos-9);
+    std::string jsonpart = line.substr(dashpos+4);
+
+    // The game process only ever emits the pure envelope -- layers 1-2
+    // (state/legalActions/body) -- never Name/XMLLoc/XMLFile (layer 3) or
+    // recipient/GUI identity (layer 4): the server already has Name/XMLLoc/
+    // XMLFile authoritatively via its own GetServerGameInfo(), so it adds
+    // all of layers 3+4 itself, at the one point it's actually writing to a
+    // specific socket, rather than having the game process redundantly echo
+    // static data back on every single message. TestOutputPort stands in
+    // for the game process's own OutputPort here, so it correctly never
+    // sees any of that wrapping.
+    boost::json::value v = boost::json::parse(jsonpart);
+    const boost::json::object &fullState = v.as_object();
+    BOOST_CHECK_EQUAL(fullState.at("state").as_string() , "InitialState");
+    BOOST_CHECK(fullState.find("legalActions") != fullState.end());
+    BOOST_CHECK(fullState.find("body") != fullState.end());
+    BOOST_CHECK(fullState.find("Name") == fullState.end());
+    BOOST_CHECK(fullState.find("XMLLoc") == fullState.end());
+    BOOST_CHECK(fullState.find("XMLFile") == fullState.end());
+
+    const boost::json::object &body = fullState.at("body").as_object();
+    BOOST_CHECK(body.find("options") != body.end());
+    const boost::json::array &players = body.at("players").as_array();
+    BOOST_CHECK_EQUAL(players.size() , 1u);
+
+    if (recipient == "Player1")
+    {
+      BOOST_CHECK_EQUAL(body.at("myPlayerId").as_int64() , 0);
+    }
+    else
+    {
+      BOOST_CHECK(body.at("myPlayerId").is_null());
+    }
+
+    seenRecipients.insert(recipient);
+  }
+
+  BOOST_CHECK_EQUAL(seenRecipients.size() , roster.size());
+  BOOST_CHECK(seenRecipients.find("Player1") != seenRecipients.end());
+  BOOST_CHECK(seenRecipients.find("Spectator1") != seenRecipients.end());
+}
 
 BOOST_AUTO_TEST_CASE( TransitionTestJOIN )
 {
@@ -29,15 +101,10 @@ BOOST_AUTO_TEST_CASE( TransitionTestJOIN )
 
   BOOST_CHECK_EQUAL(pJoin->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pJoin->IsLegal("Player1","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pJoin->ExecuteAction("InitialState",ogi,"Player1",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pJoin,"InitialState",ogi,"Player1",ap) , true);
   BOOST_CHECK_EQUAL (ogi.GetPlayers().size() , (size_t)1);
   BOOST_CHECK_EQUAL (ogi.GetPlayers()[0].GetName() ,"Player1");
-  BOOST_CHECK_EQUAL (top.GetOutput() , 
-                     "broadcast: PLAYER,Player1,0\n" 
-                     "unicast: Player1 -- IAM,0\n"
-                     );
 
-  top.ResetOutput();
 
   // can't join if you've already joined.
   BOOST_CHECK_EQUAL(pJoin->IsAuto("InitialState",ogi) , false );
@@ -55,11 +122,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestJOIN )
   // can join if there are less than 10 players.
   BOOST_CHECK_EQUAL(pJoin->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pJoin->IsLegal("Player8","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pJoin->ExecuteAction("InitialState",ogi,"Player8",ap) , true);
-  BOOST_CHECK_EQUAL (top.GetOutput() , 
-                     "broadcast: PLAYER,Player8,9\n" 
-                     "unicast: Player8 -- IAM,9\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pJoin,"InitialState",ogi,"Player8",ap) , true);
 
   // can't join if there are 10 or more.
   BOOST_CHECK_EQUAL (ogi.GetPlayers().size() , (size_t)10);
@@ -99,16 +162,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestUNJOIN )
   BOOST_CHECK_EQUAL(pUnJoin->IsLegal("PlayerB","InitialState",ogi) , true);
   BOOST_CHECK_EQUAL(pUnJoin->IsLegal("PlayerC","InitialState",ogi) , true);
 
-  BOOST_CHECK_EQUAL(pUnJoin->ExecuteAction("InitialState",ogi,"PlayerB",ap) , true);
-  BOOST_CHECK_EQUAL (top.GetOutput() , 
-                     "broadcast: RESET,Outpost\n"
-                     "broadcast: PLAYER,PlayerA,0\n"
-                     "broadcast: PLAYER,PlayerC,1\n"
-                     "unicast: PlayerA -- IAM,0\n"
-                     "unicast: PlayerC -- IAM,1\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pUnJoin,"InitialState",ogi,"PlayerB",ap) , true);
 
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetPlayers().size() , (size_t)2);
 
@@ -117,15 +172,9 @@ BOOST_AUTO_TEST_CASE( TransitionTestUNJOIN )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].GetId() , 0);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[1].GetId() , 1);
 
-  BOOST_CHECK_EQUAL(pUnJoin->ExecuteAction("InitialState",ogi,"PlayerC",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pUnJoin,"InitialState",ogi,"PlayerC",ap) , true);
   
-  BOOST_CHECK_EQUAL (top.GetOutput() , 
-                     "broadcast: RESET,Outpost\n"
-                     "broadcast: PLAYER,PlayerA,0\n"
-                     "unicast: PlayerA -- IAM,0\n"
-                     );
 
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetPlayers().size() , (size_t)1);
 
@@ -136,17 +185,9 @@ BOOST_AUTO_TEST_CASE( TransitionTestUNJOIN )
   ogi.GetPlayers().add("PlayerD");
   ogi.GetPlayers().add("PlayerE");
 
-  BOOST_CHECK_EQUAL(pUnJoin->ExecuteAction("InitialState",ogi,"PlayerA",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pUnJoin,"InitialState",ogi,"PlayerA",ap) , true);
 
-  BOOST_CHECK_EQUAL (top.GetOutput() , 
-                     "broadcast: RESET,Outpost\n"
-                     "broadcast: PLAYER,PlayerD,0\n"
-                     "broadcast: PLAYER,PlayerE,1\n"
-                     "unicast: PlayerD -- IAM,0\n"
-                     "unicast: PlayerE -- IAM,1\n"
-                     );
 
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetPlayers().size() , (size_t)2);
 
@@ -181,10 +222,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   // this should work.
   BOOST_CHECK_EQUAL(pOptions->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pOptions->IsLegal("Player1","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pOptions->ExecuteAction("InitialState",ogi,"Player1",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pOptions,"InitialState",ogi,"Player1",ap) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,1,3,2,0,1,0,1,2\n");
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , false);
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetRefineries() , false);
@@ -208,10 +247,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   // this should work.
   BOOST_CHECK_EQUAL(pSB->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pSB->IsLegal("Player1","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pSB->ExecuteAction("InitialState",ogi,"Player1",ap2) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSB,"InitialState",ogi,"Player1",ap2) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,0,0,0,0,0,1,0,0,0,0,1\n");
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , false);
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetRefineries() , false);
@@ -233,10 +270,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestOPTIONS )
   // this should work.
   BOOST_CHECK_EQUAL(pSE->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pSE->IsLegal("Player1","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pSE->ExecuteAction("InitialState",ogi,"Player1",ap3) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSE,"InitialState",ogi,"Player1",ap3) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: OPTIONS,1,0,0,0,0,1,0,1,1,0,1\n");
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetEarlyDiscard() , true);
   BOOST_CHECK_EQUAL(ogi.GetOptions().GetRefineries() , false);
@@ -287,10 +322,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestVALIDATESETUP )
   // this should work.
   BOOST_CHECK_EQUAL(pVS->IsAuto("InitialState",ogi) , false );
   BOOST_CHECK_EQUAL(pVS->IsLegal("Player1","InitialState",ogi) , true);
-  BOOST_CHECK_EQUAL(pVS->ExecuteAction("InitialState",ogi,"Player1",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: PLAYEROKSTARTUP,0,0\n"
-                    "broadcast: PLAYEROKSTARTUP,1,0\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pVS,"InitialState",ogi,"Player1",ap) , true);
   
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].OkStartup() , false);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[1].OkStartup() , false);
@@ -339,17 +371,14 @@ BOOST_AUTO_TEST_CASE( TransitionTestLIKEORNOT )
   // this should work.
   BOOST_CHECK_EQUAL(pLO->IsAuto("ValidateSetup",ogi) , false );
   BOOST_CHECK_EQUAL(pLO->IsLegal("Player1","ValidateSetup",ogi) , true);
-  BOOST_CHECK_EQUAL(pLO->ExecuteAction("ValidateSetup",ogi,"Player1",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "broadcast: PLAYEROKSTARTUP,0,1\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pLO,"ValidateSetup",ogi,"Player1",ap) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].OkStartup() , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[1].OkStartup() , false);
   
   ogi.GetPlayers()[0].SetOkStartup(false);
   BOOST_CHECK_EQUAL(pDL->IsAuto("ValidateSetup",ogi) , false );
   BOOST_CHECK_EQUAL(pDL->IsLegal("Player1","ValidateSetup",ogi) , true);
-  BOOST_CHECK_EQUAL(pDL->ExecuteAction("ValidateSetup",ogi,"Player1",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pDL,"ValidateSetup",ogi,"Player1",ap) , true);
 }
 
 BOOST_AUTO_TEST_CASE( TransitionTestSTARTGAME )
@@ -392,39 +421,9 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTGAME )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[1].GetNumHumans() , 0);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[1].GetNumRobots() , 0);
 
-  BOOST_CHECK_EQUAL(pSG->ExecuteAction("ValidateSetup",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSG,"ValidateSetup",ogi,"",ap) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: CURTURN,1\n"
-                    "broadcast: ITEMSTOCK,1,1\n"
-                    "broadcast: ITEMSTOCK,2,1\n"
-                    "broadcast: ITEMSTOCK,3,1\n"
-                    "broadcast: ITEMSTOCK,4,1\n"
-                    "broadcast: ITEMSTOCK,5,1\n"
-                    "broadcast: ITEMSTOCK,6,1\n"
-                    "broadcast: ITEMSTOCK,7,1\n"
-                    "broadcast: ITEMSTOCK,8,1\n"
-                    "broadcast: ITEMSTOCK,9,1\n"
-                    "broadcast: ITEMSTOCK,10,1\n"
-                    "broadcast: ITEMSTOCK,11,1\n"
-                    "broadcast: ITEMSTOCK,12,1\n"
-                    "broadcast: ITEMSTOCK,13,1\n"
-                    "broadcast: PLAYERFACTORIES,0,|OH-OH-WH|\n"
-                    "broadcast: PLAYERFACTORIES,1,|OH-OH-WH|\n"
-                    "broadcast: PLAYERSTATE,0,3,0,5,5,0,10,3,0,3,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,1,3,0,5,5,0,10,3,0,3,3,0,-1,-1\n"
-                    "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,0,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(ogi.GetCurTurn() , 1);
   BOOST_CHECK_EQUAL(ogi.GetCommodities().GetDeck(RESEARCH_COMMODITY).DrawCommodity(true).GetValue() , 0);
@@ -452,39 +451,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTGAME )
   BOOST_CHECK_EQUAL(ogi2.GetCommodities().GetDeck(RESEARCH_COMMODITY).DrawCommodity(true).GetValue() , 56);
   BOOST_CHECK_EQUAL(ogi2.GetUnownedItems().Initialized() , false);
 
-  BOOST_CHECK_EQUAL(pSG->ExecuteAction("ValidateSetup",ogi2,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSG,"ValidateSetup",ogi2,"",ap) , true);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: CURTURN,1\n"
-                    "broadcast: ITEMSTOCK,1,2\n"
-                    "broadcast: ITEMSTOCK,2,2\n"
-                    "broadcast: ITEMSTOCK,3,2\n"
-                    "broadcast: ITEMSTOCK,4,2\n"
-                    "broadcast: ITEMSTOCK,5,2\n"
-                    "broadcast: ITEMSTOCK,6,2\n"
-                    "broadcast: ITEMSTOCK,7,2\n"
-                    "broadcast: ITEMSTOCK,8,2\n"
-                    "broadcast: ITEMSTOCK,9,2\n"
-                    "broadcast: ITEMSTOCK,10,2\n"
-                    "broadcast: ITEMSTOCK,11,2\n"
-                    "broadcast: ITEMSTOCK,12,2\n"
-                    "broadcast: ITEMSTOCK,13,2\n"
-                    "broadcast: PLAYERFACTORIES,0,|OH-OH-WH|\n"
-                    "broadcast: PLAYERFACTORIES,1,|OH-OH-WH|\n"
-                    "broadcast: PLAYERFACTORIES,2,|OH-OH-WH|\n"
-                    "broadcast: PLAYERSTATE,0,3,0,5,5,0,10,3,0,3,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,1,3,0,5,5,0,10,3,0,3,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,2,3,0,5,5,0,10,3,0,3,3,0,-1,-1\n"
-                    "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 
 
   BOOST_CHECK_EQUAL(ogi2.GetCurTurn() , 1);
@@ -500,7 +468,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTGAME )
   ogi3.GetPlayers()[0].SetOkStartup(true);
   ogi3.GetPlayers()[1].SetOkStartup(true);
 
-  BOOST_CHECK_EQUAL(pSG->ExecuteAction("ValidateSetup",ogi3,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSG,"ValidateSetup",ogi3,"",ap) , true);
   
   int extracount = 0;
 
@@ -542,17 +510,13 @@ BOOST_AUTO_TEST_CASE( TransitionTestTURNORDER )
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder()[1] , 0);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder()[2] , 0);
 
-  BOOST_CHECK_EQUAL(pTO->ExecuteAction("TurnOrder",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pTO,"TurnOrder",ogi,"",ap) , true);
 
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder().size() , (size_t)3);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder()[0] , 1);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder()[1] , 2);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().GetTurnOrder()[2] , 0);
 
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: TURNORDER,1,1\n"
-                    "broadcast: TURNORDER,2,2\n"
-                    "broadcast: TURNORDER,0,3\n");
 }
 
 
@@ -583,7 +547,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestFILLSHIP )
 
   ogi.GetUnownedItems().SetPurchased(1,NODULE,0,30);
 
-  BOOST_CHECK_EQUAL(pFS->ExecuteAction("SupplyFill",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pFS,"SupplyFill",ogi,"",ap) , true);
 
   BOOST_CHECK( ogi.GetUnownedItems().GetShipItem(0) != NO_ITEM);
   BOOST_CHECK( ogi.GetUnownedItems().GetShipItem(1) != NO_ITEM);
@@ -617,7 +581,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestFILLSHIP )
     ;
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , oss.str() );
 }
 
 BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
@@ -646,7 +609,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "||");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 26);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
-  BOOST_CHECK_EQUAL(pFS->ExecuteAction("StartResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pFS,"StartResources",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "|OR*|");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 25);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
@@ -678,8 +641,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
     ;
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , oss.str() );
-  top.ResetOutput();
 
   // also going to check the two completion transitions for Production, since
   // we're here and they don't do anything, the false cases will be tested when we have
@@ -699,10 +660,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY )
   BOOST_CHECK_EQUAL(pPU->IsAuto("PromptMegaResources",ogi) , false );
 
   // these aren't supposed to do anything but return true.
-  BOOST_CHECK_EQUAL(pDI->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
-  BOOST_CHECK_EQUAL(pPU->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pDI,"PromptMegaResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pPU,"PromptMegaResources",ogi,"",ap) , true);
   
 }
 
@@ -733,7 +692,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Turn1 )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "||");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 26);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
-  BOOST_CHECK_EQUAL(pFS->ExecuteAction("StartResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pFS,"StartResources",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "|OR*-OR*|");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 24);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
@@ -765,8 +724,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Turn1 )
     ;
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , oss.str() );
-  top.ResetOutput();
 
   // also going to check the two completion transitions for Production, since
   // we're here and they don't do anything, the false cases will be tested when we have
@@ -785,10 +742,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Turn1 )
   BOOST_CHECK_EQUAL(pPU->IsAuto("PromptMegaResources",ogi) , false );
 
   // these aren't supposed to do anything but return true.
-  BOOST_CHECK_EQUAL(pDI->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
-  BOOST_CHECK_EQUAL(pPU->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pDI,"PromptMegaResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pPU,"PromptMegaResources",ogi,"",ap) , true);
   
 }
 
@@ -820,7 +775,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Refineries )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "||");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 26);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
-  BOOST_CHECK_EQUAL(pFS->ExecuteAction("StartResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pFS,"StartResources",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true) , "|OR*|");
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 24);
   BOOST_CHECK_EQUAL( ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 1);
@@ -851,8 +806,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Refineries )
     ;
 
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , oss.str() );
-  top.ResetOutput();
 
   // also going to check the two completion transitions for Production, since
   // we're here and they don't do anything, the false cases will be tested when we have
@@ -871,10 +824,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestINITCOMMODITY_Refineries )
   BOOST_CHECK_EQUAL(pPU->IsAuto("PromptMegaResources",ogi) , false );
 
   // these aren't supposed to do anything but return true.
-  BOOST_CHECK_EQUAL(pDI->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
-  BOOST_CHECK_EQUAL(pPU->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pDI,"PromptMegaResources",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pPU,"PromptMegaResources",ogi,"",ap) , true);
   
 }
 
@@ -921,24 +872,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestBlindDraws )
   ogi.GetOptions().SetBlindDraws(true);
 
   const TransitionType *pInit = GetTransition(osm,"StartResources","INITCOMMODITY","PromptMegaResources",1);
-  BOOST_CHECK_EQUAL(pInit->ExecuteAction("StartResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput(),
-                    "broadcast: PLAYERCARDBACKS,0,|RE*|\n"
-                    "broadcast: PLAYERCARDBACKS,1,|TI*-WA*|\n"
-                    "unicast: Player1 -- PLAYERCARDS,|RE17|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|TI12-WA*|\n"
-                    "broadcast: PLAYERSTATE,0,5,0,5,5,0,10,0,0,1,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,1,11,100,5,5,0,5,0,0,3,3,0,-1,-1\n"
-                    "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,38,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pInit,"StartResources",ogi,"",ap) , true);
 }
 
 
@@ -992,11 +926,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
   // if production is not done, this is true.
   BOOST_CHECK_EQUAL(pFS->IsAuto("PromptMegaResources",ogi) , true);
   // this should generate a message.
-  BOOST_CHECK_EQUAL(pFS->ExecuteAction("PromptMegaResources",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "unicast: Player1 -- MEGAREQUEST,2,1\n"
-                    );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pFS,"PromptMegaResources",ogi,"",ap) , true);
 
   // also going to check the two false completion transitions for Production, since
   // we're here and they don't do anything.
@@ -1023,20 +953,16 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
 
   // bad input should keep it from executing.
   ActionParser ap2 = MakeAction("NUMMEGAS",{{"i_count",-1}});
-  BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap2) , false);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pNM,"MegaResources",ogi,"Player1",ap2) , false);
   BOOST_CHECK_EQUAL(ogi.GetProductionManager().IsProductionDone() , false);
-  BOOST_CHECK_EQUAL(top.GetOutput(), "unicast: Player1 -- ERROR,Action NUMMEGAS variable i_count is below minimum\n");
-  top.ResetOutput();
 
   // bad input should keep it from executing.
   ActionParser ap3 = MakeAction("NUMMEGAS",{{"i_count",2}});
-  BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap3) , false);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pNM,"MegaResources",ogi,"Player1",ap3) , false);
   BOOST_CHECK_EQUAL(ogi.GetProductionManager().IsProductionDone() , false);
-  BOOST_CHECK_EQUAL(top.GetOutput(), "unicast: Player1 -- ERROR,Action NUMMEGAS variable i_count is above maximum\n");
-  top.ResetOutput();
 
   ActionParser ap4 = MakeAction("NUMMEGAS",{{"i_count",1}});
-  BOOST_CHECK_EQUAL(pNM->ExecuteAction("MegaResources",ogi,"Player1",ap4) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pNM,"MegaResources",ogi,"Player1",ap4) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(false,true),"|WA30M-WA*|");
 
   std::ostringstream oss;
@@ -1063,7 +989,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestREQUESTMEGA )
                     "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
     ;
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , oss.str() );
   
 }
 
@@ -1101,12 +1026,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD1 )
   // should always be an auto action
   BOOST_CHECK_EQUAL(pSD->IsAuto("StartDiscard",ogi) , true );
 
-  BOOST_CHECK_EQUAL(pSD->ExecuteAction("StartDiscard",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: PLAYERSTATE,0,5,100,8,10,0,10,0,0,1,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,1,1,15,5,5,0,10,0,0,0,3,0,-1,-1\n"
-                    "broadcast: PLAYERSTATE,2,0,0,5,5,0,10,0,0,0,3,0,-1,-1\n"
-                    );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pSD,"StartDiscard",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetName() , pl1name );
 
   const TransitionType *pDP = GetTransition(osm,"DoDiscard","ENDDISCARDTOPURCHASE","StartPurchase",4);
@@ -1261,25 +1181,18 @@ BOOST_AUTO_TEST_CASE( TransitionTestDISCARD2 )
   ogi.GetPlayers().StartTurnOrder();
 
   // executing the skip should cause an increment. 
-  BOOST_CHECK_EQUAL(pAS->ExecuteAction("DoDiscard",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL(top.GetOutput() , 
-                    "broadcast: PLAYERSTATE,0,0,0,10,5,0,10,0,0,3,3,0,-1,-1\n"
-                    );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pAS,"DoDiscard",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().AllPlayersDone() , true );
 
   // executing the Manual Discard should cause it to not skip, and to generate output.
   ogi.GetPlayers().StartTurnOrder();
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("DoDiscard",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"DoDiscard",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().AllPlayersDone() , false );
-  BOOST_CHECK_EQUAL(top.GetOutput() , "");
-  top.ResetOutput();
 
   ogi.GetOptions().SetEarlyDiscard(false);
   
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("DoDiscard",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"DoDiscard",ogi,"",ap) , true);
   BOOST_CHECK_EQUAL(ogi.GetPlayers().AllPlayersDone() , false );
-  BOOST_CHECK_EQUAL(top.GetOutput() , "" );
                     
 }
 
@@ -1320,9 +1233,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap = MakeAction("DISCARD",{{"i_discardstring","001100100"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1331,9 +1242,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap2 = MakeAction("DISCARD",{{"i_discardstring","001B0000"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap2) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Illegal characters in delete string\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap2) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1342,10 +1251,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap3 = MakeAction("DISCARD",{{"i_discardstring","00000011"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap3) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "unicast: Player1 -- ERROR,You need to discard more to get to your hand limit.\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap3) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1354,24 +1260,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap4 = MakeAction("DISCARD",{{"i_discardstring","00000111"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap4) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: SPENDS,0,0,2,0,3,|TI17-TI16-TI15|\n"
-                     "broadcast: PLAYERCARDBACKS,0,|TI*-TI*-TI*-TI*-TI*|\n"
-                     "unicast: Player1 -- PLAYERCARDS,|TI22-TI21-TI20-TI19-TI18|\n"
-                     "broadcast: PLAYERSTATE,0,0,0,5,5,0,10,0,0,3,3,0,-1,-1\n"
-                     "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                     "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                     "broadcast: COMMODITYSTOCK,3,53,3,44,10\n"
-                     "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                     "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                     "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                     "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                     "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                     "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap4) , true);
   
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
                      "|TI22-TI21-TI20-TI19-TI18|");
@@ -1420,9 +1310,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap = MakeAction("DISCARD",{{"i_discardstring","001100100"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1431,9 +1319,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap2 = MakeAction("DISCARD",{{"i_discardstring","001B0000"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap2) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "unicast: Player1 -- ERROR,Illegal characters in delete string\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap2) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1442,10 +1328,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , false );
 
   ActionParser ap3 = MakeAction("DISCARD",{{"i_discardstring","00000011"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap3) , false);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "unicast: Player1 -- ERROR,You need to discard more to get to your hand limit.\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap3) , false);
 
   // these things should not change if we get do a bad result.
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
@@ -1460,25 +1343,8 @@ BOOST_AUTO_TEST_CASE( TransitionTestMANUALDISCARD2 )
 
 
   ActionParser ap4 = MakeAction("DISCARD",{{"i_discardstring","00000111"}});
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("ManualDiscard",ogi,"Player1",ap4) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: SPENDS,0,0,2,0,3,|TI17-TI16-TI15|\n"
-                     "broadcast: PLAYERCARDBACKS,0,|TI*-TI*-TI*-TI*-TI*|\n"
-                     "unicast: Player1 -- PLAYERCARDS,|TI22-TI21-TI20-TI19-TI18|\n"
-                     "broadcast: PLAYERSTATE,0,1,15,5,5,0,10,0,0,3,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,0,0,5,5,0,10,0,0,1,3,0,-1,-1\n"
-                     "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                     "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                     "broadcast: COMMODITYSTOCK,3,53,3,44,10\n"
-                     "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                     "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                     "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                     "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                     "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                     "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"ManualDiscard",ogi,"Player1",ap4) , true);
   
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,true) , 
                      "|TI22-TI21-TI20-TI19-TI18|");
@@ -1536,7 +1402,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTMANNING )
   BOOST_CHECK_EQUAL(pMD->IsAuto("StartFinalManning",ogi) , true );
   BOOST_CHECK_EQUAL(pMD->IsLegal("Player1","StartFinalManning",ogi) , false);
 
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("StartFinalManning",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"StartFinalManning",ogi,"",ap) , true);
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 4);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[3].GetPurchaseState() , UNPLAYED);
@@ -1544,14 +1410,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTMANNING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , INTERNAL_FINAL_DONE);
 
   // PLAYERSTATE: plid,vp,costsum,handlimt,poplimit,mancost,#hum,#rob,purstate,bidstate,haspurchased
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,-1,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,1,3,1,-1,-1\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,6,3,0,-1,-1\n"
-                     );
 }
 
 
@@ -1647,7 +1505,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONEMANNING )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[4].GetFactories().AlterManning("UUUBBBBBBBBBHHHHHHHHHHB",11,11),0);
   BOOST_CHECK_EQUAL(pMD->IsLegal("Player4","FinalManning",ogi) , true); // should be ok now
 
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("FinalManning",ogi,"Player4",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"FinalManning",ogi,"Player4",ap) , true);
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 3);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[3].GetPurchaseState() , ACTIVE);
@@ -1655,23 +1513,15 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONEMANNING )
 
   // PLAYERSTATE: plid,vp,costsum,handlimt,poplimit,robotlimit,mancost,#hum,#rob,purstate,bidstate,haspurchased,highbid,lastbid
   // given the above machinations, we should see that the # of robots and humans get adjusted down
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,4,47,150,8,10,10,10,10,10,5,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,1,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
 
   
   ogi.GetPlayers().IncrementTurnOrder();
   ogi.GetPlayers().IncrementTurnOrder();
   ogi.GetPlayers().IncrementTurnOrder();
 
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("FinalManning",ogi,"Player0",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"FinalManning",ogi,"Player0",ap) , true);
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , true );
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,5,3,0,-1,-1\n"
-                     );
 
   
   BOOST_CHECK_EQUAL(pMD->IsLegal("Player5","FinalManning",ogi) , false); // needs to execute, return false, even after all players done
@@ -1751,13 +1601,9 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDMANNING )
   BOOST_CHECK_EQUAL(pME->IsAuto("FinalManning",ogi) , true );
 
   // neither of them does anything interesting.
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("FinalManning",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"FinalManning",ogi,"",ap) , true);
 
-  BOOST_CHECK_EQUAL(pME->ExecuteAction("FinalManning",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pME,"FinalManning",ogi,"",ap) , true);
 }
 
 BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
@@ -1828,7 +1674,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   ogi.GetPlayers()[3].SetLastBid(20);
   ogi.GetPlayers()[5].SetLastBid(24);
 
-  BOOST_CHECK_EQUAL(pNT->ExecuteAction("TurnEnd",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pNT,"TurnEnd",ogi,"",ap) , true);
 
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[0].GetLastBid() , NOT_HIGH_BID );
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[3].GetLastBid() , NOT_HIGH_BID );
@@ -1839,9 +1685,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[3].GetCommodityHand().GetHand()[1].IsNew() , false);
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[5].GetCommodityHand().GetHand()[0].IsNew() , false);
 
-  BOOST_CHECK_EQUAL( top.GetOutput() , "broadcast: CURTURN,6\n" );
   BOOST_CHECK_EQUAL(ogi.GetCurTurn() , 6);
-  top.ResetOutput();
 
   // let's give a player some VP.
   ogi.GetPlayers()[2].GetFactories().AddFactory(MOON_BASE_FACTORY);
@@ -1854,9 +1698,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   BOOST_CHECK_EQUAL(pEG->IsAuto("TurnEnd",ogi) , true );
   BOOST_CHECK_EQUAL(pNT->IsAuto("TurnEnd",ogi) , false );
   
-  BOOST_CHECK_EQUAL(pEG->ExecuteAction("TurnEnd",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , "broadcast: PLAYERWINS,2\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pEG,"TurnEnd",ogi,"",ap) , true);
 
   ogi.GetPlayers()[5].GetFactories().AddFactory(MOON_BASE_FACTORY);
   ogi.GetPlayers()[5].GetFactories().AddFactory(MOON_BASE_FACTORY);
@@ -1868,12 +1710,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   BOOST_CHECK_EQUAL(pEG->IsAuto("TurnEnd",ogi) , true );
   BOOST_CHECK_EQUAL(pNT->IsAuto("TurnEnd",ogi) , false );
   
-  BOOST_CHECK_EQUAL(pEG->ExecuteAction("TurnEnd",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERWINS,2\n" 
-                     "broadcast: PLAYERWINS,5\n" 
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pEG,"TurnEnd",ogi,"",ap) , true);
 
   // give someone more than 75....
   ogi.GetPlayers()[4].GetFactories().AddFactory(MOON_BASE_FACTORY);
@@ -1886,11 +1723,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestENDTURN )
   BOOST_CHECK_EQUAL(pEG->IsAuto("TurnEnd",ogi) , true );
   BOOST_CHECK_EQUAL(pNT->IsAuto("TurnEnd",ogi) , false );
   
-  BOOST_CHECK_EQUAL(pEG->ExecuteAction("TurnEnd",ogi,"",ap) , true);
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERWINS,4\n" 
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pEG,"TurnEnd",ogi,"",ap) , true);
 }
 
 
@@ -1902,99 +1735,268 @@ std::string ReplacePlayerName(const std::string &i_replace,const std::string &i_
   return input;
 }
 
-void TestRefresh(const OutpostGameInfo &i_ogi,TestOutputPort &i_top,
-                 const std::string &i_statename,const std::string &i_playername,
-                 const std::set<std::string> &i_lines,const std::string &i_TestName)
+// Calls GetClientState directly and returns the result for field assertions
+// -- replaces the old TestRefresh, which parsed TestOutputPort's captured
+// comma-line wire output. See .claude/server_game_interface_spec.md's
+// Phase 3 spike.
+boost::json::object GetState(const OutpostGameInfo &i_ogi,
+                             const std::string &i_statename,const std::string &i_playername)
 {
-  // error message
-  std::ostringstream erross;
-  erross << std::endl << "Refresh Test: " << i_TestName << std::endl;
-
-  // special: must always be first:
-  //   RESET 
-  std::string rbase("unicast: ## -- RESET,Outpost");
-  std::string testreset(ReplacePlayerName(i_playername,rbase));
-
-  // Want my own map of test records.
-  std::map<std::string,bool>::iterator mapit;
-  std::set<std::string>::const_iterator setit;
-
-  std::map<std::string,bool> testlines;
-    
-  for (setit = i_lines.begin() ; setit != i_lines.end() ; ++setit)
-  {
-    std::string newline = ReplacePlayerName(i_playername,*setit);
-    BOOST_REQUIRE( testlines.find(newline) == testlines.end() );
-    testlines[newline] = false;
-  }
-
-  // let's get the real data
-  i_ogi.SendFullState(i_playername,i_statename);
-  std::istringstream iss(i_top.GetOutput());
-
-  // check the first line specially.
-  std::string realreset;
-  BOOST_REQUIRE(std::getline(iss,realreset));
-  BOOST_REQUIRE_EQUAL(testreset,realreset);
-
-  // create a map for the rest of the lines
-  std::map<std::string,bool> reallines;
-  std::string curline;
-
-  while(std::getline(iss,curline))
-  {
-    BOOST_REQUIRE( reallines.find(curline) == reallines.end() );
-    reallines[curline + "\n"] = false;
-  }
-
-  bool fail = false;
-
-  for (mapit = reallines.begin() ; mapit != reallines.end() ; ++mapit)
-  {
-    if (testlines.find(mapit->first) == testlines.end()) 
-    {
-      fail = true;
-    }
-    else
-    {
-      mapit->second = true;
-    }
-  }
-
-  for (mapit = testlines.begin() ; mapit != testlines.end() ; ++mapit)
-  {
-    if (reallines.find(mapit->first) == reallines.end()) 
-    {
-      fail = true;
-    }
-    else
-    {
-      mapit->second = true;
-    }
-  }
-
-  erross << "--TEST----" << std::endl;
-  for (mapit = testlines.begin() ; mapit != testlines.end() ; ++mapit)
-  {
-    erross << (mapit->second ? "   : " : "xxx: ");
-    erross << mapit->first;
-  }
-
-  erross << "--REAL----" << std::endl;
-  for (mapit = reallines.begin() ; mapit != reallines.end() ; ++mapit)
-  {
-    erross << (mapit->second ? "   : " : "xxx: ");
-    erross << mapit->first;
-  }
-  erross << "---------" << std::endl;
-
-  if (fail) BOOST_FAIL(erross.str());
-
-  i_top.ResetOutput();
-
+  return i_ogi.GetClientState(i_playername,i_statename);
 }
 
+void CheckOptions(const boost::json::object &i_result)
+{
+  const boost::json::object &options = i_result.at("options").as_object();
+  BOOST_CHECK_EQUAL(options.at("discard").as_bool() , true);
+  BOOST_CHECK_EQUAL(options.at("refinery").as_bool() , false);
+  BOOST_CHECK_EQUAL(options.at("oneupgrade").as_bool() , false);
+  BOOST_CHECK_EQUAL(options.at("activebid").as_bool() , false);
+  BOOST_CHECK_EQUAL(options.at("supplyharshness").as_int64() , 4);
+  BOOST_CHECK_EQUAL(options.at("robots").as_int64() , 1);
+  BOOST_CHECK_EQUAL(options.at("researchmega").as_bool() , false);
+  BOOST_CHECK_EQUAL(options.at("smallresearch").as_bool() , true);
+  BOOST_CHECK_EQUAL(options.at("smallmicro").as_bool() , true);
+  BOOST_CHECK_EQUAL(options.at("blinddraws").as_bool() , true);
+  BOOST_CHECK_EQUAL(options.at("stock").as_int64() , 1);
+}
 
+const boost::json::object &FindPlayer(const boost::json::array &i_players,int i_id)
+{
+  for (const boost::json::value &pv : i_players)
+  {
+    const boost::json::object &p = pv.as_object();
+    if (p.at("id").as_int64() == i_id)
+    {
+      return p;
+    }
+  }
+  BOOST_FAIL("player id not found in players array");
+  static boost::json::object dummy;
+  return dummy;
+}
+
+void CheckPlayer(const boost::json::object &i_p,const std::string &i_name,int i_id,bool i_okstartup,
+                 int i_vp,int i_itemcostsum,int i_handlimit,int i_poplimit,int i_robotlimit,int i_mancost,
+                 int i_numhumans,int i_numrobots,int i_pstate,int i_bstate,bool i_haspurchased,
+                 int i_highbid,int i_lastbid,const std::string &i_factorydesc,const std::string &i_cardbackdesc,
+                 const std::vector<int> &i_items)
+{
+  BOOST_CHECK_EQUAL(i_p.at("name").as_string() , i_name);
+  BOOST_CHECK_EQUAL(i_p.at("id").as_int64() , i_id);
+  BOOST_CHECK_EQUAL(i_p.at("okstartup").as_bool() , i_okstartup);
+  BOOST_CHECK_EQUAL(i_p.at("victoryPoints").as_int64() , i_vp);
+  BOOST_CHECK_EQUAL(i_p.at("itemCostSum").as_int64() , i_itemcostsum);
+  BOOST_CHECK_EQUAL(i_p.at("handLimit").as_int64() , i_handlimit);
+  BOOST_CHECK_EQUAL(i_p.at("popLimit").as_int64() , i_poplimit);
+  BOOST_CHECK_EQUAL(i_p.at("robotLimit").as_int64() , i_robotlimit);
+  BOOST_CHECK_EQUAL(i_p.at("manCost").as_int64() , i_mancost);
+  BOOST_CHECK_EQUAL(i_p.at("numHumans").as_int64() , i_numhumans);
+  BOOST_CHECK_EQUAL(i_p.at("numRobots").as_int64() , i_numrobots);
+  BOOST_CHECK_EQUAL(i_p.at("purchaseState").as_int64() , i_pstate);
+  BOOST_CHECK_EQUAL(i_p.at("bidState").as_int64() , i_bstate);
+  BOOST_CHECK_EQUAL(i_p.at("hasPurchased").as_bool() , i_haspurchased);
+  BOOST_CHECK_EQUAL(i_p.at("highBid").as_int64() , i_highbid);
+  BOOST_CHECK_EQUAL(i_p.at("lastBid").as_int64() , i_lastbid);
+  BOOST_CHECK_EQUAL(i_p.at("factoryDescription").as_string() , i_factorydesc);
+  BOOST_CHECK_EQUAL(i_p.at("cardBackDescription").as_string() , i_cardbackdesc);
+
+  const boost::json::array &items = i_p.at("items").as_array();
+  BOOST_REQUIRE_EQUAL(items.size() , i_items.size());
+  for (size_t i = 0 ; i < i_items.size() ; ++i)
+  {
+    BOOST_CHECK_EQUAL(items[i].as_int64() , i_items[i]);
+  }
+}
+
+// Player stats as of right after setup (before the second StartProduction
+// call later in the test) -- used by InitialState/ValidateSetup/Purchase/
+// Bid/TerminalState.
+void CheckPlayersCardset1(const boost::json::array &i_players)
+{
+  CheckPlayer(FindPlayer(i_players,0),"Player0",0,false,
+             11,100,13,10,0,10,3,0, 0,1,false, -1,-1,
+             "|WH-WH-WH-WH-RH|","|MO*-WA*|",{10});
+  CheckPlayer(FindPlayer(i_players,1),"Player1",1,true,
+             3,50,13,8,0,10,4,1, 0,0,false, -1,-1,
+             "|TU|","|RE38M-OR*|",{2,4});
+  CheckPlayer(FindPlayer(i_players,2),"Player2",2,false,
+             94,80,10,6,0,10,5,0, 1,4,false, 10,-1,
+             "|SH-MB-MB-MB-MB|","|MI18A|",{5,5});
+}
+
+// Player stats after the second StartProduction call -- used by
+// MegaResources. Only purchaseState (0, 2) differs plus the now-more-visible
+// card backs; everything else is unchanged from cardset1.
+void CheckPlayersCardset2(const boost::json::array &i_players)
+{
+  CheckPlayer(FindPlayer(i_players,0),"Player0",0,false,
+             11,100,13,10,0,10,3,0, 1,1,false, -1,-1,
+             "|WH-WH-WH-WH-RH|","|MO*-RE*-WA*|",{10});
+  CheckPlayer(FindPlayer(i_players,1),"Player1",1,true,
+             3,50,13,8,0,10,4,1, 0,0,false, -1,-1,
+             "|TU|","|RE38M-OR*|",{2,4});
+  CheckPlayer(FindPlayer(i_players,2),"Player2",2,false,
+             94,80,10,6,0,10,5,0, 3,4,false, 10,-1,
+             "|SH-MB-MB-MB-MB|","|MO*-MO*-MO*-MO*-OM*-MI18A-RE*-RE*|",{5,5});
+}
+
+// The rest of the in-game fields are identical for every viewer at a given
+// state (unlike players[], which old PLAYERCARDS/PLAYERPURCHASEINFO kept
+// private, these were always "global" events) -- so these only need
+// checking once per state, not once per viewer.
+void CheckInGamePublicCardset1(const boost::json::object &i_result)
+{
+  BOOST_CHECK_EQUAL(i_result.at("turnNum").as_int64() , 3);
+
+  static const int expectedItemStock[13] = {2,1,2,1,0,2,2,2,2,1,2,2,2};
+  const boost::json::array &itemStock = i_result.at("itemStock").as_array();
+  BOOST_REQUIRE_EQUAL(itemStock.size() , 13u);
+  for (int i = 0 ; i < 13 ; ++i)
+  {
+    const boost::json::object &entry = itemStock[i].as_object();
+    BOOST_CHECK_EQUAL(entry.at("itemId").as_int64() , i+1);
+    BOOST_CHECK_EQUAL(entry.at("count").as_int64() , expectedItemStock[i]);
+  }
+
+  static const int expectedTurnOrder[3] = {2,0,1};
+  const boost::json::array &turnOrder = i_result.at("turnOrder").as_array();
+  BOOST_REQUIRE_EQUAL(turnOrder.size() , 3u);
+  for (int i = 0 ; i < 3 ; ++i)
+  {
+    BOOST_CHECK_EQUAL(turnOrder[i].as_int64() , expectedTurnOrder[i]);
+  }
+
+  const boost::json::array &supplyShip = i_result.at("supplyShip").as_array();
+  BOOST_REQUIRE_EQUAL(supplyShip.size() , 3u);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("slot").as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("itemId").as_int64() , 9);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("slot").as_int64() , 1);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("slot").as_int64() , 2);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("itemId").as_int64() , 13);
+
+  static const int expectedCommodity[9][4] = {
+    {26,0,0,3}, {39,0,30,7}, {53,0,44,10}, {32,0,56,13}, {16,0,0,17},
+    {23,1,88,20}, {14,0,0,30}, {12,0,0,40}, {11,0,0,50}
+  };
+  const boost::json::array &commodityStock = i_result.at("commodityStock").as_array();
+  BOOST_REQUIRE_EQUAL(commodityStock.size() , 9u);
+  for (int i = 0 ; i < 9 ; ++i)
+  {
+    const boost::json::object &entry = commodityStock[i].as_object();
+    BOOST_CHECK_EQUAL(entry.at("commodityId").as_int64() , i+1);
+    BOOST_CHECK_EQUAL(entry.at("drawCount").as_int64() , expectedCommodity[i][0]);
+    BOOST_CHECK_EQUAL(entry.at("discardCount").as_int64() , expectedCommodity[i][1]);
+    BOOST_CHECK_EQUAL(entry.at("megaValue").as_int64() , expectedCommodity[i][2]);
+    BOOST_CHECK_EQUAL(entry.at("averageValue").as_int64() , expectedCommodity[i][3]);
+  }
+
+  const boost::json::array &purchaseData = i_result.at("purchaseData").as_array();
+  BOOST_REQUIRE_EQUAL(purchaseData.size() , 3u);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("shipIndex").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("playerId").as_int64() , 3000);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("cost").as_int64() , -1);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("shipIndex").as_int64() , 1);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("playerId").as_int64() , 3000);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("cost").as_int64() , -1);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("shipIndex").as_int64() , 2);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("playerId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("itemId").as_int64() , 7);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("cost").as_int64() , 75);
+
+  BOOST_CHECK_EQUAL(i_result.at("spends").as_array().size() , 0u);
+}
+
+// Same as cardset1 except commodities 4/7/9's drawCount, which the second
+// StartProduction call (later in the test) draws down further.
+void CheckInGamePublicCardset2(const boost::json::object &i_result)
+{
+  BOOST_CHECK_EQUAL(i_result.at("turnNum").as_int64() , 3);
+
+  static const int expectedItemStock[13] = {2,1,2,1,0,2,2,2,2,1,2,2,2};
+  const boost::json::array &itemStock = i_result.at("itemStock").as_array();
+  BOOST_REQUIRE_EQUAL(itemStock.size() , 13u);
+  for (int i = 0 ; i < 13 ; ++i)
+  {
+    const boost::json::object &entry = itemStock[i].as_object();
+    BOOST_CHECK_EQUAL(entry.at("itemId").as_int64() , i+1);
+    BOOST_CHECK_EQUAL(entry.at("count").as_int64() , expectedItemStock[i]);
+  }
+
+  static const int expectedTurnOrder[3] = {2,0,1};
+  const boost::json::array &turnOrder = i_result.at("turnOrder").as_array();
+  BOOST_REQUIRE_EQUAL(turnOrder.size() , 3u);
+  for (int i = 0 ; i < 3 ; ++i)
+  {
+    BOOST_CHECK_EQUAL(turnOrder[i].as_int64() , expectedTurnOrder[i]);
+  }
+
+  const boost::json::array &supplyShip = i_result.at("supplyShip").as_array();
+  BOOST_REQUIRE_EQUAL(supplyShip.size() , 3u);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("slot").as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("itemId").as_int64() , 9);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("slot").as_int64() , 1);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("slot").as_int64() , 2);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("itemId").as_int64() , 13);
+
+  static const int expectedCommodity[9][4] = {
+    {26,0,0,3}, {39,0,30,7}, {53,0,44,10}, {29,0,56,13}, {16,0,0,17},
+    {23,1,88,20}, {13,0,0,30}, {12,0,0,40}, {7,0,0,50}
+  };
+  const boost::json::array &commodityStock = i_result.at("commodityStock").as_array();
+  BOOST_REQUIRE_EQUAL(commodityStock.size() , 9u);
+  for (int i = 0 ; i < 9 ; ++i)
+  {
+    const boost::json::object &entry = commodityStock[i].as_object();
+    BOOST_CHECK_EQUAL(entry.at("commodityId").as_int64() , i+1);
+    BOOST_CHECK_EQUAL(entry.at("drawCount").as_int64() , expectedCommodity[i][0]);
+    BOOST_CHECK_EQUAL(entry.at("discardCount").as_int64() , expectedCommodity[i][1]);
+    BOOST_CHECK_EQUAL(entry.at("megaValue").as_int64() , expectedCommodity[i][2]);
+    BOOST_CHECK_EQUAL(entry.at("averageValue").as_int64() , expectedCommodity[i][3]);
+  }
+
+  const boost::json::array &purchaseData = i_result.at("purchaseData").as_array();
+  BOOST_REQUIRE_EQUAL(purchaseData.size() , 3u);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("shipIndex").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("playerId").as_int64() , 3000);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[0].as_object().at("cost").as_int64() , -1);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("shipIndex").as_int64() , 1);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("playerId").as_int64() , 3000);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("itemId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[1].as_object().at("cost").as_int64() , -1);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("shipIndex").as_int64() , 2);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("playerId").as_int64() , 0);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("itemId").as_int64() , 7);
+  BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("cost").as_int64() , 75);
+
+  BOOST_CHECK_EQUAL(i_result.at("spends").as_array().size() , 0u);
+}
+
+void CheckNoPrivateInfo(const boost::json::object &i_result)
+{
+  BOOST_CHECK(i_result.at("myHand").is_null());
+  BOOST_CHECK(i_result.at("myPurchaseInfo").is_null());
+}
+
+void CheckPrivateInfo(const boost::json::object &i_result,const std::string &i_hand,
+                      int i_numRobots,int i_numMen,int i_numOre,int i_numWater,
+                      int i_numTitanium,int i_numResearch,int i_numNewChem)
+{
+  BOOST_CHECK_EQUAL(i_result.at("myHand").as_string() , i_hand);
+  const boost::json::object &pinfo = i_result.at("myPurchaseInfo").as_object();
+  BOOST_CHECK_EQUAL(pinfo.at("numRobots").as_int64() , i_numRobots);
+  BOOST_CHECK_EQUAL(pinfo.at("numMen").as_int64() , i_numMen);
+  BOOST_CHECK_EQUAL(pinfo.at("numOre").as_int64() , i_numOre);
+  BOOST_CHECK_EQUAL(pinfo.at("numWater").as_int64() , i_numWater);
+  BOOST_CHECK_EQUAL(pinfo.at("numTitanium").as_int64() , i_numTitanium);
+  BOOST_CHECK_EQUAL(pinfo.at("numResearch").as_int64() , i_numResearch);
+  BOOST_CHECK_EQUAL(pinfo.at("numNewChem").as_int64() , i_numNewChem);
+}
 
 BOOST_AUTO_TEST_CASE( StateMachineRefresh )
 {
@@ -2007,7 +2009,7 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
   ogi.GetPlayers().add("Player0");
   ogi.GetPlayers().add("Player1");
   ogi.GetPlayers().add("Player2");
-  
+
   ogi.GetOptions().SetEarlyDiscard(true);
   ogi.GetOptions().SetSupplyHarshness(4);
   ogi.GetOptions().SetResearchIsSmall(true);
@@ -2015,16 +2017,6 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
   ogi.GetOptions().SetBlindDraws(true);
 
   ogi.GetPlayers()[1].SetOkStartup(true);
-
-  // always:
-  //   PLAYER
-  //   OPTIONS
-
-  std::set<std::string> always;
-  always.insert("unicast: ## -- PLAYER,Player0,0\n");
-  always.insert("unicast: ## -- PLAYER,Player1,1\n");
-  always.insert("unicast: ## -- PLAYER,Player2,2\n");
-  always.insert("unicast: ## -- OPTIONS,1,0,0,0,4,1,0,1,1,1,1\n");
 
   ogi.SetCurTurn(3);
   ogi.GetPlayers()[0].GetOwnedItems().AddItem(OUTPOST);
@@ -2081,198 +2073,119 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
   ogi.GetCommodities().GetDeck(NEW_CHEMICALS_COMMODITY).DiscardCommodity(Commodity(NEW_CHEMICALS_COMMODITY,17,false,false));
   // research draw pile is 2 down, moon ore is 1 down, and newchem has one discard.
 
-  // during normal game, public:
-  //   CURTURN
-  //   PLAYERITEMS
-  //   ITEMSTOCK
-  //   SUPPLYSHIP
-  //   PLAYERCARDBACKS
-  //   PLAYERFACTORIES
-  //   TURNORDER
-  //   PLAYERSTATE
-  //   COMMODITYSTOCK
+  // --- InitialState / ValidateSetup: the setup-phase early return. Options
+  // and players (full stats included -- GetClientState always computes
+  // every player field in one pass, even pre-game, since they're all
+  // harmless defaults until the game actually starts) only; nothing else.
+  // ValidateSetup behaves identically to InitialState in the new design --
+  // okstartup is just always part of each player object now, not a
+  // separate state-gated event.
+  {
+    boost::json::object r = GetState(ogi,"InitialState","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+    BOOST_CHECK(r.find("turnNum") == r.end());
+  }
+  {
+    boost::json::object r = GetState(ogi,"InitialState","Player2");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 2);
+    BOOST_CHECK(r.find("turnNum") == r.end());
+  }
+  {
+    boost::json::object r = GetState(ogi,"ValidateSetup","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+  }
+  {
+    boost::json::object r = GetState(ogi,"ValidateSetup","Player2");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 2);
+  }
 
-  std::set<std::string> normalpublic;
-  normalpublic.insert("unicast: ## -- CURTURN,3\n");
-  normalpublic.insert("unicast: ## -- PLAYERITEMS,0,0,10\n");
-  normalpublic.insert("unicast: ## -- PLAYERITEMS,1,0,2\n");
-  normalpublic.insert("unicast: ## -- PLAYERITEMS,1,1,4\n");
-  normalpublic.insert("unicast: ## -- PLAYERITEMS,2,0,5\n");
-  normalpublic.insert("unicast: ## -- PLAYERITEMS,2,1,5\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,1,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,2,1\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,3,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,4,1\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,5,0\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,6,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,7,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,8,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,9,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,10,1\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,11,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,12,2\n");
-  normalpublic.insert("unicast: ## -- ITEMSTOCK,13,2\n");
-  normalpublic.insert("unicast: ## -- SUPPLYSHIP,0,9\n");
-  normalpublic.insert("unicast: ## -- SUPPLYSHIP,1,0\n");
-  normalpublic.insert("unicast: ## -- SUPPLYSHIP,2,13\n");
-  normalpublic.insert("unicast: ## -- PLAYERFACTORIES,0,|WH-WH-WH-WH-RH|\n");
-  normalpublic.insert("unicast: ## -- PLAYERFACTORIES,1,|TU|\n");
-  normalpublic.insert("unicast: ## -- PLAYERFACTORIES,2,|SH-MB-MB-MB-MB|\n");
-  normalpublic.insert("unicast: ## -- TURNORDER,0,2\n");
-  normalpublic.insert("unicast: ## -- TURNORDER,1,3\n");
-  normalpublic.insert("unicast: ## -- TURNORDER,2,1\n");
-  normalpublic.insert("unicast: ## -- PURCHASEDATA,0,3000,0,-1\n");
-  normalpublic.insert("unicast: ## -- PURCHASEDATA,1,3000,0,-1\n");
-  normalpublic.insert("unicast: ## -- PURCHASEDATA,2,0,7,75\n");
+  // --- Purchase (normal in-game state)
+  {
+    boost::json::object r = GetState(ogi,"Purchase","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+    CheckInGamePublicCardset1(r);
+    CheckNoPrivateInfo(r);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
+  {
+    boost::json::object r = GetState(ogi,"Purchase","Player1");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 1);
+    CheckInGamePublicCardset1(r);
+    CheckPrivateInfo(r,"|RE38M-OR3|", 0,4,4,2,0,0,0);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
 
-  std::set<std::string> cardset1;
-  cardset1.insert("unicast: ## -- PLAYERCARDBACKS,0,|MO*-WA*|\n");
-  cardset1.insert("unicast: ## -- PLAYERCARDBACKS,1,|RE38M-OR*|\n");
-  cardset1.insert("unicast: ## -- PLAYERCARDBACKS,2,|MI18A|\n");
-  cardset1.insert("unicast: ## -- PLAYERSTATE,0,11,100,13,10,0,10,3,0,0,1,0,-1,-1\n");
-  cardset1.insert("unicast: ## -- PLAYERSTATE,1,3,50,13,8,0,10,4,1,0,0,0,-1,-1\n");
-  cardset1.insert("unicast: ## -- PLAYERSTATE,2,94,80,10,6,0,10,5,0,1,4,0,10,-1\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,1,26,0,0,3\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,2,39,0,30,7\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,3,53,0,44,10\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,4,32,0,56,13\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,5,16,0,0,17\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,6,23,1,88,20\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,7,14,0,0,30\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,8,12,0,0,40\n");
-  cardset1.insert("unicast: ## -- COMMODITYSTOCK,9,11,0,0,50\n");
+  // --- Bid
+  {
+    boost::json::object r = GetState(ogi,"Bid","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+    CheckInGamePublicCardset1(r);
+    CheckNoPrivateInfo(r);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    const boost::json::object &bidInfo = r.at("bidInfo").as_object();
+    BOOST_CHECK_EQUAL(bidInfo.at("itemId").as_int64() , 2);
+    BOOST_CHECK_EQUAL(bidInfo.at("price").as_int64() , 10);
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
+  {
+    boost::json::object r = GetState(ogi,"Bid","Player2");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 2);
+    CheckInGamePublicCardset1(r);
+    CheckPrivateInfo(r,"|MI18A|", 0,1,1,0,0,0,0);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    const boost::json::object &bidInfo2 = r.at("bidInfo").as_object();
+    BOOST_CHECK_EQUAL(bidInfo2.at("itemId").as_int64() , 2);
+    BOOST_CHECK_EQUAL(bidInfo2.at("price").as_int64() , 10);
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
 
-  std::set<std::string> cardset2;
-  cardset2.insert("unicast: ## -- PLAYERCARDBACKS,0,|MO*-RE*-WA*|\n");
-  cardset2.insert("unicast: ## -- PLAYERCARDBACKS,1,|RE38M-OR*|\n");
-  cardset2.insert("unicast: ## -- PLAYERCARDBACKS,2,|MO*-MO*-MO*-MO*-OM*-MI18A-RE*-RE*|\n");
-  cardset2.insert("unicast: ## -- PLAYERSTATE,0,11,100,13,10,0,10,3,0,1,1,0,-1,-1\n");
-  cardset2.insert("unicast: ## -- PLAYERSTATE,1,3,50,13,8,0,10,4,1,0,0,0,-1,-1\n");
-  cardset2.insert("unicast: ## -- PLAYERSTATE,2,94,80,10,6,0,10,5,0,3,4,0,10,-1\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,1,26,0,0,3\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,2,39,0,30,7\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,3,53,0,44,10\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,4,29,0,56,13\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,5,16,0,0,17\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,6,23,1,88,20\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,7,13,0,0,30\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,8,12,0,0,40\n");
-  cardset2.insert("unicast: ## -- COMMODITYSTOCK,9,7,0,0,50\n");
-
-
-
-  // private: (only sent to a particular player)
-  //   PLAYERCARDS
-  //   PLAYERPURCHASEINFO
-
-  // rob,men,ore,water,titan,res,newchem
-  // 37, 0 research, 3/8 H 0/0 R
-  std::set<std::string> player0private;
-  player0private.insert("unicast: Player0 -- PLAYERCARDS,|MO30-WA7|\n");
-  player0private.insert("unicast: Player0 -- PLAYERPURCHASEINFO,0,3,3,1,0,0,0\n");
-
-  // 41, 4 research 4/8 H 1/0 R
-  std::set<std::string> player1private;
-  player1private.insert("unicast: Player1 -- PLAYERCARDS,|RE38M-OR3|\n");
-  player1private.insert("unicast: Player1 -- PLAYERPURCHASEINFO,0,4,4,2,0,0,0\n");
-
-  // 18, 0 research 5/5 H 0/0 R
-  std::set<std::string> player2private;
-  player2private.insert("unicast: Player2 -- PLAYERCARDS,|MI18A|\n");
-  player2private.insert("unicast: Player2 -- PLAYERPURCHASEINFO,0,1,1,0,0,0,0\n");
-
-
-
-  
-  std::set<std::string> player0initialprivate;
-  std::set<std::string> player1initialprivate;
-  std::set<std::string> player2initialprivate;
-  player0initialprivate.insert("unicast: Player0 -- IAM,0\n");
-  player1initialprivate.insert("unicast: Player1 -- IAM,1\n");
-  player2initialprivate.insert("unicast: Player2 -- IAM,2\n");
-
-
-
-
-  // specials:
-  //   PLAYEROKSTARTUP (only in ValidateSetup)
-  std::set<std::string> vsetup;
-  vsetup.insert("unicast: ## -- PLAYEROKSTARTUP,0,0\n");
-  vsetup.insert("unicast: ## -- PLAYEROKSTARTUP,1,1\n");
-  vsetup.insert("unicast: ## -- PLAYEROKSTARTUP,2,0\n");
-
-  //   BIDITEM (only in Bid)
-  std::set<std::string> biditemstate;
-  biditemstate.insert("unicast: ## -- BIDITEM,2\n");
-  biditemstate.insert("unicast: ## -- PURCHASEPRICE,10\n");
-
-  //   PLAYERWINS (only in TerminalState)
-  std::set<std::string> terminalstate;
-  terminalstate.insert("unicast: ## -- PLAYERWINS,2\n");
-
-  //   MEGAREQUEST (only in MegaResources)
-  std::set<std::string> requestmega;
-  requestmega.insert("unicast: Player0 -- MEGAREQUEST,2,1\n");
-
-  // non-player, initial state
-  TestRefresh(ogi,top,"InitialState","Player9",always,"Initial State Non-Player");
-
-  std::set<std::string> initial2;
-  initial2.insert(always.begin(),always.end());
-  initial2.insert(player2initialprivate.begin(),player2initialprivate.end());
-
-  // player, initial state
-  TestRefresh(ogi,top,"InitialState","Player2",initial2,"Initial State, Player 2");
-
-  std::set<std::string> validateset;
-  validateset.insert(always.begin(),always.end());
-  validateset.insert(vsetup.begin(),vsetup.end());
-
-  // non-player, 
-  TestRefresh(ogi,top,"ValidateSetup","Player9",validateset,"Validate Setup Non-Player");
-
-  validateset.insert(player2initialprivate.begin(),player2initialprivate.end());
-
-  // player, 2
-  TestRefresh(ogi,top,"ValidateSetup","Player2",validateset,"Validate Setup Player 2");
-
-  // normal part of the game.
-  std::set<std::string> normalset;
-  normalset.insert(always.begin(),always.end());
-  normalset.insert(normalpublic.begin(),normalpublic.end());
-  normalset.insert(cardset1.begin(),cardset1.end());
-
-  // non-player, 
-  TestRefresh(ogi,top,"Purchase","Player9",normalset,"Normal non-player");
-
-  // a player will see all those, plus their own stuff.
-  normalset.insert(player1private.begin(),player1private.end());
-  normalset.insert(player1initialprivate.begin(),player1initialprivate.end());
-  TestRefresh(ogi,top,"Purchase","Player1",normalset,"Normal Player 1");
-  
-  // in Bid state
-  std::set<std::string> bidstateset;
-  bidstateset.insert(always.begin(),always.end());
-  bidstateset.insert(normalpublic.begin(),normalpublic.end());
-  bidstateset.insert(biditemstate.begin(),biditemstate.end());
-  bidstateset.insert(cardset1.begin(),cardset1.end());
-
-  TestRefresh(ogi,top,"Bid","Player9",bidstateset,"Bid state, Non-player");
-  bidstateset.insert(player2private.begin(),player2private.end());
-  bidstateset.insert(player2initialprivate.begin(),player2initialprivate.end());
-  TestRefresh(ogi,top,"Bid","Player2",bidstateset,"Bid State, Player 2");
-
-  // terminalstate (TerminalState)
-  std::set<std::string> terminalstateset;
-  terminalstateset.insert(always.begin(),always.end());
-  terminalstateset.insert(normalpublic.begin(),normalpublic.end());
-  terminalstateset.insert(terminalstate.begin(),terminalstate.end());
-  terminalstateset.insert(cardset1.begin(),cardset1.end());
-
-  TestRefresh(ogi,top,"TerminalState","Player9",terminalstateset,"Terminal state, non-player");
-  terminalstateset.insert(player0private.begin(),player0private.end());
-  terminalstateset.insert(player0initialprivate.begin(),player0initialprivate.end());
-  TestRefresh(ogi,top,"TerminalState","Player0",terminalstateset,"Terminal state, player 0");
+  // --- TerminalState
+  {
+    boost::json::object r = GetState(ogi,"TerminalState","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+    CheckInGamePublicCardset1(r);
+    CheckNoPrivateInfo(r);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    const boost::json::array &winners = r.at("winners").as_array();
+    BOOST_REQUIRE_EQUAL(winners.size() , 1u);
+    BOOST_CHECK_EQUAL(winners[0].as_int64() , 2);
+  }
+  {
+    boost::json::object r = GetState(ogi,"TerminalState","Player0");
+    CheckOptions(r);
+    CheckPlayersCardset1(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 0);
+    CheckInGamePublicCardset1(r);
+    CheckPrivateInfo(r,"|MO30-WA7|", 0,3,3,1,0,0,0);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    const boost::json::array &winners2 = r.at("winners").as_array();
+    BOOST_REQUIRE_EQUAL(winners2.size() , 1u);
+    BOOST_CHECK_EQUAL(winners2[0].as_int64() , 2);
+  }
 
   BOOST_CHECK_EQUAL(ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDeckSize() , 26);
   BOOST_CHECK_EQUAL(ogi.GetCommodities().GetDeck(ORE_COMMODITY).GetDiscardSize() , 0);
@@ -2316,39 +2229,44 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
   BOOST_CHECK_EQUAL(ogi.GetCommodities().GetDeck(MOON_ORE_COMMODITY).GetDiscardSize() , 0);
 
 
-  std::set<std::string> mrset;
-  mrset.insert(always.begin(),always.end());
-  mrset.insert(normalpublic.begin(),normalpublic.end());
-  mrset.insert(cardset2.begin(),cardset2.end());
+  // --- MegaResources
+  {
+    boost::json::object r = GetState(ogi,"MegaResources","Player9");
+    CheckOptions(r);
+    CheckPlayersCardset2(r.at("players").as_array());
+    BOOST_CHECK(r.at("myPlayerId").is_null());
+    CheckInGamePublicCardset2(r);
+    CheckNoPrivateInfo(r);
+    BOOST_CHECK(r.at("megaRequest").is_null());
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
+  {
+    boost::json::object r = GetState(ogi,"MegaResources","Player0");
+    CheckOptions(r);
+    CheckPlayersCardset2(r.at("players").as_array());
+    BOOST_CHECK_EQUAL(r.at("myPlayerId").as_int64() , 0);
+    CheckInGamePublicCardset2(r);
 
-  TestRefresh(ogi,top,"MegaResources","Player9",mrset,"MegaResources, non-player");
+    // computed live, same as the original test did, rather than a
+    // hardcoded string -- the second StartProduction call above may have
+    // changed Player0's hand.
+    std::string expectedHand = ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,false);
+    BOOST_CHECK_EQUAL(r.at("myHand").as_string() , expectedHand);
+    const boost::json::object &pinfo = r.at("myPurchaseInfo").as_object();
+    BOOST_CHECK_EQUAL(pinfo.at("numRobots").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(ROBOT_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numMen").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(MAN_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numOre").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(ORE_FACTORY_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numWater").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(WATER_FACTORY_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numTitanium").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(TITANIUM_FACTORY_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numResearch").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(RESEARCH_FACTORY_PURCHASABLE,FIRST_UNLIMITED));
+    BOOST_CHECK_EQUAL(pinfo.at("numNewChem").as_int64() , ogi.GetPlayers()[0].GetMaxPurchasable(NEW_CHEMICALS_FACTORY_PURCHASABLE,FIRST_UNLIMITED));
 
-
-  mrset.insert(std::string("unicast: Player0 -- PLAYERCARDS,") +
-               ogi.GetPlayers()[0].GetCommodityHand().GetHandDescription(true,false) +
-               std::string("\n"));
-
-  std::ostringstream oss;
-  oss << "unicast: Player0 -- PLAYERPURCHASEINFO";
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(ROBOT_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(MAN_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(ORE_FACTORY_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(WATER_FACTORY_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(TITANIUM_FACTORY_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(RESEARCH_FACTORY_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "," << ogi.GetPlayers()[0].GetMaxPurchasable(NEW_CHEMICALS_FACTORY_PURCHASABLE,FIRST_UNLIMITED);
-  oss << "\n";
-
-  mrset.insert(oss.str());
-               
-
-  mrset.insert(requestmega.begin(),requestmega.end());
-  mrset.insert(player0initialprivate.begin(),player0initialprivate.end());
-
-  TestRefresh(ogi,top,"MegaResources","Player0",mrset,"MegaResources, player 0");
-  
-               
-
-
+    const boost::json::object &megaRequest = r.at("megaRequest").as_object();
+    BOOST_CHECK_EQUAL(megaRequest.at("resourceType").as_int64() , 2);
+    BOOST_CHECK_EQUAL(megaRequest.at("maxMegas").as_int64() , 1);
+    BOOST_CHECK(r.at("bidInfo").is_null());
+    BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
+  }
 }
 

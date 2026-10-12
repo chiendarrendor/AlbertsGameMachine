@@ -7,6 +7,8 @@
 #include "OutputPort.hpp"
 #include "ActionParser.hpp"
 #include "Serialize.hpp"
+#include "GameActionError.hpp"
+#include <boost/json.hpp>
 
 template<class T_GameSet,class T_DLLGameInfo>
 class DLLGame : public Game
@@ -29,6 +31,14 @@ public:
   virtual bool SaveFile(const std::string &i_FileName) const;
 
 private:
+  // The generic, game-agnostic half of the full-state envelope: which state
+  // we're in and what actions i_PlayerName may legally take from it. Shared
+  // between the success path (SendFullState, which adds "body") and the
+  // rejected-action path (which will add "error" instead) so both carry
+  // identical state/legalActions -- nothing changed on a rejected action, so
+  // there's no reason for the two paths to disagree about either.
+  boost::json::object BuildStateWalkerEnvelope(const std::string &i_PlayerName) const;
+
   T_DLLGameInfo m_GameInfo;
   StateWalker<T_DLLGameInfo> m_StateWalker;
 
@@ -108,22 +118,35 @@ bool DLLGame<T_GameSet,T_DLLGameInfo>::SaveFile
 }
 
 template<class T_GameSet,class T_DLLGameInfo>
+boost::json::object DLLGame<T_GameSet,T_DLLGameInfo>::BuildStateWalkerEnvelope
+(const std::string &i_PlayerName) const
+{
+  boost::json::array legalactions;
+  std::vector<std::string> legaltransitions;
+  if (m_StateWalker.GetLegalTransitionNames(i_PlayerName,legaltransitions))
+  {
+    std::vector<std::string>::iterator transit;
+    for (transit = legaltransitions.begin() ; transit != legaltransitions.end() ; ++transit)
+    {
+      legalactions.push_back(boost::json::value(*transit));
+    }
+  }
+
+  boost::json::object envelope;
+  envelope["state"] = m_StateWalker.GetCurStateName();
+  envelope["stateDesc"] = m_StateWalker.GetCurStateDesc();
+  envelope["legalActions"] = legalactions;
+  return envelope;
+}
+
+template<class T_GameSet,class T_DLLGameInfo>
 void DLLGame<T_GameSet,T_DLLGameInfo>::SendFullState
 (const std::string &i_PlayerName) const
 {
-  m_GameInfo.SendFullState(i_PlayerName,m_StateWalker.GetCurStateName());
+  boost::json::object envelope = BuildStateWalkerEnvelope(i_PlayerName);
+  envelope["body"] = m_GameInfo.GetClientState(i_PlayerName,m_StateWalker.GetCurStateName());
 
-  m_GameInfo.UnicastNEWSTATE(i_PlayerName,m_StateWalker.GetCurStateName(),m_StateWalker.GetCurStateDesc());
-  std::vector<std::string> legaltransitions;
-  if (!m_StateWalker.GetLegalTransitionNames(i_PlayerName,legaltransitions))
-  {
-    return;
-  }
-  std::vector<std::string>::iterator transit;
-  for (transit = legaltransitions.begin() ; transit != legaltransitions.end() ; ++transit)
-  {
-    m_GameInfo.UnicastLEGALACTION(i_PlayerName,*transit);
-  }
+  GetOutputPort().UniCastJson(i_PlayerName,envelope);
 }
 
 template<class T_GameSet,class T_DLLGameInfo>
@@ -163,60 +186,80 @@ void DLLGame<T_GameSet,T_DLLGameInfo>::HandleAction
 (const std::string &i_Name,const ActionParser &i_ap,
  const std::set<std::string> &i_Roster)
 {
-  m_GameInfo.ResetERRORCount();
-
-  ExecuteStatus status = m_StateWalker.Execute(i_Name,i_ap);
+  ExecuteStatus status;
+  try
+  {
+    status = m_StateWalker.Execute(i_Name,i_ap);
+  }
+  catch (const GameActionError &e)
+  {
+    boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+    envelope["error"] = e.what();
+    GetOutputPort().UniCastJson(i_Name,envelope);
+    return;
+  }
 
   switch(status)
   {
   case NO_STATE:
-    m_GameInfo.BroadcastERROR("Game is in an invalid state!");
+    {
+      boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+      envelope["error"] = "Game is in an invalid state!";
+      GetOutputPort().UniCastJson(i_Name,envelope);
+    }
     return;
   case TRANSITION_NOT_FOUND:
-    m_GameInfo.UnicastERROR(i_Name,"Unknown Action sent to server!");
+    {
+      boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+      envelope["error"] = "Unknown Action sent to server!";
+      GetOutputPort().UniCastJson(i_Name,envelope);
+    }
     return;
   case EXECUTE_FAILED:
-    if (m_GameInfo.GetERRORCount() == 0)
     {
-      m_GameInfo.UnicastERROR(i_Name,"That is not a legal move.");
+      boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+      envelope["error"] = "That is not a legal move.";
+      GetOutputPort().UniCastJson(i_Name,envelope);
     }
     return;
   case RECURSION_LIMIT:
-    m_GameInfo.BroadcastERROR("WARNING: Potential Auto-Infinite-Loop detected! (game state still valid)");
+    // Not a rejection -- the auto-transition chain hit its safety limit but
+    // the resulting state is still valid, so this falls through to the
+    // normal roster broadcast below like EXECUTE_OK. i_Name gets this
+    // warning now and the real post-action full-state moments later.
+    {
+      boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+      envelope["error"] = "WARNING: Potential Auto-Infinite-Loop detected! (game state still valid)";
+      GetOutputPort().UniCastJson(i_Name,envelope);
+    }
     break;
   case EXECUTE_OK:
     break;
   default:
-    m_GameInfo.BroadcastERROR("StateWalker return unknown status!");
+    {
+      boost::json::object envelope = BuildStateWalkerEnvelope(i_Name);
+      envelope["error"] = "StateWalker return unknown status!";
+      GetOutputPort().UniCastJson(i_Name,envelope);
+    }
     return;
   };
 
-  // OK...If we got here, the state is sufficiently valid to be worth updating everyone.
-  m_GameInfo.BroadcastNEWSTATE(m_StateWalker.GetCurStateName(),m_StateWalker.GetCurStateDesc());
-
-  // Who gets told LEGALACTION for each transition out of the new state is
-  // decided entirely by that transition's own <allowed> condition (IsLegal)
-  // -- opaque game logic, evaluated per name. i_Roster (every current room
-  // occupant, players and spectators alike) is the only source of candidate
-  // names now that the game runs out-of-process and has no room-membership
-  // knowledge of its own; the server supplies it fresh on every call. This
-  // replaces the old VaricastLEGALACTION/OutputPort::VariCast mechanism,
-  // which relied on RoomOutputPort iterating its own broadcast-target set
-  // in-process -- see .claude/server_game_interface_spec.md's VariCast
-  // replacement design.
-  const typename State<T_DLLGameInfo>::TransMap &transmap = m_StateWalker.GetCurState()->GetTransitionMap();
-  typename State<T_DLLGameInfo>::TransMap::const_iterator transit;
-
-  for (transit = transmap.begin() ; transit != transmap.end() ; ++transit)
+  // OK...If we got here, the state is sufficiently valid to be worth
+  // updating everyone. This is the entire Phase 3 mechanism: every
+  // successful action resends full state (state name, legal actions, and
+  // the developer's own GetClientState body) to every current room
+  // occupant -- players and spectators alike. i_Roster is the only source
+  // of candidate names now that the game runs out-of-process and has no
+  // room-membership knowledge of its own; the server supplies it fresh on
+  // every call. This replaces both the old BroadcastNEWSTATE and the old
+  // per-transition/per-roster UnicastLEGALACTION loop (which relied on
+  // RoomOutputPort iterating its own broadcast-target set in-process) --
+  // both are now fully subsumed by SendFullState's envelope. See
+  // .claude/server_game_interface_spec.md's Phase 3 design.
+  std::set<std::string>::const_iterator playerit;
+  for (playerit = i_Roster.begin() ; playerit != i_Roster.end() ; ++playerit)
   {
-    std::set<std::string>::const_iterator playerit;
-    for (playerit = i_Roster.begin() ; playerit != i_Roster.end() ; ++playerit)
-    {
-      if (transit->second.first->IsLegal(*playerit,m_StateWalker.GetCurStateName(),m_GameInfo))
-      {
-        m_GameInfo.UnicastLEGALACTION(*playerit,transit->first);
-      }
-    }
+    SendFullState(*playerit);
   }
 }
 

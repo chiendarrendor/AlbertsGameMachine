@@ -186,13 +186,7 @@ ExecuteStatus StateWalker<T_GameInfo>::Execute(const std::string &i_PlayerName,c
     return EXECUTE_FAILED;
   }
 
-  if (!pTrans->ExecuteAction(GetCurStateName(),m_rGameInfo,i_PlayerName,i_ap))
-  {
-#ifdef STATEDEBUG
-    std::cout << "Execute: execute failed" << std::endl;
-#endif
-    return EXECUTE_FAILED;
-  }
+  pTrans->ExecuteAction(GetCurStateName(),m_rGameInfo,i_PlayerName,i_ap);
 
   m_pCurState = pNextState;
 #ifdef STATEDEBUG
@@ -289,13 +283,7 @@ ExecuteStatus StateWalker<T_GameInfo>::ExecuteAuto(int i_AutoRecursionLimit)
 #ifdef STATEDEBUG
   std::cout << "ExecuteAuto: executing auto transition " << pAutoTrans->GetName() << std::endl;
 #endif
-  if (!pAutoTrans->ExecuteAction(GetCurStateName(),m_rGameInfo,"",dummyap))
-  {
-#ifdef STATEDEBUG
-    std::cout << "ExecuteAuto: auto transtion failed!" << std::endl;
-#endif
-    return EXECUTE_FAILED;
-  }
+  pAutoTrans->ExecuteAction(GetCurStateName(),m_rGameInfo,"",dummyap);
 
   m_pCurState = pAutoNextState;
 #ifdef STATEDEBUG

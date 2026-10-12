@@ -3,6 +3,7 @@
 
 #include <set>
 #include <map>
+#include <boost/json.hpp>
 #include "ActionManager.hpp"
 #include "RoomOutputPort.hpp"
 
@@ -17,9 +18,10 @@ public:
   void RemovePlayerFromRoom(const std::string &i_Name);
   bool IsPlayerInRoom(const std::string &i_Name);
   void HandleAction(const std::string &i_Name,const ActionParser &i_ap);
-  
+
   std::string GetGameName();
-  std::string GetGameStatus();
+  bool GetGameIsDone();
+  boost::json::array GetSavedGameNames();
 
   std::string GetName();
   const std::set<std::string> &GetInhabitantSet() const;
@@ -32,8 +34,6 @@ private:
   void HandleSaveGame(const std::string &i_Name,const ActionParser &i_ap);
 
   void BroadcastFullState();
-
-  std::string GetSavedGameString();
 
 
   static const GameCloset *s_pGameCloset;
@@ -65,9 +65,27 @@ private:
 
   Room *GetRoomOf(const std::string &i_Name);
 
+  // Computes the current global lobby snapshot -- every room's name/current
+  // game/IsDone()/available game types, plus the full inhabitant list. See
+  // .claude/server_game_interface_spec.md's ROOMGUI design.
+  boost::json::object BuildRoomGuiState();
+
+  // Recomputes the snapshot and broadcasts it (wrapped the same way as a
+  // per-game full-state, via WrapFullStateEnvelope) to every connected
+  // player, but only if it actually differs from the last one sent --
+  // most actions touch nothing lobby-relevant. Called at the end of every
+  // place that can change lobby-relevant state: initial connection, new
+  // room, change room, disconnect, and after every in-room action (the only
+  // room-action-triggered change that's ever lobby-relevant is IsDone()
+  // flipping, which this re-checks for every room's game unconditionally --
+  // cheap at this project's scale, see the spec doc's size estimate).
+  void BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &i_Connections);
+
   std::map<std::string,Room *> m_Rooms;
   std::set<std::string> m_Inhabitants;
-  
+  const GameCloset &m_rGameCloset;
+  boost::json::object m_LastRoomGuiState;
+
   std::string m_XMLLoc;
   std::string m_XMLName;
 

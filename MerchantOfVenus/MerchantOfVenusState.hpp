@@ -49,7 +49,12 @@ public:
   // or they have not bought/sold something this turn already.
   bool HasRemainingBuy() const;
   bool HasRemainingSell() const;
-
+  // related to above two functions, but more useful to user
+  // returns -1 if the transaction type is unlimited
+  // returns 1 if the transaction is limited to 1 and hasn't been used this turn
+  // returns 0 if the tranaction is limited and _has_ been used this turn.
+  int GetRemainingBuys() const;
+  int GetRemainingSells() const;
 
 
 private:

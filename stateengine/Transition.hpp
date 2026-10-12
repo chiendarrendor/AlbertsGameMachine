@@ -19,7 +19,7 @@ public:
                        const T_GameInfo &) const = 0;
 	virtual bool IsAuto(const StateName &i_StateName,
                       const T_GameInfo &) const = 0;
-	virtual bool ExecuteAction(const StateName &i_StateName,
+	virtual void ExecuteAction(const StateName &i_StateName,
                              T_GameInfo &,
                              const std::string &i_PlayerName,
                              const ActionParser &) const = 0;

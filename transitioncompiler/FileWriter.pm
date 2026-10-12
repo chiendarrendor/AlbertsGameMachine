@@ -61,6 +61,7 @@ sub WriteFiles
     print GIHPP "#include \"${name}Set.hpp\"\n";
     print GIHPP "#include \"${name}State.hpp\"\n";
     print GIHPP "#include \"StateMachine.hpp\"\n";
+    print GIHPP "#include <boost/json.hpp>\n";
     print GIHPP "\n";
     
 
@@ -70,6 +71,7 @@ sub WriteFiles
     print DLLCPP "#include <boost/lexical_cast.hpp>\n";
     print DLLCPP "#include <boost/json.hpp>\n";
     print DLLCPP "#include \"JsonParamExtraction.hpp\"\n";
+    print DLLCPP "#include \"GameActionError.hpp\"\n";
     print DLLCPP "#include \"StringUtilities.hpp\"\n";
     print DLLCPP "#include \"${name}GameInfo.hpp\"\n";
     print DLLCPP "#include \"DLLGame.hpp\"\n";
@@ -106,13 +108,7 @@ sub WriteFiles
 	print GIHPP "  static const StateName $state;\n";
     }
 
-    print GIHPP "  mutable int m_errorcount;\n";
     print GIHPP "public:\n";
-    print GIHPP "  void ResetERRORCount();\n";
-    print GIHPP "  int GetERRORCount() const;\n";
-    
-    print DLLCPP "void ${name}GameInfo::ResetERRORCount() { m_errorcount = 0; }\n";
-    print DLLCPP "int ${name}GameInfo::GetERRORCount() const { return m_errorcount; }\n";
 
 
     foreach $transkey (keys %{$tcom->{TRANSITIONS}})
@@ -138,22 +134,21 @@ sub WriteFiles
         print DLLCPP "}\n";
 	print DLLCPP "\n";
 
-	print GIHPP "  bool ${tname}_ExecuteAction(const std::string &i_PlayerName,\n";
+	print GIHPP "  void ${tname}_ExecuteAction(const std::string &i_PlayerName,\n";
 	print GIHPP "                              const ActionParser &i_ap,\n";
 	print GIHPP "                              const StateName &i_StateName);\n";
 
-	print DLLCPP "bool ${name}GameInfo::${tname}_ExecuteAction(const std::string &i_PlayerName,\n";
+	print DLLCPP "void ${name}GameInfo::${tname}_ExecuteAction(const std::string &i_PlayerName,\n";
 	print DLLCPP "                                             const ActionParser &i_ap,\n";
 	print DLLCPP "                                             const StateName &i_StateName)\n";
 	print DLLCPP "{\n";
 	print DLLCPP FromStateValidator($trans,$name);
-	
+
 	my $actionsize = (exists $trans->{ACTIONS}) ? scalar @{$trans->{ACTIONS}} : 0;
 
 	print DLLCPP "  if (i_ap.GetParams().size() != ",$actionsize,")\n";
 	print DLLCPP "  {\n";
-        print DLLCPP "    UnicastERROR(i_PlayerName,\"Bad number of arguments to ${tname}\");\n";
-	print DLLCPP "    return false;\n";
+        print DLLCPP "    throw GameActionError(\"Bad number of arguments to ${tname}\");\n";
         print DLLCPP "  }\n";
 	print DLLCPP "\n";
 
@@ -170,16 +165,14 @@ sub WriteFiles
 	    print DLLCPP "  }\n";
 	    print DLLCPP "  catch (const std::exception &)\n";
 	    print DLLCPP "  {\n";
-	    print DLLCPP "    UnicastERROR(i_PlayerName,\"Malformed arguments to ${tname}\");\n";
-	    print DLLCPP "    return false;\n";
+	    print DLLCPP "    throw GameActionError(\"Malformed arguments to ${tname}\");\n";
 	    print DLLCPP "  }\n";
 	    print DLLCPP "\n";
 	    if (exists $action->{MIN})
 	    {
 		print DLLCPP "  if ($aname < ",$action->{MIN},")\n";
 		print DLLCPP "  {\n";
-		print DLLCPP "    UnicastERROR(i_PlayerName,\"Action $tname variable $aname is below minimum\");\n";
-		print DLLCPP "    return false;\n";
+		print DLLCPP "    throw GameActionError(\"Action $tname variable $aname is below minimum\");\n";
 		print DLLCPP "  }\n";
 		print DLLCPP "\n";
 	    }
@@ -187,8 +180,7 @@ sub WriteFiles
 	    {
 		print DLLCPP "  if ($aname > ",$action->{MAX},")\n";
 		print DLLCPP "  {\n";
-		print DLLCPP "    UnicastERROR(i_PlayerName,\"Action $tname variable $aname is above maximum\");\n";
-		print DLLCPP "    return false;\n";
+		print DLLCPP "    throw GameActionError(\"Action $tname variable $aname is above maximum\");\n";
 		print DLLCPP "  }\n";
 		print DLLCPP "\n";
 	    }
@@ -198,8 +190,7 @@ sub WriteFiles
 		print DLLCPP "  std::set<$atype>::iterator findit = validlist.find($aname);\n";
 		print DLLCPP "  if (findit == validlist.end())\n";
 		print DLLCPP "  {\n";
-		print DLLCPP "    UnicastERROR(i_PlayerName,\"Action $tname variable $aname has illegal value\");\n";
-		print DLLCPP "    return false;\n";
+		print DLLCPP "    throw GameActionError(\"Action $tname variable $aname has illegal value\");\n";
 		print DLLCPP "  }\n";
 		print DLLCPP "\n";
 	    }
@@ -215,7 +206,7 @@ sub WriteFiles
 
     print DLLCPP "\n";
 
-    print GIHPP "  void SendFullState(const std::string &i_PlayerName,const StateName &i_StateName) const;\n";
+    print GIHPP "  boost::json::object GetClientState(const std::string &i_PlayerName,const StateName &i_StateName) const;\n";
     print GIHPP "\n";
     print GIHPP "\n";
 
@@ -241,7 +232,7 @@ sub WriteFiles
 
     print GIHPP "};\n";
 
-    print DLLCPP "void ${name}GameInfo::SendFullState(const std::string &i_PlayerName,const StateName &i_StateName) const\n";
+    print DLLCPP "boost::json::object ${name}GameInfo::GetClientState(const std::string &i_PlayerName,const StateName &i_StateName) const\n";
     print DLLCPP "{\n";
     print DLLCPP $tcom->{REFRESH},"\n";
     print DLLCPP "}\n";
@@ -281,16 +272,16 @@ sub WriteFiles
 	print DLLCPP "}\n";
         print DLLCPP "\n";
 
-	print GIHPP "  virtual bool ExecuteAction(const StateName &i_StateName,${name}GameInfo &i_gi,\n";
+	print GIHPP "  virtual void ExecuteAction(const StateName &i_StateName,${name}GameInfo &i_gi,\n";
         print GIHPP "                             const std::string &i_PlayerName,\n";
         print GIHPP "                             const ActionParser &i_ap) const;\n";
 
 
-	print DLLCPP "bool ${tname}_Transition::ExecuteAction(const StateName &i_StateName,${name}GameInfo &i_gi,\n";
+	print DLLCPP "void ${tname}_Transition::ExecuteAction(const StateName &i_StateName,${name}GameInfo &i_gi,\n";
         print DLLCPP "                           const std::string &i_PlayerName,\n";
         print DLLCPP "                           const ActionParser &i_ap) const\n";
 	print DLLCPP "{\n";
-        print DLLCPP "  return i_gi.${tname}_ExecuteAction(i_PlayerName,i_ap,i_StateName);\n";
+        print DLLCPP "  i_gi.${tname}_ExecuteAction(i_PlayerName,i_ap,i_StateName);\n";
 	print DLLCPP "}\n";
 	print DLLCPP "\n";
 

@@ -31,6 +31,11 @@ public:
   const std::vector<Token>& GetSellableTokens() const;
   const std::vector<Token>& GetDemandTokens() const;
   const std::vector<Token>& GetSpaceportDeeds() const;
+
+  // -1 if factory is unowned
+  void SetFactoryOwner(int playerid);
+  int GetFactoryOwner() const;
+
 private:
   SERIALIZE_FUNC
   {
@@ -41,6 +46,7 @@ private:
     SERIALIZE(m_spaceportdeeds);
     SERIALIZE(m_factorygood);
     SERIALIZE(m_secret);
+    SERIALIZE(m_factoryowner);
   }
 
   std::string m_id;
@@ -51,5 +57,6 @@ private:
   std::vector<Token> m_spaceportdeeds;
   Token m_factorygood;
   Secret m_secret;
+  int m_factoryowner;
 };
 

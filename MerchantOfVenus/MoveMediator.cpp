@@ -187,8 +187,8 @@ int MoveMediator::GetPilotNumber() const
 
 bool MoveMediator::IsPilotNumberPermanent() const
 {
-  Player& cp = m_players.GetCurPlayer();
   if (m_pnumber == 0) return false;
+  Player& cp = m_players.GetCurPlayer();
   return !cp.GetAdvances().HasSwitchSwitch();
 }
 

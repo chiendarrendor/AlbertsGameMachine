@@ -38,10 +38,6 @@ sub GetPublicCodeBody
 
     $result .= "void ${cname}Unicast${ename}(const std::string &i_PlayerName".$chdrs.") const\n";
     $result .= "{\n";
-    if ($ename eq "ERROR")
-    {
-	$result .= "  ++m_errorcount;\n";
-    }
     $result .= "  m_OutputPort.UniCast(i_PlayerName,Make${ename}Message(${args}));\n";
     $result .= "}\n";
 

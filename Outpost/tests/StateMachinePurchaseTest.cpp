@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTPURCHASE )
   const TransitionType *pMD = GetTransition(osm,"StartPurchase","STARTPURCHASE","Purchase",1);
   BOOST_CHECK_EQUAL(pMD->IsAuto("StartPurchase",ogi) , true );
   BOOST_CHECK_EQUAL(pMD->IsLegal("Player1","StartPurchase",ogi) , false);
-  BOOST_CHECK_EQUAL(pMD->ExecuteAction("StartPurchase",ogi,"",ap) , true);
+  BOOST_CHECK_EQUAL(TryExecuteAction(pMD,"StartPurchase",ogi,"",ap) , true);
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 5);
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[3].GetPurchaseState() , UNPLAYED);
@@ -65,20 +65,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestSTARTPURCHASE )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].HasPurchased() , false);
 
   // PLAYERSTATE: plid,vp,costsum,handlimt,poplimit,mancost,#hum,#rob,purstate,bidstate,haspurchased
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,2,5,90,5,5,-1,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,0,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,5,10,200,11,15,0,10,0,0,1,3,0,-1,-1\n"
-                     "unicast: Player0 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     "unicast: Player1 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     "unicast: Player2 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     "unicast: Player3 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     "unicast: Player4 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     "unicast: Player5 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     );
 
 }
 
@@ -185,39 +171,27 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYMEN )
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap1 = MakeAction("BUYMEN",{{"i_nummen",-1},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYMEN variable i_nummen is below minimum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYMEN",{{"i_nummen",4},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYMEN variable i_nummen is above maximum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYMEN",{{"i_nummen",3},{"i_discardstring","1111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYMEN",{{"i_nummen",3},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYMEN",{{"i_nummen",3},{"i_discardstring","111V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYMEN",{{"i_nummen",3},{"i_discardstring","000011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYMEN",{{"i_nummen",3},{"i_discardstring","101111"}});
@@ -231,27 +205,10 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYMEN )
   ogi.GetPlayers()[2].GetFactories().AddFactory(MOON_BASE_FACTORY);
 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetNumHumans() , 5 );
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|WA10|");
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,1,30,|WA12-OR6-OR5-OR4-OR3|\n"
-                    "broadcast: PLAYERSTATE,2,29,90,5,6,-1,10,5,0,1,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|WU-WH-WH-WH-WH-MH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|WA*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|WA10|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,1,1,1,0,0,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,4,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,1,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
                     
   ogi.GetPlayers().PurchaseIncrementTurnOrder(); // active player is now pl #1
   ogi.GetPlayers().PurchaseIncrementTurnOrder(); // active player is now pl #0
@@ -468,39 +425,27 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYROBOTS )
   // he should be now limited to 3 robots, since he has 32 resources.
 
   ActionParser ap1 = MakeAction("BUYROBOTS",{{"i_numrobots",-1},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYROBOTS variable i_numrobots is below minimum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYROBOTS",{{"i_numrobots",4},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYROBOTS variable i_numrobots is above maximum\n");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYROBOTS",{{"i_numrobots",2},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYROBOTS",{{"i_numrobots",2},{"i_discardstring","111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYROBOTS",{{"i_numrobots",2},{"i_discardstring","1V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYROBOTS",{{"i_numrobots",2},{"i_discardstring","0011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYROBOTS",{{"i_numrobots",2},{"i_discardstring","1100"}});
@@ -508,27 +453,10 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYROBOTS )
   ogi.GetPlayers()[2].GetFactories().AddFactory(RESEARCH_FACTORY);
   ogi.GetPlayers()[2].GetFactories().AddFactory(NEW_CHEMICALS_FACTORY);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetNumRobots() , 10 );
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|OR7-OR3|");
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,0,20,|OR12-OR10|\n"
-                    "broadcast: PLAYERSTATE,2,13,140,5,5,-1,10,1,10,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|RB-NH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|OR*-OR*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|OR7-OR3|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,1,1,1,0,0,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,2,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
                     
 }
 
@@ -619,79 +547,50 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYOREFACTORIES )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
   
   ActionParser ap1 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",-1},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYOREFACTORIES variable i_numfactories is below minimum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",5},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYOREFACTORIES variable i_numfactories is above maximum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",2},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",2},{"i_discardstring","111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",2},{"i_discardstring","1V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",3},{"i_discardstring","0011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYOREFACTORIES",{{"i_numfactories",2},{"i_discardstring","1100"}});
 
   ogi.GetPlayers()[2].AddHumans(1);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|OR10-OR10|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "|OU-OH|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 6 );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,2,20,|OR10-OR10|\n"
-                    "broadcast: PLAYERSTATE,2,6,90,5,5,-1,10,1,0,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|OU-OH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|OR*-OR*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|OR10-OR10|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,2,2,2,1,0,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,2,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 }                    
 
 
@@ -782,79 +681,50 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYWATERFACTORIES )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
   
   ActionParser ap1 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",-1},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYWATERFACTORIES variable i_numfactories is below minimum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",5},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYWATERFACTORIES variable i_numfactories is above maximum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",2},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",2},{"i_discardstring","111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",2},{"i_discardstring","1V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",3},{"i_discardstring","0011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYWATERFACTORIES",{{"i_numfactories",2},{"i_discardstring","1100"}});
 
   ogi.GetPlayers()[2].AddRobots(1);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|OR20-OR20|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "|WU-WB|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 6 );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,3,40,|OR20-OR20|\n"
-                    "broadcast: PLAYERSTATE,2,6,90,5,5,-1,10,0,1,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|WU-WB|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|OR*-OR*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|OR20-OR20|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,4,4,4,2,0,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,2,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 }                    
 
 
@@ -955,51 +825,39 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYTITANIUMFACTORIES )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 6 );
   
   ActionParser ap1 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",-1},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYTITANIUMFACTORIES variable i_numfactories is below minimum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",5},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYTITANIUMFACTORIES variable i_numfactories is above maximum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",2},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",2},{"i_discardstring","111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",2},{"i_discardstring","1V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",3},{"i_discardstring","0011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,6 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYTITANIUMFACTORIES",{{"i_numfactories",2},{"i_discardstring","1100"}});
@@ -1008,28 +866,11 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYTITANIUMFACTORIES )
   ogi.GetPlayers()[2].AddRobots(1);
 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|OR30-OR30|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "|TB-TH|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,4,60,|OR30-OR30|\n"
-                    "broadcast: PLAYERSTATE,2,10,120,5,5,-1,10,1,1,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|TB-TH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|OR*-OR*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|OR30-OR30|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,6,4,6,3,2,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,2,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,0,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 }                    
 
 BOOST_AUTO_TEST_CASE( TransitionTestBUYRESEARCHFACTORIES )
@@ -1129,79 +970,50 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYRESEARCHFACTORIES )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 10 );
   
   ActionParser ap1 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",-1},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYRESEARCHFACTORIES variable i_numfactories is below minimum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",5},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYRESEARCHFACTORIES variable i_numfactories is above maximum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",2},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",2},{"i_discardstring","111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",2},{"i_discardstring","1V11"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",3},{"i_discardstring","0011"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,10 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYRESEARCHFACTORIES",{{"i_numfactories",2},{"i_discardstring","1100"}});
 
   ogi.GetPlayers()[2].AddHumans(1);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|RE40-RE40|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "|RU-RH|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() ,12 );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,5,80,|RE40-RE40|\n"
-                    "broadcast: PLAYERSTATE,2,12,190,5,5,-1,10,1,0,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|RU-RH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|RE*-RE*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|RE40-RE40|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,8,4,8,4,0,2,1\n"
-                    "broadcast: COMMODITYSTOCK,1,26,0,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,2,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 }                    
 
 
@@ -1301,87 +1113,56 @@ BOOST_AUTO_TEST_CASE( TransitionTestBUYNEWCHEMFACTORIES )
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
   
   ActionParser ap1 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",-1},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYNEWCHEMFACTORIES variable i_numfactories is below minimum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap1) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap2 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",5},{"i_discardstring","11111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Action BUYNEWCHEMFACTORIES variable i_numfactories is above maximum\n");
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap2) , false); // illegal value for # men.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap3 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","111111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap3) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap3) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap4 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","1111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap4) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() , "unicast: Player2 -- ERROR,Mismatched delete string length\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap4) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap5 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","1V111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap5) , false); // bad delete string
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,Illegal characters in delete string\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap5) , false); // bad delete string
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","00001"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6) , false); // didn't spend enough.
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap6a = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","00111"}});
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap6a) , false); // enough, but no research
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  "unicast: Player2 -- ERROR,You need to spend more Research resource cards to buy that.\n" );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap6a) , false); // enough, but no research
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "||");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 5 );
-  top.ResetOutput();
 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player2","Purchase",ogi) , true); // active
   ActionParser ap7 = MakeAction("BUYNEWCHEMFACTORIES",{{"i_numfactories",2},{"i_discardstring","11011"}});
 
   ogi.GetPlayers()[2].AddHumans(1);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player2",ap7) , true); // should be ok...
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player2",ap7) , true); // should be ok...
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetCommodityHand().GetHandDescription(true,true) , "|OR60|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetFactories().GetFactoryDescription() , "|NU-NH|");
   BOOST_CHECK_EQUAL(ogi.GetPlayers()[2].GetVP() , 8 );
 
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  
-                    "broadcast: SPENDS,0,2,0,6,120,|RE30-RE30-OR30-OR30|\n"
-                    "broadcast: PLAYERSTATE,2,8,90,5,5,-1,10,1,0,2,3,0,-1,-1\n"
-                    "broadcast: PLAYERFACTORIES,2,|NU-NH|\n"
-                    "broadcast: PLAYERCARDBACKS,2,|OR*|\n"
-                    "unicast: Player2 -- PLAYERCARDS,|OR60|\n"
-                    "unicast: Player2 -- PLAYERPURCHASEINFO,6,4,6,3,0,0,0\n"
-                    "broadcast: COMMODITYSTOCK,1,26,2,0,3\n"
-                    "broadcast: COMMODITYSTOCK,2,39,0,30,7\n"
-                    "broadcast: COMMODITYSTOCK,3,53,0,44,10\n"
-                    "broadcast: COMMODITYSTOCK,4,34,2,56,13\n"
-                    "broadcast: COMMODITYSTOCK,5,16,0,0,17\n"
-                    "broadcast: COMMODITYSTOCK,6,23,0,88,20\n"
-                    "broadcast: COMMODITYSTOCK,7,14,0,0,30\n"
-                    "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
-                    "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
-                    );
 }                    
 
 
@@ -1513,7 +1294,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestWATERMULLIGAN )
   pl3.GetFactories().AddFactory(ORE_FACTORY);
   pl3.AddHumans(3);
 
-  BOOST_CHECK_NO_THROW ( b = pBM->ExecuteAction("Purchase",ogi,pl3.GetName(),ap1) );
+  BOOST_CHECK_NO_THROW ( b = TryExecuteAction(pBM,"Purchase",ogi,pl3.GetName(),ap1) );
   BOOST_CHECK_EQUAL( b , true); 
 
   BOOST_CHECK_EQUAL(pl3.GetCommodityHand().GetHandDescription(true,true) , "||");
@@ -1541,7 +1322,6 @@ BOOST_AUTO_TEST_CASE( TransitionTestWATERMULLIGAN )
                     "broadcast: COMMODITYSTOCK,8,12,0,0,40\n"
                     "broadcast: COMMODITYSTOCK,9,12,0,0,50\n"
     ;
-  BOOST_CHECK_EQUAL(top.GetOutput() ,  oss.str() );
 
 }                    
 
@@ -1675,12 +1455,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINTERNALIZE )
 
   ogi.GetPlayers()[4].SetBidState(HASBID);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,2,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,1,0,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap) , true); // should be ok...
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 3 );
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
@@ -1690,11 +1465,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINTERNALIZE )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetPurchaseState() , INTERNALIZING );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetPurchaseState() , UNPLAYED );
   
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player0",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,2,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player0",ap) , true); // should be ok...
   
   BOOST_CHECK_EQUAL( ogi.GetPlayers().GetCurTurnPlayer().GetId() , 3 );
 
@@ -1705,10 +1476,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestINTERNALIZE )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[1].GetPurchaseState() , INTERNALIZING );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[0].GetPurchaseState() , INTERNALIZING );
   
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player3",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput() , 
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,2,3,0,-1,-1\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player3",ap) , true); // should be ok...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers().AllPlayersDone() , true );
 
@@ -1796,12 +1564,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONE )
   ogi.GetPlayers()[4].SetHighBid(NOT_HIGH_BID);
   ogi.GetPlayers()[1].SetHighBid(NOT_HIGH_BID);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,3,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,1,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap) , true); // should be ok...
 
   
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
@@ -1819,11 +1582,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONE )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player1","Purchase",ogi) , true); 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player0","Purchase",ogi) , false); 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player1",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,4,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player1",ap) , true); // should be ok...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetPurchaseState() , DONE );
@@ -1857,11 +1616,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestDONE )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player1","Purchase",ogi) , false); 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player0","Purchase",ogi) , true); 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player0",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,3,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player0",ap) , true); // should be ok...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetPurchaseState() , DONE );
@@ -1956,12 +1711,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestFINALDONE )
   ogi.GetPlayers()[4].SetHighBid(NOT_HIGH_BID);
   ogi.GetPlayers()[1].SetHighBid(NOT_HIGH_BID);
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player4",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,4,8,150,8,10,-1,10,0,0,5,3,0,-1,-1\n"
-                     "broadcast: PLAYERSTATE,3,8,100,5,5,0,5,0,0,1,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player4",ap) , true); // should be ok...
 
   
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
@@ -1979,11 +1729,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestFINALDONE )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player1","Purchase",ogi) , true); 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player0","Purchase",ogi) , false); 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player1",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,1,4,65,5,8,0,10,0,0,6,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player1",ap) , true); // should be ok...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetPurchaseState() , FINAL_DONE );
@@ -2017,11 +1763,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestFINALDONE )
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player1","Purchase",ogi) , false); 
   BOOST_CHECK_EQUAL(pBM->IsLegal("Player0","Purchase",ogi) , true); 
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"Player0",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),
-                     "broadcast: PLAYERSTATE,0,3,65,8,5,0,10,0,0,5,3,0,-1,-1\n"
-                     );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"Player0",ap) , true); // should be ok...
 
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[5].GetPurchaseState() , DONE );
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetPurchaseState() , FINAL_DONE );
@@ -2144,9 +1886,7 @@ BOOST_AUTO_TEST_CASE( TransitionTestPURCHASEDONE )
   // auto only if all players are done or internal done.
   BOOST_CHECK_EQUAL(pBM->IsAuto("Purchase",ogi) , true );
 
-  BOOST_CHECK_EQUAL(pBM->ExecuteAction("Purchase",ogi,"",ap) , true); // should be ok...
-  BOOST_CHECK_EQUAL( top.GetOutput(),"");
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBM,"Purchase",ogi,"",ap) , true); // should be ok...
 }
 
 
@@ -2241,63 +1981,35 @@ BOOST_AUTO_TEST_CASE( TransitionTestALTERMANNING )
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetFactories().GetFactoryDescription() , "|OH-WU-MB|");
 
   ActionParser ap1 = MakeAction("ALTERMANNING",{{"i_manningstring","BUHU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap1) , false); // manning string too long.
-  BOOST_CHECK_EQUAL( top.GetOutput(), "unicast: Player4 -- ERROR,Invalid Length of Manning List\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap1) , false); // manning string too long.
 
   ActionParser ap2 = MakeAction("ALTERMANNING",{{"i_manningstring","BU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap2) , false); // manning string too short
-  BOOST_CHECK_EQUAL( top.GetOutput(), "unicast: Player4 -- ERROR,Invalid Length of Manning List\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap2) , false); // manning string too short
 
   ActionParser ap3 = MakeAction("ALTERMANNING",{{"i_manningstring","BBU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap3) , false); // too many robots
-  BOOST_CHECK_EQUAL( top.GetOutput(), "unicast: Player4 -- ERROR,Too Many Robots or People\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap3) , false); // too many robots
 
   ActionParser ap4 = MakeAction("ALTERMANNING",{{"i_manningstring","HHU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap4) , false); // too many humans
-  BOOST_CHECK_EQUAL( top.GetOutput(), "unicast: Player4 -- ERROR,Too Many Robots or People\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap4) , false); // too many humans
 
   ActionParser ap5 = MakeAction("ALTERMANNING",{{"i_manningstring","HVU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap5) , false); // too many humans
-  BOOST_CHECK_EQUAL( top.GetOutput(), "unicast: Player4 -- ERROR,Invalid Character in Manning List\n" );
-  top.ResetOutput();
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap5) , false); // too many humans
 
   ActionParser ap6 = MakeAction("ALTERMANNING",{{"i_manningstring","UBH"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap6) , true); // should work
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap6) , true); // should work
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetFactories().GetFactoryDescription() , "|OU-WB-MH|");
-  BOOST_CHECK_EQUAL( top.GetOutput(), 
-                     "broadcast: PLAYERFACTORIES,4,|OU-WB-MH|\n"
-                     "broadcast: PLAYERSTATE,4,29,150,8,11,-1,10,1,1,1,3,0,-1,-1\n"
-                     "unicast: Player4 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     );
-  top.ResetOutput();
 
   ActionParser ap7 = MakeAction("ALTERMANNING",{{"i_manningstring","BUH"}});
 
   // just futzing with the robot numbers
   ogi.GetOptions().SetRobotMechanism(SECOND_UNLIMITED);
 
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap7) , true); // should work
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap7) , true); // should work
   BOOST_CHECK_EQUAL( ogi.GetPlayers()[4].GetFactories().GetFactoryDescription() , "|OB-WU-MH|");
-  BOOST_CHECK_EQUAL( top.GetOutput(), 
-                     "broadcast: PLAYERFACTORIES,4,|OB-WU-MH|\n" 
-                     "broadcast: PLAYERSTATE,4,29,150,8,11,1,10,1,1,1,3,0,-1,-1\n"
-                     "unicast: Player4 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     );
-  top.ResetOutput();
 
   ActionParser ap8 = MakeAction("ALTERMANNING",{{"i_manningstring","BHU"}});
-  BOOST_CHECK_EQUAL(pBMM->ExecuteAction("FinalManning",ogi,"Player4",ap8) , true); // unmanning mannable item
-  BOOST_CHECK_EQUAL( top.GetOutput(), 
-                     "broadcast: PLAYERFACTORIES,4,|OB-WH-MU|\n" 
-                     "broadcast: PLAYERSTATE,4,10,150,8,10,1,10,1,1,1,3,0,-1,-1\n"
-                     "unicast: Player4 -- PLAYERPURCHASEINFO,0,0,0,0,0,0,0\n"
-                     );
+  BOOST_CHECK_EQUAL(TryExecuteAction(pBMM,"FinalManning",ogi,"Player4",ap8) , true); // unmanning mannable item
 
-  top.ResetOutput();
 
   ogi.GetPlayers().IncrementTurnOrder();
   ogi.GetPlayers().IncrementTurnOrder();

@@ -15,166 +15,6 @@
   <state name="FinalManning" desc="Final Chance to Change Manning"/>
   <state name="TurnEnd" desc="End of Turn Handling"/>
 
-  <event name="PLAYER" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_PName" type="std::string" source="GetPlayers()[playerindex].GetName()"/>
-    <var name="i_PId" type="int" source="playerindex"/>
-  </event>
-
-  <event name="PLAYERWINS">
-    <var name="i_PId" type="size_t"/>
-  </event>
-  
-  <event name="OPTIONS" type="global">
-    <var name="i_discard" type="bool" source="GetOptions().GetEarlyDiscard()"/>
-    <var name="i_refinery" type="bool" source="GetOptions().GetRefineries()"/>
-    <var name="i_oneupgrade" type="bool" source="GetOptions().GetOneUpgradePerTurn()"/>
-    <var name="i_activebid" type="bool" source="GetOptions().GetMustBeActiveToBid()"/>
-    <var name="i_supplyharshness" type="int" source="GetOptions().GetSupplyHarshness()"/>
-    <var name="i_robots" type="int" source="GetOptions().GetRobotMechanism()"/>
-    <var name="i_researchmega" type="bool" source="GetOptions().GetResearchMega()"/>
-    <var name="i_smallresearch" type="bool" source="GetOptions().GetResearchIsSmall()"/>
-    <var name="i_smallmicro" type="bool" source="GetOptions().GetMicroIsSmall()"/>
-    <var name="i_blinddraws" type="bool" source="GetOptions().GetBlindDraws()"/>
-    <var name="i_stock" type="int" source="GetOptions().GetStockMechanism()"/>
-  </event>
-
-  <event name="COMMODITYSTOCK" type="global">
-    <iterator name="commType" type="int" start="1" stop="10"/>
-    <var name="i_commodity" type="int" source="commType"/>
-    <var name="i_drawcount" type="int" source="GetCommodities().GetDeck((CommodityType)commType).GetDeckSize()"/>
-    <var name="i_disccount" type="int" source="GetCommodities().GetDeck((CommodityType)commType).GetDiscardSize()"/>
-    <var name="i_megavalue" type="int" source="GetCommodities().GetDeck((CommodityType)commType).GetMegaValue()"/>
-    <var name="i_avgvalue" type="int" source="GetCommodities().GetDeck((CommodityType)commType).GetAverageValue()"/>
-  </event>
-
-  <event name="ITEMSTOCK" type="global">
-    <iterator name="itemType" type="int" start="1" stop="14"/>
-    <var name="i_stacknum" type="int" source="itemType"/>
-    <var name="i_stacksize" type="int" source="GetUnownedItems().GetItemCount((ItemType)itemType)"/>
-  </event>
-
-  <event name="BIDITEM" type="global">
-    <var name="i_itemindex" type="int" source="GetUnownedItems().GetBidIndex()"/>
-  </event>
-
-  <event name="TURNORDER" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_playernum" type="int" source="GetPlayers().GetTurnOrder()[playerindex]"/>
-    <var name="i_turnorder" type="int" source="playerindex+1"/>
-  </event>
-
-  <event name="SUPPLYSHIP" type="global">
-    <iterator name="shipIndex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_slotnum" type="int" source="shipIndex"/>
-    <var name="i_contents" type="int" source="GetUnownedItems().GetShipItem(shipIndex)"/>
-  </event>
-
-  <event name="CURTURN" type="global">
-    <var name="i_turnnum" type="int" source="GetCurTurn()"/>
-  </event>
-
-  <event name="PLAYEROKSTARTUP" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_playerid" type="int" source="playerindex"/>
-    <var name="i_okstartup" type="bool" source="GetPlayers()[playerindex].OkStartup()"/>
-  </event>
-
-  <event name="PLAYERITEMS" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <iterator name="itemindex" type="size_t" start="0" stop="GetPlayers()[playerindex].GetOwnedItems().GetItemList().size()"/>
-    <var name="i_playerid" type="size_t" source="playerindex"/>
-    <var name="i_itemindex" type="size_t" source="itemindex"/>
-    <var name="i_itemid" type="int" source="GetPlayers()[playerindex].GetOwnedItems().GetItemList()[itemindex]" />
-  </event>
-
-  <event name="PLAYERSTATE" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_playerid" type="int" source="playerindex"/>
-    <var name="i_victorypoints" type="int" source="GetPlayers()[playerindex].GetVP()"/>
-    <var name="i_itemcostsum" type="int" source="GetPlayers()[playerindex].GetOwnedItems().GetCostSum()"/>
-    <var name="i_handlimit" type="int" source="GetPlayers()[playerindex].GetHandLimit(GetOptions().GetEarlyDiscard())"/>
-    <var name="i_poplimit" type="int" source="GetPlayers()[playerindex].GetMaxHumans()"/>
-    <var name="i_robotlimit" type="int" source="GetPlayers()[playerindex].GetMaxRobots(GetOptions().GetRobotMechanism())"/>
-    <var name="i_mancost" type="int" source="GetPlayers()[playerindex].GetOwnedItems().GetPeopleCost()"/>
-    <var name="i_numhumans" type="int" source="GetPlayers()[playerindex].GetNumHumans()"/>
-    <var name="i_numrobots" type="int" source="GetPlayers()[playerindex].GetNumRobots()"/>
-    <var name="i_pstate" type="int" source="GetPlayers()[playerindex].GetPurchaseState()"/>
-    <var name="i_bstate" type="int" source="GetPlayers()[playerindex].GetBidState()"/>
-    <var name="i_haspurchased" type="bool" source="GetPlayers()[playerindex].HasPurchased()"/>
-    <var name="i_highbid" type="int" source="GetPlayers()[playerindex].GetHighBid()"/>
-    <var name="i_lastbid" type="int" source="GetPlayers()[playerindex].GetLastBid()"/>
-  </event>
-  
-  <event name="MEGAREQUEST" type="global">
-    <var name="i_resourcetype" type="int" source="GetProductionManager().GetMegaInfo().m_Commodity"/>
-    <var name="i_maxmegas" type="int" source="GetProductionManager().GetMegaInfo().m_MaxMegas"/>
-  </event>
-
-  <event name="PLAYERCARDBACKS" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_playerid" type="int" source="playerindex"/>
-    <var name="i_cardstring" type="std::string" source="GetPlayers()[playerindex].GetCommodityHand().GetHandDescription(false,false)"/>
-  </event>
-
-  <event name="PLAYERFACTORIES" type="global">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_playerid" type="int" source="playerindex"/>
-    <var name="i_facstring" type="std::string" source="GetPlayers()[playerindex].GetFactories().GetFactoryDescription()"/>
-  </event>
-
-  <event name="PLAYERCARDS" type="private" toname="GetPlayers()[playerindex].GetName()">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_cardstring" type="std::string" source="GetPlayers()[playerindex].GetCommodityHand().GetHandDescription(true,
-                                                        GetProductionManager().IsProductionDone() || !GetOptions().GetBlindDraws() )"/>
-  </event>
-
-  <event name="PURCHASEPRICE" type="global">
-    <var name="i_Price" type="int" source="GetPlayers().GetHighBidPlayer().GetHighBid() -
-        GetPlayers().GetHighBidPlayer().GetOwnedItems().GetDiscount(GetUnownedItems().GetShipItem(GetUnownedItems().GetBidIndex()))"/>
-  </event>
-
-  <event name="IAM" type="private" toname="GetPlayers()[playerindex].GetName()">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_PlayerId" type="size_t" source="playerindex"/>
-  </event>
-
-  <event name="PLAYERPURCHASEINFO" type="private" toname="GetPlayers()[playerindex].GetName()">
-    <iterator name="playerindex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_numrobots" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(ROBOT_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_nummen" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(MAN_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_numore" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(ORE_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_numwater" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(WATER_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_numtitanium" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(TITANIUM_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_numresearch" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(RESEARCH_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-    <var name="i_numnewchem" type="int" 
-         source="GetPlayers()[playerindex].GetMaxPurchasable(NEW_CHEMICALS_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism())"/>
-  </event>
-
-  <event name="PURCHASEDATA" type="global">
-    <iterator name="shipIndex" type="size_t" start="0" stop="GetPlayers().size()"/>
-    <var name="i_shipindex" type="size_t" source="shipIndex"/>
-    <var name="i_playerindex" type="size_t" source="GetUnownedItems().GetPurchaseInfo(shipIndex).m_playerindex"/>
-    <var name="i_type" type="size_t" source="GetUnownedItems().GetPurchaseInfo(shipIndex).m_type"/>
-    <var name="i_cost" type="size_t" source="GetUnownedItems().GetPurchaseInfo(shipIndex).m_cost"/>
-  </event>
-
-  <event name="SPENDS" type="global">
-    <iterator name="spendIndex" type="size_t" start="0" stop="GetSpends().size()"/>
-    <var name="i_turnnum" type="int" source="GetSpends()[spendIndex].GetTurnNum()"/>
-    <var name="i_playernum" type="size_t" source="GetSpends()[spendIndex].GetPlayerNum()"/>
-    <var name="i_spendtype" type="int" source="GetSpends()[spendIndex].GetSpendType()"/>
-    <var name="i_spenditem" type="int" source="GetSpends()[spendIndex].GetSpendItem()"/>
-    <var name="i_spendcost" type="int" source="GetSpends()[spendIndex].GetSpendCost()"/>
-    <var name="i_resources" type="std::string" source="GetSpends()[spendIndex].GetCommodityHand().GetHandDescription(true,true)"/>
-  </event>
-
   <preface>
     <![CDATA[
       // this class handles deleting stuff from a players hand.
@@ -185,7 +25,7 @@
       {
       public:
         HandDeleter(OutpostGameInfo &i_ogi,Player &i_player,const std::string &i_deletestring,Spend &i_newspend,
-	            bool i_validateweight,int i_cost = 0, int i_numresearch = 0) : m_isOk(false)
+	            bool i_validateweight,int i_cost = 0, int i_numresearch = 0)
 	{
 	  std::vector<Commodity> deletedItems;
 	  CommodityHand newhand = i_player.GetCommodityHand();
@@ -195,23 +35,22 @@
 	  int result = newhand.ApplyDeletes(i_deletestring,deletedItems);
 	  switch(result)
           {
-	  case -1: i_ogi.UnicastERROR(i_player.GetName(),"Mismatched delete string length"); return;
-	  case -2: i_ogi.UnicastERROR(i_player.GetName(),"Illegal characters in delete string"); return;
+	  case -1: throw GameActionError("Mismatched delete string length");
+	  case -2: throw GameActionError("Illegal characters in delete string");
 	  case 0: break; // this is the ok case.
-	  default: i_ogi.UnicastERROR(i_player.GetName(),"Unknown error reported by ApplyDeletes"); return;
+	  default: throw GameActionError("Unknown error reported by ApplyDeletes");
 	  }
 
 	  if (i_validateweight)
 	  {
-	    i_newspend.SetSpendCost(origover);		       
+	    i_newspend.SetSpendCost(origover);
 
 	    int over = newhand.GetHandWeight(i_ogi.GetOptions().GetResearchIsSmall(),i_ogi.GetOptions().GetMicroIsSmall())
 	               - i_player.GetHandLimit(i_ogi.GetOptions().GetEarlyDiscard());
 
 	    if (over > 0)
 	    {
-	      i_ogi.UnicastERROR(i_player.GetName(),"You need to discard more to get to your hand limit.");
-	      return;
+	      throw GameActionError("You need to discard more to get to your hand limit.");
 	    }
           }
 	  else
@@ -219,16 +58,13 @@
             i_newspend.SetSpendCost(i_cost);
 	    if (i_player.GetCommodityHand().GetHandValue() - newhand.GetHandValue() < i_cost)
 	    {
-	      i_ogi.UnicastERROR(i_player.GetName(),"You need to spend more to buy that.");
-	      return;
+	      throw GameActionError("You need to spend more to buy that.");
 	    }
 	    if (i_player.GetCommodityHand().GetNumResearch() - newhand.GetNumResearch() < i_numresearch)
 	    {
-	      i_ogi.UnicastERROR(i_player.GetName(),"You need to spend more Research resource cards to buy that.");
-	      return;
+	      throw GameActionError("You need to spend more Research resource cards to buy that.");
 	    }
           }
-          m_isOk = true;
 
 	  // if we got here, we can safely discard the cards and make the new hand the player's hand.
 	  size_t i;
@@ -236,15 +72,10 @@
 	  {
 	    i_ogi.GetCommodities().GetDeck(deletedItems[i].GetType()).DiscardCommodity(deletedItems[i]);
 	    i_newspend.AddCommodity(deletedItems[i]);
-	    
+
 	  }
 	  i_player.GetCommodityHand() = newhand;
         }
-
-        bool IsOk() const { return m_isOk; }
-
-      private:	
-	bool m_isOk;
       };
     ]]>
   </preface>
@@ -260,9 +91,6 @@
     </allowed>
     <body>
       GetPlayers().add(i_PlayerName);
-      BroadcastUpdatePLAYERByplayerindex(GetPlayers().size()-1);
-      SingleCastIAM(GetPlayers().size()-1);
-      return true;
     </body>
   </transition>
 
@@ -276,11 +104,6 @@
     <body>
       GetPlayers().remove(i_PlayerName);
 
-      BroadcastRESET();
-      BroadcastPLAYER();
-      AllCastIAM();
-
-      return true;
     </body>
   </transition>
 
@@ -317,8 +140,6 @@
       GetOptions().SetBlindDraws(blinddraws);
       GetOptions().SetStockMechanism((StockMechanism)stock);
 
-      BroadcastOPTIONS();
-      return true;		   
     </body>
   </transition>
 
@@ -329,8 +150,6 @@
     </allowed>
     <body>
       GetOptions().SetStandardBasic();
-      BroadcastOPTIONS();
-      return true;		   
     </body>
   </transition>
 
@@ -341,8 +160,6 @@
     </allowed>
     <body>
       GetOptions().SetStandardExpert();
-      BroadcastOPTIONS();
-      return true;		   
     </body>
   </transition>
 
@@ -360,10 +177,7 @@
 	{
 	  GetPlayers()[i].SetOkStartup(false);
 	}
-	
-	BroadcastPLAYEROKSTARTUP();
 
-	return true;
       ]]>
     </body>
   </transition>
@@ -388,8 +202,6 @@
     </allowed>
     <body>
       GetPlayers().GetPlayerByName(i_PlayerName).SetOkStartup(true);
-      BroadcastUpdatePLAYEROKSTARTUPByplayerindex(GetPlayers().GetPlayerByName(i_PlayerName).GetId());
-      return true;
     </body>
   </transition>
 
@@ -414,12 +226,6 @@
 	  GetPlayers()[i].AddHumans(STARTHUMANS);
 	}
 
-	BroadcastCURTURN();
-	BroadcastITEMSTOCK();
-	BroadcastPLAYERFACTORIES();
-	BroadcastPLAYERSTATE();
-	BroadcastCOMMODITYSTOCK();
-	return true;
       ]]>
     </body>
   </transition>
@@ -431,8 +237,6 @@
     <body>
       <![CDATA[
         GetPlayers().DetermineTurnOrder();
-	BroadcastTURNORDER();
-        return true;
       ]]>
     </body>
   </transition>
@@ -446,12 +250,8 @@
         GetUnownedItems().FillShip(GetPlayers().GetPhase(),GetOptions().GetSupplyHarshness());
 	GetUnownedItems().ClearPurchases();
 
-	BroadcastSUPPLYSHIP();
-	BroadcastITEMSTOCK();
-	BroadcastPURCHASEDATA();
 
 
-        return true;
       ]]>
     </body>
   </transition>
@@ -467,12 +267,7 @@
 					     GetCurTurn() == 1,
 					     GetOptions().GetRefineries());
 
-      BroadcastPLAYERCARDBACKS();
-      AllCastPLAYERCARDS();
-      BroadcastPLAYERSTATE();
-      BroadcastCOMMODITYSTOCK();
 
-      return true;
       ]]>
     </body>
   </transition>
@@ -503,8 +298,6 @@
     <auto>!GetProductionManager().IsProductionDone()</auto>
     <body>
       <![CDATA[
-      UnicastMEGAREQUEST(GetPlayers().GetCurTurnPlayer().GetName());
-      return true;
       ]]>
     </body>
   </transition>
@@ -525,12 +318,7 @@
 					     GetCurTurn() == 1,
 					     GetOptions().GetRefineries());
 
-      BroadcastPLAYERCARDBACKS();
-      AllCastPLAYERCARDS();
-      BroadcastPLAYERSTATE();
-      BroadcastCOMMODITYSTOCK();      
 
-      return true;
       ]]>
     </body>
   </transition>
@@ -541,9 +329,7 @@
     <auto>true</auto>
     <body>
       GetPlayers().StartTurnOrder();
-      BroadcastPLAYERSTATE();
 
-      return true;
     </body>
   </transition>
 
@@ -580,8 +366,6 @@
     </auto>
     <body>
       GetPlayers().IncrementTurnOrder();
-      BroadcastPLAYERSTATE();
-      return true;
     </body>
   </transition>
 
@@ -598,7 +382,6 @@
     </auto>
     <body>
       <![CDATA[
-        return true;
       ]]>
     </body>
   </transition>
@@ -618,22 +401,12 @@
 		  );
 		  
       HandDeleter hd(*this,GetPlayers().GetCurTurnPlayer(),i_discardstring,spend,true);
-      if (!hd.IsOk()) return false;
 
       GetSpends().push_back(spend);
-      BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
-      BroadcastUpdatePLAYERCARDBACKSByplayerindex(GetPlayers().GetCurTurnPlayer().GetId());
-      SingleCastPLAYERCARDS(GetPlayers().GetCurTurnPlayer().GetId());
 
-      size_t oldid = GetPlayers().GetCurTurnPlayer().GetId();
       GetPlayers().IncrementTurnOrder();
-      BroadcastUpdatePLAYERSTATEByplayerindex(oldid);
-      if (!GetPlayers().AllPlayersDone()) BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetCurTurnPlayer().GetId());
 
-      BroadcastCOMMODITYSTOCK();
-
-      return true;
      ]]>
     </body>
   </transition>
@@ -645,9 +418,6 @@
     <body>
       <![CDATA[
         GetPlayers().StartPurchasePhase();
-	BroadcastPLAYERSTATE();
-	AllCastPLAYERPURCHASEINFO();
-	return true;
       ]]>
     </body>
   </transition>
@@ -675,21 +445,12 @@
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,
 	               i_nummen * GetPlayers().GetPlayerByName(i_PlayerName).GetOwnedItems().GetPeopleCost());
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 	GetPlayers().GetPlayerByName(i_PlayerName).AddHumans(i_nummen);
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
 
-	return true;
       ]]>
     </body>
   </transition>
@@ -716,21 +477,12 @@
 		    );
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,i_numrobots * 10);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AddRobots(i_numrobots);
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -757,10 +509,8 @@
 		    );
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,i_numfactories * 10);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	for (int i = 0 ; i < i_numfactories ; ++i)
 	{
@@ -769,13 +519,6 @@
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -802,10 +545,8 @@
 		    );
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,i_numfactories * 20);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	for (int i = 0 ; i < i_numfactories ; ++i)
 	{
@@ -814,13 +555,6 @@
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -847,10 +581,8 @@
 		    );
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,i_numfactories * 30);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	for (int i = 0 ; i < i_numfactories ; ++i)
 	{
@@ -859,13 +591,6 @@
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -892,10 +617,8 @@
 		    );
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),i_discardstring,spend,false,i_numfactories * 40);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	for (int i = 0 ; i < i_numfactories ; ++i)
 	{
@@ -904,13 +627,6 @@
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -938,10 +654,8 @@
 
         HandDeleter hd(*this,GetPlayers().GetPlayerByName(i_PlayerName),
 	               i_discardstring,spend,false,i_numfactories * 60,i_numfactories);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	for (int i = 0 ; i < i_numfactories ; ++i)
 	{
@@ -950,13 +664,6 @@
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -989,17 +696,9 @@
 	GetPlayers().GetPlayerByName(i_PlayerName).GetFactories().AddFactory(WATER_FACTORY);
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	GetPlayers().GetPlayerByName(i_PlayerName).AutoMan();
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERFACTORIESByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName) );
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-	BroadcastCOMMODITYSTOCK();
-        return true;
       ]]>
     </body>
   </transition>
@@ -1018,24 +717,13 @@
     </allowed>
     <body>
       <![CDATA[
-        size_t curplayerid = GetPlayers().GetPlayerId(i_PlayerName);
-	size_t nextplayerid = NO_PLAYER;
-
         if (GetPlayers().GetPlayerByName(i_PlayerName).GetPurchaseState() == ACTIVE)
 	{
 	  GetPlayers().PurchaseIncrementTurnOrder();
-	  if (!GetPlayers().AllPlayersDone()) nextplayerid = GetPlayers().GetCurTurnPlayer().GetId();
 	}
 	GetPlayers().GetPlayerByName(i_PlayerName).SetPurchaseState(INTERNALIZING);
 	GetPlayers().GetPlayerByName(i_PlayerName).SetBidState(PASS_OUT);
 
-	BroadcastUpdatePLAYERSTATEByplayerindex( curplayerid );
-	if (nextplayerid != NO_PLAYER)
-	{
-	  BroadcastUpdatePLAYERSTATEByplayerindex( nextplayerid );
-	}
-
-        return true;
       ]]>
     </body>
   </transition>
@@ -1054,11 +742,9 @@
     </allowed>
     <body>  
       <![CDATA[
-        size_t nextplayerid = NO_PLAYER;
         if (GetPlayers().GetPlayerByName(i_PlayerName).GetPurchaseState() == ACTIVE)
 	{
 	  GetPlayers().PurchaseIncrementTurnOrder();
-	  if (!GetPlayers().AllPlayersDone()) nextplayerid = GetPlayers().GetCurTurnPlayer().GetId();
 	}
 	else
 	{
@@ -1066,10 +752,6 @@
 	}
 
 	GetPlayers().GetPlayerByName(i_PlayerName).SetBidState(PASS_OUT);
-
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	if (nextplayerid != NO_PLAYER) BroadcastUpdatePLAYERSTATEByplayerindex( nextplayerid );
-	return true;
       ]]>
     </body>
   </transition>
@@ -1088,11 +770,9 @@
     </allowed>
     <body>  
       <![CDATA[
-        size_t nextplayerid = NO_PLAYER;
         if (GetPlayers().GetPlayerByName(i_PlayerName).GetPurchaseState() == ACTIVE)
 	{
 	  GetPlayers().PurchaseIncrementTurnOrder(FINAL_DONE);
-	  if (!GetPlayers().AllPlayersDone()) nextplayerid = GetPlayers().GetCurTurnPlayer().GetId();
 	}
 	else
 	{
@@ -1100,10 +780,6 @@
 	}
 
 	GetPlayers().GetPlayerByName(i_PlayerName).SetBidState(PASS_OUT);
-
-	BroadcastUpdatePLAYERSTATEByplayerindex( GetPlayers().GetPlayerByName(i_PlayerName).GetId() );
-	if (nextplayerid != NO_PLAYER) BroadcastUpdatePLAYERSTATEByplayerindex( nextplayerid );
-	return true;
       ]]>
     </body>
   </transition>
@@ -1150,11 +826,7 @@
 	  }
 	}
 
-	BroadcastPLAYERSTATE();
-	BroadcastBIDITEM();
-	BroadcastPURCHASEPRICE();
 
-	return true;
       ]]>
     </body>
   </transition>
@@ -1166,8 +838,6 @@
     <body>
       <![CDATA[
         GetPlayers().StartManningTurnOrder();
-	BroadcastPLAYERSTATE();
-	return true;
       ]]>
     </body>
   </transition>
@@ -1195,15 +865,11 @@
 	int result = pl.GetFactories().AlterManning(i_manningstring,pl.GetNumHumans(),pl.GetNumRobots());
 	switch(result)
 	{
-	case -4: UnicastERROR(i_PlayerName,"Removing Man from Mannable Item"); return false;
-	case -3: UnicastERROR(i_PlayerName,"Invalid Character in Manning List"); return false;
-	case -2: UnicastERROR(i_PlayerName,"Too Many Robots or People"); return false;
-	case -1: UnicastERROR(i_PlayerName,"Invalid Length of Manning List"); return false;
+	case -4: throw GameActionError("Removing Man from Mannable Item");
+	case -3: throw GameActionError("Invalid Character in Manning List");
+	case -2: throw GameActionError("Too Many Robots or People");
+	case -1: throw GameActionError("Invalid Length of Manning List");
 	}
-	BroadcastUpdatePLAYERFACTORIESByplayerindex(pl.GetId());
-	BroadcastUpdatePLAYERSTATEByplayerindex(pl.GetId());
-	SingleCastPLAYERPURCHASEINFO( pl.GetId() );
-        return true;
       ]]>
     </body>
   </transition>
@@ -1236,13 +902,6 @@
       }
 
       GetPlayers().IncrementManningTurnOrder();
-        
-      BroadcastUpdatePLAYERSTATEByplayerindex(oldpl.GetId());
-      if (!GetPlayers().AllPlayersDone())
-      {
-        BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetCurTurnPlayer().GetId());
-      }
-      return true;
       ]]>
     </body>
   </transition>
@@ -1291,10 +950,8 @@
 	               i_discardstring,spend,false,GetPlayers().GetCurBidPlayer().GetHighBid() - 
 		                                   GetPlayers().GetCurBidPlayer().GetOwnedItems().GetDiscount(
 					             GetUnownedItems().GetShipItem(GetUnownedItems().GetBidIndex())),0);
-	if (!hd.IsOk()) return false;
 
 	GetSpends().push_back(spend);
-        BroadcastUpdateSPENDSByspendIndex(GetSpends().size()-1);
 
 	Player &pl = GetPlayers().GetCurBidPlayer();
 	size_t itemindex = GetUnownedItems().GetBidIndex();
@@ -1314,21 +971,10 @@
 	GetUnownedItems().SetShipItem(GetUnownedItems().GetBidIndex(),NO_ITEM);
 	pl.AutoMan();
 
-	BroadcastUpdateSUPPLYSHIPByshipIndex(GetUnownedItems().GetBidIndex());
 
 	GetUnownedItems().SetBidIndex(NO_BID_INDEX);
 
-	BroadcastUpdatePLAYERCARDBACKSByplayerindex(pl.GetId());
-	SingleCastPLAYERCARDS( pl.GetId() );
-	SingleCastPLAYERPURCHASEINFO( pl.GetId() );
-	BroadcastUpdatePLAYERITEMSByplayerindex(pl.GetId());
-	BroadcastUpdatePLAYERFACTORIESByplayerindex(pl.GetId());
-	BroadcastUpdatePLAYERSTATEByplayerindex(pl.GetId());
-	BroadcastBIDITEM();
-	BroadcastCOMMODITYSTOCK();
-	BroadcastUpdatePURCHASEDATAByshipIndex(itemindex);
 
-        return true;
       ]]>
     </body>
   </transition>
@@ -1353,20 +999,9 @@
     </action>				        
     <body>
       <![CDATA[
-        // find who had the high bid before.
-
-	size_t highindex = GetPlayers().GetHighBidPlayer().GetId();
-	size_t oldindex = GetPlayers().GetCurBidPlayer().GetId();
-
         GetPlayers().IncrementBid(HASBID,i_bid);
 
 	GetPlayers().GetPlayerByName(i_PlayerName).SetLastBid(i_bid);
-
-	BroadcastUpdatePLAYERSTATEByplayerindex(highindex);
-	BroadcastUpdatePLAYERSTATEByplayerindex(oldindex);
-	BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetCurBidPlayer().GetId());
-	BroadcastPURCHASEPRICE();
-        return true;
       ]]>
     </body>
   </transition>
@@ -1381,13 +1016,7 @@
     </allowed>
     <body>
       <![CDATA[
-        size_t oldindex = GetPlayers().GetCurBidPlayer().GetId();
-
         GetPlayers().IncrementBid(PASS);
-
-	BroadcastUpdatePLAYERSTATEByplayerindex(oldindex);
-	BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetCurBidPlayer().GetId());
-        return true;
       ]]>
     </body>
   </transition>
@@ -1404,20 +1033,14 @@
     <body>
       <![CDATA[
       if (i_PlayerName == GetPlayers().GetCurBidPlayer().GetName())
-      {     
-        size_t oldindex = GetPlayers().GetCurBidPlayer().GetId();
+      {
         GetPlayers().IncrementBid(PASS_OUT);
-
-	BroadcastUpdatePLAYERSTATEByplayerindex(oldindex);
-	BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetCurBidPlayer().GetId());
       }
       else
       {
         GetPlayers().GetPlayerByName(i_PlayerName).SetBidState(PASS_OUT);
-	BroadcastUpdatePLAYERSTATEByplayerindex(GetPlayers().GetPlayerByName(i_PlayerName).GetId());
       }
 
-      return true;
       ]]>
     </body>
   </transition>
@@ -1430,19 +1053,8 @@
         GetPlayers().GetWinningPlayerIndices().size() > 0
       ]]>
     </auto>
-    <body>
-      <![CDATA[
-        std::set<size_t> winners = GetPlayers().GetWinningPlayerIndices();
-        std::set<size_t>::iterator winit;
-	for (winit = winners.begin() ; winit != winners.end() ; ++winit)
-	{
-	  BroadcastPLAYERWINS(*winit);
-	}
-        return true;
-      ]]>
-    </body>
   </transition>
-      
+
   <transition name="NEWTURN">
     <transit from="TurnEnd" to="TurnOrder"/>
     <allowed>false</allowed>
@@ -1463,8 +1075,6 @@
 	  GetPlayers()[i].SetHasPurchased(false);
 	}
 
-	BroadcastCURTURN();
-	return true;
       ]]>
     </body>
   </transition>
@@ -1472,65 +1082,200 @@
   <refresh>
     <![CDATA[
 
-      UnicastRESET(i_PlayerName);
-      UnicastOPTIONS(i_PlayerName);
-      UnicastPLAYER(i_PlayerName);
+      boost::json::object options;
+      options["discard"] = GetOptions().GetEarlyDiscard();
+      options["refinery"] = GetOptions().GetRefineries();
+      options["oneupgrade"] = GetOptions().GetOneUpgradePerTurn();
+      options["activebid"] = GetOptions().GetMustBeActiveToBid();
+      options["supplyharshness"] = GetOptions().GetSupplyHarshness();
+      options["robots"] = static_cast<int>(GetOptions().GetRobotMechanism());
+      options["researchmega"] = GetOptions().GetResearchMega();
+      options["smallresearch"] = GetOptions().GetResearchIsSmall();
+      options["smallmicro"] = GetOptions().GetMicroIsSmall();
+      options["blinddraws"] = GetOptions().GetBlindDraws();
+      options["stock"] = static_cast<int>(GetOptions().GetStockMechanism());
 
-      if (GetPlayers().IsPlayer(i_PlayerName)) 
+      boost::json::array players;
+      for (size_t i = 0 ; i < GetPlayers().size() ; ++i)
       {
-        SingleCastIAM(GetPlayers().GetPlayerId(i_PlayerName));
-      }
+        const Player &p = GetPlayers()[i];
+        boost::json::object playerobj;
+        playerobj["name"] = p.GetName();
+        playerobj["id"] = p.GetId();
+        playerobj["okstartup"] = p.OkStartup();
 
+        playerobj["victoryPoints"] = p.GetVP();
+        playerobj["itemCostSum"] = p.GetOwnedItems().GetCostSum();
+        playerobj["handLimit"] = p.GetHandLimit(GetOptions().GetEarlyDiscard());
+        playerobj["popLimit"] = p.GetMaxHumans();
+        playerobj["robotLimit"] = p.GetMaxRobots(GetOptions().GetRobotMechanism());
+        playerobj["manCost"] = p.GetOwnedItems().GetPeopleCost();
+        playerobj["numHumans"] = p.GetNumHumans();
+        playerobj["numRobots"] = p.GetNumRobots();
+        playerobj["purchaseState"] = static_cast<int>(p.GetPurchaseState());
+        playerobj["bidState"] = static_cast<int>(p.GetBidState());
+        playerobj["hasPurchased"] = p.HasPurchased();
+        playerobj["highBid"] = p.GetHighBid();
+        playerobj["lastBid"] = p.GetLastBid();
+        playerobj["factoryDescription"] = p.GetFactories().GetFactoryDescription();
+        playerobj["cardBackDescription"] = p.GetCommodityHand().GetHandDescription(false,false);
 
-      if (i_StateName == ValidateSetup)
-      {
-        UnicastPLAYEROKSTARTUP(i_PlayerName);
-      }
-
-
-      if (i_StateName == InitialState || i_StateName == ValidateSetup) return;
-
-      UnicastCURTURN(i_PlayerName);
-      UnicastITEMSTOCK(i_PlayerName);
-      UnicastTURNORDER(i_PlayerName);
-      UnicastSUPPLYSHIP(i_PlayerName);      
-      UnicastPLAYERSTATE(i_PlayerName);
-      UnicastPLAYERFACTORIES(i_PlayerName);
-      UnicastPLAYERCARDBACKS(i_PlayerName);
-      UnicastPLAYERITEMS(i_PlayerName);
-      UnicastCOMMODITYSTOCK(i_PlayerName);
-      UnicastPURCHASEDATA(i_PlayerName);
-      UnicastSPENDS(i_PlayerName);
-
-      if (GetPlayers().IsPlayer(i_PlayerName)) 
-      {
-        SingleCastPLAYERCARDS(GetPlayers().GetPlayerId(i_PlayerName));
-	SingleCastPLAYERPURCHASEINFO(GetPlayers().GetPlayerId(i_PlayerName));
-      }
-
-      if (i_StateName == MegaResources)
-      {
-	if (i_PlayerName == GetPlayers().GetCurTurnPlayer().GetName())
-	{
-          UnicastMEGAREQUEST(i_PlayerName);
+        boost::json::array items;
+        const std::vector<ItemType> &itemList = p.GetOwnedItems().GetItemList();
+        for (size_t j = 0 ; j < itemList.size() ; ++j)
+        {
+          items.push_back(static_cast<int>(itemList[j]));
         }
+        playerobj["items"] = items;
+
+        players.push_back(playerobj);
+      }
+
+      boost::json::object result;
+      result["options"] = options;
+      result["players"] = players;
+      result["myPlayerId"] = GetPlayers().IsPlayer(i_PlayerName) ?
+          boost::json::value(static_cast<int>(GetPlayers().GetPlayerId(i_PlayerName))) :
+          boost::json::value(nullptr);
+
+      if (i_StateName == InitialState || i_StateName == ValidateSetup)
+      {
+        return result;
+      }
+
+      result["turnNum"] = GetCurTurn();
+
+      boost::json::array itemStock;
+      for (int itemType = DATA_LIBRARY ; itemType <= MOON_BASE ; ++itemType)
+      {
+        boost::json::object itemobj;
+        itemobj["itemId"] = itemType;
+        itemobj["count"] = GetUnownedItems().GetItemCount((ItemType)itemType);
+        itemStock.push_back(itemobj);
+      }
+      result["itemStock"] = itemStock;
+
+      boost::json::array turnOrder;
+      for (size_t i = 0 ; i < GetPlayers().GetTurnOrder().size() ; ++i)
+      {
+        turnOrder.push_back(GetPlayers().GetTurnOrder()[i]);
+      }
+      result["turnOrder"] = turnOrder;
+
+      boost::json::array supplyShip;
+      for (size_t shipIndex = 0 ; shipIndex < GetPlayers().size() ; ++shipIndex)
+      {
+        boost::json::object shipslotobj;
+        shipslotobj["slot"] = static_cast<int>(shipIndex);
+        shipslotobj["itemId"] = static_cast<int>(GetUnownedItems().GetShipItem(shipIndex));
+        supplyShip.push_back(shipslotobj);
+      }
+      result["supplyShip"] = supplyShip;
+
+      boost::json::array commodityStock;
+      for (int commType = ORE_COMMODITY ; commType <= MOON_ORE_COMMODITY ; ++commType)
+      {
+        const CommodityDeck &deck = GetCommodities().GetDeck((CommodityType)commType);
+        boost::json::object commobj;
+        commobj["commodityId"] = commType;
+        commobj["drawCount"] = deck.GetDeckSize();
+        commobj["discardCount"] = deck.GetDiscardSize();
+        commobj["megaValue"] = deck.GetMegaValue();
+        commobj["averageValue"] = deck.GetAverageValue();
+        commodityStock.push_back(commobj);
+      }
+      result["commodityStock"] = commodityStock;
+
+      boost::json::array purchaseData;
+      for (size_t shipIndex = 0 ; shipIndex < GetPlayers().size() ; ++shipIndex)
+      {
+        const PurchaseInfo &pinfo = GetUnownedItems().GetPurchaseInfo(shipIndex);
+        boost::json::object purchaseobj;
+        purchaseobj["shipIndex"] = static_cast<int>(shipIndex);
+        purchaseobj["playerId"] = static_cast<int>(pinfo.m_playerindex);
+        purchaseobj["itemId"] = static_cast<int>(pinfo.m_type);
+        purchaseobj["cost"] = pinfo.m_cost;
+        purchaseData.push_back(purchaseobj);
+      }
+      result["purchaseData"] = purchaseData;
+
+      boost::json::array spends;
+      for (size_t i = 0 ; i < GetSpends().size() ; ++i)
+      {
+        const Spend &s = GetSpends()[i];
+        boost::json::object spendobj;
+        spendobj["turnNum"] = s.GetTurnNum();
+        spendobj["playerId"] = static_cast<int>(s.GetPlayerNum());
+        spendobj["spendType"] = static_cast<int>(s.GetSpendType());
+        spendobj["spendItem"] = s.GetSpendItem();
+        spendobj["spendCost"] = s.GetSpendCost();
+        spendobj["resources"] = s.GetCommodityHand().GetHandDescription(true,true);
+        spends.push_back(spendobj);
+      }
+      result["spends"] = spends;
+
+      if (GetPlayers().IsPlayer(i_PlayerName))
+      {
+        const Player &me = GetPlayers().GetPlayerByName(i_PlayerName);
+
+        result["myHand"] = me.GetCommodityHand().GetHandDescription(true,
+            GetProductionManager().IsProductionDone() || !GetOptions().GetBlindDraws());
+
+        boost::json::object purchaseInfo;
+        purchaseInfo["numRobots"] = me.GetMaxPurchasable(ROBOT_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numMen"] = me.GetMaxPurchasable(MAN_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numOre"] = me.GetMaxPurchasable(ORE_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numWater"] = me.GetMaxPurchasable(WATER_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numTitanium"] = me.GetMaxPurchasable(TITANIUM_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numResearch"] = me.GetMaxPurchasable(RESEARCH_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
+        purchaseInfo["numNewChem"] = me.GetMaxPurchasable(NEW_CHEMICALS_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
+        result["myPurchaseInfo"] = purchaseInfo;
+      }
+      else
+      {
+        result["myHand"] = nullptr;
+        result["myPurchaseInfo"] = nullptr;
+      }
+
+      if (i_StateName == MegaResources && i_PlayerName == GetPlayers().GetCurTurnPlayer().GetName())
+      {
+        boost::json::object megaRequest;
+        megaRequest["resourceType"] = static_cast<int>(GetProductionManager().GetMegaInfo().m_Commodity);
+        megaRequest["maxMegas"] = GetProductionManager().GetMegaInfo().m_MaxMegas;
+        result["megaRequest"] = megaRequest;
+      }
+      else
+      {
+        result["megaRequest"] = nullptr;
       }
 
       if (i_StateName == Bid)
       {
-        UnicastBIDITEM(i_PlayerName);
-	UnicastPURCHASEPRICE(i_PlayerName);
+        boost::json::object bidInfo;
+        bidInfo["itemId"] = static_cast<int>(GetUnownedItems().GetBidIndex());
+        bidInfo["price"] = GetPlayers().GetHighBidPlayer().GetHighBid() -
+            GetPlayers().GetHighBidPlayer().GetOwnedItems().GetDiscount(
+                GetUnownedItems().GetShipItem(GetUnownedItems().GetBidIndex()));
+        result["bidInfo"] = bidInfo;
+      }
+      else
+      {
+        result["bidInfo"] = nullptr;
       }
 
+      boost::json::array winners;
       if (i_StateName == TerminalState)
       {
-        std::set<size_t> winners = GetPlayers().GetWinningPlayerIndices();
+        std::set<size_t> winset = GetPlayers().GetWinningPlayerIndices();
         std::set<size_t>::iterator winit;
-	for (winit = winners.begin() ; winit != winners.end() ; ++winit)
-	{
-	  UnicastPLAYERWINS(i_PlayerName,*winit);
-	}
+        for (winit = winset.begin() ; winit != winset.end() ; ++winit)
+        {
+          winners.push_back(static_cast<int>(*winit));
+        }
       }
+      result["winners"] = winners;
+
+      return result;
     ]]>
   </refresh>
 </game>
