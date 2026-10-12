@@ -95,10 +95,10 @@ private class SolarSystemLabel extends JLabel implements TradeBaseData.SolarSyst
         if (!tb.DoPrint(t)) continue;
         if (!counts.containsKey(t.GetName()))
         {
-          counts.put(t.GetName(),new Integer(0));
+          counts.put(t.GetName(),0);
         }
         int v = counts.get(t.GetName()).intValue();
-        counts.put(t.GetName(),new Integer(v+1));
+        counts.put(t.GetName(),v+1);
       }
 
       for (String s : counts.keySet())

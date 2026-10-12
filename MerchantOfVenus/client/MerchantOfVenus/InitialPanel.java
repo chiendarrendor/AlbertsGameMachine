@@ -160,7 +160,7 @@ Map<Integer,Player> players;
     
 
     if (p == null) return;
-    Integer key = new Integer(p.GetId());
+    int key = p.GetId();
     if (!players.containsKey(key)) 
     {
       players.put(key,p);

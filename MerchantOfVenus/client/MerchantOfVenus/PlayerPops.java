@@ -216,7 +216,7 @@ public class PlayerPops implements PlayerData.PlayerListener
   {
     if (p == null) return;
     
-    Integer pid = new Integer(p.GetId());
+    int pid = p.GetId();
     if (seenPlayers.contains(pid)) return;
 
     seenPlayers.add(pid);

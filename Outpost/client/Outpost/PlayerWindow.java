@@ -35,7 +35,6 @@ public class PlayerWindow implements UserDefinedInterface
     int i;
     for (i = 1; i <= 13 ; ++i)
     {
-      Integer io = new Integer(i);
       JPanel ipanel = new JPanel();
       ipanel.setLayout(new BoxLayout(ipanel,BoxLayout.Y_AXIS));
       JLabel iicon = ItemByNumber.createJLabel(i);
@@ -43,7 +42,7 @@ public class PlayerWindow implements UserDefinedInterface
       ipanel.add(iicon);
       JLabel ilabel = new JLabel("0");
       ilabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-      m_itemcounts.put(io.toString(),ilabel);
+      m_itemcounts.put(Integer.toString(i),ilabel);
       ipanel.add(ilabel);
       itempanel.add(ipanel);
     }
@@ -77,8 +76,7 @@ public class PlayerWindow implements UserDefinedInterface
     int i;
     for (i = 1; i <= 13 ; ++i)
     {
-      Integer io = new Integer(i);
-      m_itemcounts.get(io.toString()).setText("0");
+      m_itemcounts.get(Integer.toString(i)).setText("0");
     }
   }
 }

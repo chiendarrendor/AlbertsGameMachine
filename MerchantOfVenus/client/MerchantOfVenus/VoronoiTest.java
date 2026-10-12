@@ -81,9 +81,10 @@ public class VoronoiTest
       repaint();
     }
     
+    @SuppressWarnings("unchecked")
     public void actionPerformed(ActionEvent e)
     {
-	JComboBox jcb = (JComboBox)e.getSource();
+	JComboBox<String> jcb = (JComboBox<String>)e.getSource();
       curSolarSystem = (String)jcb.getSelectedItem();
       repaint();
     }
@@ -190,7 +191,7 @@ public class VoronoiTest
     {
       ssnames[idx++] = ssname;
     }
-    JComboBox jcb = new JComboBox(ssnames);
+    JComboBox<String> jcb = new JComboBox<String>(ssnames);
     jcb.addActionListener(dp);
     cpanel.add(jcb);
 

@@ -45,8 +45,7 @@ public class PlayerData
 
   public Player GetPlayer(int id)
   {
-    Integer i = new Integer(id);
-    if (players.containsKey(i)) return players.get(i);
+    if (players.containsKey(id)) return players.get(id);
     return null;
   }
   
@@ -87,11 +86,11 @@ public class PlayerData
     icons.set(i2,pii1);
     icons.set(i1,pii2);
 
-    Player actedPlayer = players.get(new Integer(i1));
+    Player actedPlayer = players.get(i1);
     if (i1 == iamid) for (PlayerListener listener : iamlisteners) { listener.PlayerChanged(actedPlayer,iamid,turnorder,curplayer); }
     if (actedPlayer != null) for (PlayerListener listener : listeners) { listener.PlayerChanged(actedPlayer,iamid,turnorder,curplayer); }
 
-    actedPlayer = players.get(new Integer(i2));
+    actedPlayer = players.get(i2);
     if (i2 == iamid) for (PlayerListener listener : iamlisteners) { listener.PlayerChanged(actedPlayer,iamid,turnorder,curplayer); }
     if (actedPlayer != null) for (PlayerListener listener : listeners) { listener.PlayerChanged(actedPlayer,iamid,turnorder,curplayer); }
   }
@@ -127,7 +126,7 @@ public class PlayerData
       iamid = i_event.asInt("IAM.PlayerId");
       anychanged = true;
       iamchanged = true;
-      actedPlayer = players.get(new Integer(iamid));
+      actedPlayer = players.get(iamid);
       if (actedPlayer != null) actedPlayer.SetIAm();
     }
     else if (ename.equals("PLAYER"))
@@ -135,7 +134,7 @@ public class PlayerData
       actedPlayer = new Player(i_event.GetVarValue("PLAYER.Name"),
                                i_event.asInt("PLAYER.PlayerId"),
                                this);
-      players.put(new Integer(actedPlayer.GetId()),actedPlayer);
+      players.put(actedPlayer.GetId(),actedPlayer);
       anychanged = true;
       int[] newturnorder = new int[players.size()];
       if (turnorder != null) System.arraycopy(turnorder,0,newturnorder,0,players.size()-1);
@@ -150,7 +149,7 @@ public class PlayerData
     }
     else if (ename.equals("PLAYEROKSTARTUP"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("PLAYEROKSTARTUP.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("PLAYEROKSTARTUP.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetOkStartup(i_event.GetVarValue("PLAYEROKSTARTUP.IsOk").equals("1"));
@@ -170,7 +169,7 @@ public class PlayerData
     }
     else if (ename.equals("PLAYERMONEY"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("PLAYERMONEY.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("PLAYERMONEY.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetMoney(i_event.asInt("PLAYERMONEY.Money"),
@@ -182,7 +181,7 @@ public class PlayerData
     }
     else if (ename.equals("PLAYERRACE"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("PLAYERRACE.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("PLAYERRACE.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetRace(i_event.GetVarValue("PLAYERRACE.RaceId"));
@@ -192,7 +191,7 @@ public class PlayerData
     }
     else if (ename.equals("ADDTOPLAYER"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("ADDTOPLAYER.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("ADDTOPLAYER.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.AddToken(new Token(i_event.GetVarValue("ADDTOPLAYER.TokenEncoding")));
@@ -203,7 +202,7 @@ public class PlayerData
     }
     else if (ename.equals("SUBTRACTFROMPLAYER"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("SUBTRACTFROMPLAYER.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("SUBTRACTFROMPLAYER.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.RemoveToken(i_event.GetVarValue("SUBTRACTFROMPLAYER.TokenEncoding"));
@@ -213,7 +212,7 @@ public class PlayerData
     }
     else if (ename.equals("PLAYERLOCATION"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("PLAYERLOCATION.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("PLAYERLOCATION.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetLocation(i_event.GetVarValue("PLAYERLOCATION.SpaceName"));
@@ -223,7 +222,7 @@ public class PlayerData
     }
     else if (ename.equals("PLAYERWINS"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("PLAYERWINS.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("PLAYERWINS.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetWins();
@@ -233,7 +232,7 @@ public class PlayerData
     }
     else if (ename.equals("REMAININGTRANSCOUNT"))
     {
-      actedPlayer = players.get(new Integer(i_event.asInt("REMAININGTRANSCOUNT.PlayerId")));
+      actedPlayer = players.get(i_event.asInt("REMAININGTRANSCOUNT.PlayerId"));
       if (actedPlayer != null)
       {
         actedPlayer.SetRemaining(i_event.asInt("REMAININGTRANSCOUNT.NumBuys"),
@@ -244,14 +243,14 @@ public class PlayerData
     }
     else if (ename.equals("CURPLAYER"))
     {
-      curplayer = new Integer(i_event.asInt("CURPLAYER.PlayerId"));
+      curplayer = i_event.asInt("CURPLAYER.PlayerId");
       actedPlayer = players.get(curplayer);
       anychanged = true;
       if (actedPlayer.GetId() == iamid) iamchanged = true;
     }
     else if (ename.equals("AGEPLAYER"))
     {
-    	actedPlayer = players.get(new Integer(i_event.asInt("AGEPLAYER.PlayerId")));
+    	actedPlayer = players.get(i_event.asInt("AGEPLAYER.PlayerId"));
     	if (actedPlayer != null)
     	{
     		actedPlayer.Age();

@@ -43,7 +43,7 @@ public class ClientApplication {
         JFrame f = new JFrame("Test");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        ClientApplet applet = new ClientApplet();
+        ClientPanel applet = new ClientPanel();
         applet.init(server,uname,password);
         f.getContentPane().add(applet);
 

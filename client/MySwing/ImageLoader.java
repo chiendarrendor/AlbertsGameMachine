@@ -70,7 +70,7 @@ public class ImageLoader
       java.net.URL realURL = null;
       try
       {
-         realURL = new java.net.URL(i_Name);
+         realURL = java.net.URI.create(i_Name).toURL();
          icon = new ImageIcon(realURL);
       }
       catch(java.net.MalformedURLException mue)

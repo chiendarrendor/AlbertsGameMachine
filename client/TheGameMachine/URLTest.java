@@ -10,7 +10,7 @@ class URLTest
   {
     try
     {
-      URL url = new URL("http://albert.best.vwh.net/games/Aor/Icons/London_New_Token.JPG");
+      URL url = URI.create("http://albert.best.vwh.net/games/Aor/Icons/London_New_Token.JPG").toURL();
       System.out.println(url);
       URLConnection urlc = url.openConnection();
       InputStream is = urlc.getInputStream();

@@ -39,7 +39,7 @@ public class GUIUnit
     // assume (require?) that all User Defined Nodes of this GUI Unit are found in a jar in the same remote directory
     // as the .xml file, with the same prefix as the name of the GUI
     try {
-      URL[] urls = new URL[]{new URL(i_gpp.GetXMLLoc() + "/" + i_gpp.GetGuiName() + ".jar")};
+      URL[] urls = new URL[]{URI.create(i_gpp.GetXMLLoc() + "/" + i_gpp.GetGuiName() + ".jar").toURL()};
       URLClassLoader classLoader = new URLClassLoader(urls, this.getClass().getClassLoader());
       m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader,i_gpp.GetGuiName());
     } catch (MalformedURLException e) {

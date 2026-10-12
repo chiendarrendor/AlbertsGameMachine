@@ -74,13 +74,7 @@ public class WindowNode extends GameNode
     m_frame = new JFrame(i_title);
 
 
-    try
-    {
-      m_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-    } 
-    catch (java.security.AccessControlException ace)
-    {
-    }
+    m_frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
     JPanel panel = new JPanel();
 

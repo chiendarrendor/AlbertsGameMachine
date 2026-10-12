@@ -86,7 +86,8 @@ the architecture itself, are kept in a separate file — see [[outpost-client-gu
 
 ## Wire-dispatch chain: how one raw line becomes GUI behavior
 
-`ClientApplication.main` → `ClientApplet.start()` (spins a thread running `ClientManager.mainloop()`,
+`ClientApplication.main` → `ClientPanel.start()` (renamed from `ClientApplet` 2026-10-12, once it no
+longer extended `java.applet.Applet` — see `TODO.md`; spins a thread running `ClientManager.mainloop()`,
 the only real work either class does) → `ClientManager`:
 - `mainloop()`: connect the socket, read one unparsed welcome line, `DoLogin` (see below), then loop
   `HandleOneLine()` forever.

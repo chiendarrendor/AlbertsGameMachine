@@ -179,13 +179,7 @@ public class TabbedWindow extends JFrame
     m_tabinfo = new HashMap<Component,TabInfo>();
     m_dataloc = i_dataloc;
 
-    try
-    {
-      setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-    } 
-    catch (java.security.AccessControlException ace)
-    {
-    }
+    setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
     m_tabs = new MyTabbedPane();
 

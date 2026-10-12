@@ -11,14 +11,8 @@ public class TextWindow
   public TextWindow(String i_Name)
   {
     m_frame = new JFrame(i_Name);
-    try
-    {
-      m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    } 
-    catch (java.security.AccessControlException ace)
-    {
-    }
-    
+    m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
     m_textarea = new JTextArea();
     m_textarea.setLineWrap(true);
     m_textarea.setWrapStyleWord(true);

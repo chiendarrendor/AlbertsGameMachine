@@ -63,13 +63,13 @@ public class PriorityMap
         throw new PriorityMapException("Closing levels out of order!");
       }
 
-      m_TMap.remove(new Integer(maxlevel));
+      m_TMap.remove(maxlevel);
 
     }
 
     public void AddEntry(int i_Level,String i_Val)
     {
-      m_TMap.put(new Integer(i_Level),i_Val);
+      m_TMap.put(i_Level,i_Val);
 
     }
 

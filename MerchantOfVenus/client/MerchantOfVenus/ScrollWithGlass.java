@@ -30,8 +30,8 @@ public ScrollWithGlass(JComponent i_child,JComponent glass)
     jsp.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
     jsp.getVerticalScrollBar().setUnitIncrement(15);
     jsp.getHorizontalScrollBar().setUnitIncrement(15);
-    add(jsp,new Integer(0));
-    add(glass,new Integer(1));
+    add(jsp,0);
+    add(glass,1);
 
     springs.putConstraint(SpringLayout.NORTH,jsp,0,SpringLayout.NORTH,this);
     springs.putConstraint(SpringLayout.SOUTH,jsp,0,SpringLayout.SOUTH,this);

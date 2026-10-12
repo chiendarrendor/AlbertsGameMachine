@@ -23,8 +23,8 @@ public class PopAndLockPanel extends JLayeredPane
 {
 	private static final long serialVersionUID = 1L;
 public static int OTHEREXTREME = -1000000;
-  private static Integer LABELLAYER = new Integer(0);
-  private static Integer PANELLAYER = new Integer(1);
+  private static final int LABELLAYER = 0;
+  private static final int PANELLAYER = 1;
   SpringLayout springs;
 
   // if x or y are OTHEREXTREME, that will 'lock' the component to the right/bottom of the pane
@@ -69,7 +69,7 @@ public static int OTHEREXTREME = -1000000;
     ll.Remove();
   }
 
-  private void addItem(Component c,Point p,Integer layer)
+  private void addItem(Component c,Point p,int layer)
   {
     super.add(c,layer);
     Point newP = calcLabelPosition(c,p);

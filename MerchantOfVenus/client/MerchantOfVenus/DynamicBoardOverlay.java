@@ -85,7 +85,7 @@ private Board board;
 
     if (p == null) return;
 
-    Integer plid = new Integer(p.GetId());
+    int plid = p.GetId();
     if (!playerlocations.containsKey(plid))
     {
       playerlocations.put(plid,p.GetLocation());
@@ -185,7 +185,7 @@ private Board board;
 
   public void DrawShip(Graphics2D g2d,int plid,String loc,int radius,double theta)
   {
-    ImageIcon ii = playerships.get(new Integer(plid));
+    ImageIcon ii = playerships.get(plid);
 
     if (loc == null) return;
 
@@ -385,9 +385,9 @@ private Board board;
                                 ms.GetY() - highlighter.getIconHeight()/2);
         }
       }
-      if (isEndTurn && playerlocations.containsKey(new Integer(iamid)))
+      if (isEndTurn && playerlocations.containsKey(iamid))
       {
-        Board.MapSpace ms = board.GetSpaces().get(playerlocations.get(new Integer(iamid)));
+        Board.MapSpace ms = board.GetSpaces().get(playerlocations.get(iamid));
         highlighter.paintIcon(null,g2d,
                                 ms.GetX() - highlighter.getIconWidth()/2,
                                 ms.GetY() - highlighter.getIconHeight()/2);
@@ -429,9 +429,9 @@ private Board board;
       Board.MapSpace ms = nss.GetNearestSpace(e.getX(),e.getY());
       if (ms == null) return;
 
-      if (isEndTurn && 
-          playerlocations.containsKey(new Integer(iamid)) &&
-          ms.GetSpaceName().equals(playerlocations.get(new Integer(iamid))))
+      if (isEndTurn &&
+          playerlocations.containsKey(iamid) &&
+          ms.GetSpaceName().equals(playerlocations.get(iamid)))
       {
         // if this is the first space and the current space is a penalty and
         // the player elects to not move, let's prompt them before we allow that.

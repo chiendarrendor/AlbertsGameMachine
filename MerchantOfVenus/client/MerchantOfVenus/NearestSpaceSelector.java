@@ -18,12 +18,11 @@ public class NearestSpaceSelector
     
     public void add(int i,Board.MapSpace ms)
     {
-      Integer ic = new Integer(i);
-      if (!map.containsKey(ic))
+      if (!map.containsKey(i))
       {
-        map.put(ic,new Vector<Board.MapSpace>());
+        map.put(i,new Vector<Board.MapSpace>());
       }
-      map.get(ic).add(ms);
+      map.get(i).add(ms);
     }
   
     // return a set of all items in this container
@@ -33,8 +32,8 @@ public class NearestSpaceSelector
       HashSet<Board.MapSpace> result = new HashSet<Board.MapSpace>();
       
       NavigableMap<Integer,Vector<Board.MapSpace>> sub = 
-        map.subMap(new Integer(center-radius),true,
-                   new Integer(center+radius),true);
+        map.subMap(center-radius,true,
+                   center+radius,true);
 
       for(Vector<Board.MapSpace> v : sub.values())
       {

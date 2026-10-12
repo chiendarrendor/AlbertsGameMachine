@@ -19,7 +19,7 @@ all:
 	${JCMD} org/json/*.java
 	${JCMD} TheGameMachine/GameClient.java
 	${JCMD} TheGameMachine/GUITester.java
-	${JCMD} TheGameMachine/ClientApplet.java
+	${JCMD} TheGameMachine/ClientPanel.java
 	${JCMD} TheGameMachine/ClientApplication.java
 	${JCMD} TheGameMachine/TestResource.java
 	${JCMD} MySwing/*.java

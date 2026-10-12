@@ -16,13 +16,7 @@ public class ActionWindowNode extends GameNode
 
     m_frame = new JFrame(i_Name + " Action Selection");
 
-    try
-    {
-      m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    } 
-    catch (java.security.AccessControlException ace)
-    {
-    }
+    m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     JPanel panel = new JPanel();
     panel.setOpaque(false);

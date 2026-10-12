@@ -1,8 +1,8 @@
 package TheGameMachine;
 
-import java.applet.Applet;
+import java.awt.Panel;
 
-public class ClientApplet extends Applet implements Runnable
+public class ClientPanel extends Panel implements Runnable
 {
   private static int m_port = 4356;
   private ClientManager m_cm = null;
@@ -18,13 +18,6 @@ public class ClientApplet extends Applet implements Runnable
   }
 
 
-  public void init() 
-  {
-    m_server = getParameter("gameserverloc");
-    m_uname = getParameter("username");
-    m_pass = getParameter("password");
-  }
-
   public void init(String server,String uname,String password) {
     m_server = server;
     m_uname = uname;
@@ -39,7 +32,7 @@ public class ClientApplet extends Applet implements Runnable
     m_thread.start();
   }
 
-  public void stop() 
+  public void stop()
   {
     m_thread.interrupt();
     m_cm.dispose();
@@ -47,9 +40,6 @@ public class ClientApplet extends Applet implements Runnable
     m_thread = null;
   }
 
-  public void destroy()
-  {
-  }
   private static final long serialVersionUID = 1;
 
 }

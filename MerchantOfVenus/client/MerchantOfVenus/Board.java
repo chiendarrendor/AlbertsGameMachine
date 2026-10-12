@@ -159,7 +159,7 @@ public class Board
         String[] pnums = pnumberstring.split(",");
         for (String pnum : pnums)
         {
-          pilotNumbers.add(new Integer(Integer.parseInt(pnum)));
+          pilotNumbers.add(Integer.parseInt(pnum));
         }
       }
     }
@@ -170,7 +170,7 @@ public class Board
     public String GetNextSpace() { return nextSpace; }
     public boolean IsFlyable() { return isFlyable; }
     public boolean HasPilotNumbers() { return pilotNumbers.size() > 0; }
-    public boolean HasPilotNumber(int pnum) { return pilotNumbers.contains(new Integer(pnum)); }
+    public boolean HasPilotNumber(int pnum) { return pilotNumbers.contains(pnum); }
     public boolean IsInvisible() { return isInvisible; }
   }
 

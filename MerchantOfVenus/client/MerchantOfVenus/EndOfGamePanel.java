@@ -18,8 +18,7 @@ JLabel[] playerNames;
 
     public int compareTo(PlayerOrderable other)
     {
-      Integer thing = new Integer(worth);
-      return -thing.compareTo(new Integer(other.worth));
+      return -Integer.compare(worth,other.worth);
     }
   }
 
@@ -54,7 +53,7 @@ JLabel[] playerNames;
   {
     if (p == null) return;
 
-    Integer pI = new Integer(p.GetId());
+    int pI = p.GetId();
     if (!players.containsKey(pI))
     {
       PlayerOrderable order = new PlayerOrderable();

@@ -1,9 +1,9 @@
 package MerchantOfVenus;
 import java.awt.*;
-import java.applet.Applet;
 import java.util.*;
+import javax.swing.*;
 
-public class VoronoiApplet extends Applet
+public class VoronoiPanel extends Panel
 {
     public SolarSystemHolderDomain solarsystems;
     public Vector<SolarSystemDrawer> drawers = new Vector<SolarSystemDrawer>();
@@ -11,10 +11,8 @@ public class VoronoiApplet extends Applet
     int deltay;
     int indent = 10;
 
-    public void init()
+    public void init(String dataloc, String ss1string, String ss2string)
     {
-	String dataloc = getParameter("dataloc");
-
 	solarsystems = new SolarSystemHolderDomain(dataloc);
 	// expecting ss1 and ss2 to be in the form:
 	// <name>:[s][S][D][V][A]:[alpha]
@@ -26,8 +24,6 @@ public class VoronoiApplet extends Applet
 	// V is the Voronoi Diagram
 	// A is the alpha shape (using the given alpha)
 	// alpha is only required if A is present.
-	String ss1string = getParameter("ss1");
-	String ss2string = getParameter("ss2");
 	if (ss1string != null) drawers.add(new SolarSystemDrawer(solarsystems,ss1string,Color.green,15));
 	if (ss2string != null) drawers.add(new SolarSystemDrawer(solarsystems,ss2string,Color.blue,30));
 
@@ -44,11 +40,6 @@ public class VoronoiApplet extends Applet
 	deltay = -miny + indent;
     }
 
-    public void stop()
-    {
-    }
-
-
     public void paint(Graphics g)
     {
 	g.setColor(getBackground());
@@ -57,5 +48,39 @@ public class VoronoiApplet extends Applet
 	{
 	    ssd.paint(g,deltax,deltay);
 	}
+    }
+
+    private static void createAndShowGUI(String dataloc, String ss1string, String ss2string)
+    {
+	JFrame frame = new JFrame("Voronoi Panel");
+	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+	VoronoiPanel va = new VoronoiPanel();
+	va.init(dataloc, ss1string, ss2string);
+
+	frame.getContentPane().add(va);
+	frame.pack();
+	frame.setVisible(true);
+    }
+
+    public static void main(String[] args)
+    {
+	if (args.length < 1)
+	{
+	    System.out.println("usage: VoronoiPanel <dataloc> [ss1string] [ss2string]");
+	    System.exit(1);
+	}
+
+	final String dataloc = args[0];
+	final String ss1string = args.length > 1 ? args[1] : null;
+	final String ss2string = args.length > 2 ? args[2] : null;
+
+	javax.swing.SwingUtilities.invokeLater(new Runnable()
+	{
+	    public void run()
+	    {
+		createAndShowGUI(dataloc, ss1string, ss2string);
+	    }
+	});
     }
 }

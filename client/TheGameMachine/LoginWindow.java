@@ -100,13 +100,7 @@ public class LoginWindow implements ActionListener
   {
     m_loginFrame = new JFrame("Login");
 
-    try
-    {
-      m_loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    } 
-    catch (java.security.AccessControlException ace)
-    {
-    }
+    m_loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     m_loginFrame.setVisible(true);
 

@@ -26,7 +26,7 @@ public class Destinations
       {
         for (int i = 0 ; i < dparts[3].length() ; ++i)
         {
-          pNumbers.add(new Integer(Integer.parseInt(dparts[3].substring(i,i+1))));
+          pNumbers.add(Integer.parseInt(dparts[3].substring(i,i+1)));
         }
       }
     }

@@ -100,7 +100,7 @@ public class IconSelectionDialog extends JDialog
   {
     for (int i = 0 ; i < buttons.length ; ++i)
     {
-      buttons[i].setVisible(activeButtons.contains(new Integer(i)));
+      buttons[i].setVisible(activeButtons.contains(i));
     }
     pack();
     setVisible(true);

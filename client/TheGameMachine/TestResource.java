@@ -3,6 +3,7 @@ package TheGameMachine;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
@@ -14,7 +15,7 @@ public class TestResource {
 
     public static ImageIcon getImageIconFromJar(String jarURL,String imageName)  {
         try {
-            URL[] loaderurls = new URL[]{new URL(jarURL)};
+            URL[] loaderurls = new URL[]{URI.create(jarURL).toURL()};
             ClassLoader cl = new URLClassLoader(loaderurls);
 
             Enumeration<URL> imageurls = cl.getResources(imageName);
@@ -41,7 +42,7 @@ public class TestResource {
         System.out.println("Trials:");
 
         try {
-            URL[] urls = new URL[]{new URL(args[0]) };
+            URL[] urls = new URL[]{URI.create(args[0]).toURL()};
             ClassLoader cl = new URLClassLoader(urls);
 
             String target = "Man.PNG";

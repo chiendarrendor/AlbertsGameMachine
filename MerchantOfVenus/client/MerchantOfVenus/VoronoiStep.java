@@ -1,7 +1,6 @@
 package MerchantOfVenus;
 
 import java.awt.*;
-import java.applet.Applet;
 import java.awt.event.*;
 
 import javax.swing.*;
@@ -10,7 +9,7 @@ import java.util.*;
 import Voronoi.*;
 import Voronoi.Point;
 
-public class VoronoiStep extends Applet
+public class VoronoiStep extends Panel
 {
 	private static final long serialVersionUID = 1L;
 	private Fortune vf;
