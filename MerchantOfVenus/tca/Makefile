@@ -119,17 +119,30 @@ clientinstall: ${CLIENTJAVADIR}/MerchantOfVenusClient.xml clientjava
 MerchantOfVenusClient.xml: ../client/MerchantOfVenusClient.xml 
 	${CPP} -I../client -P ../client/MerchantOfVenusClient.xml > MerchantOfVenusClient.xml
 
-clientjava: .actionschema.validated
-	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
-	@- rm -rf ${CLIENTCLASSDIR}
-	@- mkdir -p ${CLIENTCLASSDIR}
-	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
+.PHONY: clientjava voronoi
 
-voronoi:
+# clientjava and voronoi are alternate build modes sharing one output dir --
+# each rm -rf's it before writing its own set of classes, so switching from
+# one to the other always correctly forces a rebuild (the other's stamp
+# file goes away along with its classes), while repeating the same one does
+# not needlessly recompile.
+${CLIENTCLASSDIR}/.compiled-clientjava: ${JFILES} .actionschema.validated
 	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
 	@- rm -rf ${CLIENTCLASSDIR}
-	@- mkdir -p ${CLIENTCLASSDIR}
+	mkdir -p ${CLIENTCLASSDIR}
+	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
+	touch $@
+
+clientjava: ${CLIENTCLASSDIR}/.compiled-clientjava
+
+${CLIENTCLASSDIR}/.compiled-voronoi: ${VFILES}
+	@- rm -f ${CLIENTJAVADIR}/MerchantOfVenus/*.class
+	@- rm -rf ${CLIENTCLASSDIR}
+	mkdir -p ${CLIENTCLASSDIR}
 	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${VFILES}
+	touch $@
+
+voronoi: ${CLIENTCLASSDIR}/.compiled-voronoi
 
 %.o:%.cpp
 	${GCC} -c $<

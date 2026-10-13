@@ -28,7 +28,6 @@ class OutputPort
 {
 public:
   virtual void UniCast(const std::string &i_Name,const std::string &i_Message) const = 0;
-  virtual void BroadCast(const std::string &i_Message) const = 0;
 
   // Sends a native JSON value as one event, rather than a pre-serialized
   // opaque string -- for anything that's already structured JSON, so it
@@ -67,6 +66,20 @@ public:
   {
     UniCast(i_Name,boost::json::serialize(WrapFullStateEnvelope(i_Name,i_GuiName,i_XMLLoc,i_XMLFile,i_Envelope)));
   }
+
+  // The broadcast counterpart to UniCastFullState above -- every currently
+  // known recipient gets the same envelope. Unlike UniCastFullState, this
+  // can't be a concrete default here: enumerating "every recipient" is
+  // necessarily subclass-specific knowledge the base class doesn't have
+  // (RoomOutputPort tracks its own broadcast-target set; a game process's
+  // own OutputPort has no such list and no legitimate reason to broadcast
+  // a full-state envelope at all -- see GameServerMainOutputPort's
+  // implementation). Currently only called by GameProcessProxy::Terminate,
+  // to notify everyone in the room a game process died -- see
+  // .claude/server_game_interface_spec.md.
+  virtual void BroadCastFullState(const std::string &i_GuiName,
+                                  const std::string &i_XMLLoc,const std::string &i_XMLFile,
+                                  const boost::json::object &i_Envelope) const = 0;
 };
 
 #endif

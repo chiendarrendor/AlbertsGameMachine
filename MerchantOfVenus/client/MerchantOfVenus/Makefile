@@ -6,8 +6,12 @@ JAVAMAIN=MerchantOfVenus/VoronoiPanel.java
 JARNAME=VoronoiPanel.jar
 MAPFILE=MerchantOfVenusMap.xml
 
-jar:
+.PHONY: jar
+
+$(JARNAME): ../$(JAVAMAIN)
 	-rm *.class
 	(cd .. ; $(JAVAC) $(JAVAMAIN))
 	(cd .. ; $(JAR) -cf $(JARNAME) MerchantOfVenus/*.class)
 	mv ../$(JARNAME) .
+
+jar: $(JARNAME)

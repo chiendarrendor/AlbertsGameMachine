@@ -3,7 +3,6 @@
 #include "StringUtilities.hpp"
 #include "JsonParamExtraction.hpp"
 #include "OutputPort.hpp"
-#include <sstream>
 #include <iostream>
 #include <time.h>
 #include "GameCloset.hpp"
@@ -13,21 +12,18 @@
 
 const char *INITIALROOM = "Great Hall";
 
+// ROOMGUI's synthetic, permanently-fixed FSM state -- see
+// .claude/server_game_interface_spec.md's "ROOMGUI's full-state shape
+// decided to match a real game's exactly" section. Mapping the room
+// subsystem's real action set onto an FSM the way a game's is modeled
+// shows it's genuinely a single-state cyclic FSM (every action loops back
+// to the same state), so this never varies -- varying it would be making
+// it do double-duty with legalActions, which is where per-request
+// conditional availability actually belongs.
+const char *ROOMGUI_STATE = "ROOM";
+const char *ROOMGUI_STATEDESC = "Room Navigation";
+
 const GameCloset *Room::s_pGameCloset(NULL);
-
-#define ROOMVALIDATE(_vtest_,_verror_) \
-if (!(_vtest_))                         \
-{                                      \
-  m_Connections.UniCast(i_Name,std::string("ERROR,") + _verror_); \
-  return; \
-}
-
-#define SENDLINE(M_TARGET,M_STREAM) \
-{ \
-  std::ostringstream sloss; \
-  sloss << M_STREAM; \
-  i_Connections.SendLineToName(M_TARGET,sloss.str() ); \
-}
 
 
 
@@ -124,45 +120,51 @@ boost::json::array Room::GetSavedGameNames()
 }
 
 
-void Room::HandleAction(const std::string &i_Name,const ActionParser &i_ap)
+std::string Room::HandleAction(const std::string &i_Name,const ActionParser &i_ap)
 {
   if (i_ap.GetNamespace() == "room")
   {
     if (i_ap.GetActionName() == "NEWGAME")
     {
-      HandleNewGame(i_Name,i_ap);
+      return HandleNewGame(i_Name,i_ap);
     }
     else if (i_ap.GetActionName() == "LOADGAME")
     {
-      HandleLoadGame(i_Name,i_ap);
+      return HandleLoadGame(i_Name,i_ap);
     }
     else if (i_ap.GetActionName() == "SAVEGAME")
     {
-      HandleSaveGame(i_Name,i_ap);
+      return HandleSaveGame(i_Name,i_ap);
     }
     else
     {
-      m_Connections.UniCast(i_Name,std::string("ERROR,Unknown room action ") + i_ap.GetActionName());
+      return std::string("Unknown room action ") + i_ap.GetActionName();
     }
-    return;
   }
 
-  ROOMVALIDATE(m_pGame != NULL,"No active game in this room.");
-  ROOMVALIDATE(i_ap.GetNamespace() == m_pGame->GetServerGameInfo().GetName(),
-               "Action namespace '" + i_ap.GetNamespace() + "' doesn't match this room's active game.");
+  if (m_pGame == NULL) return "No active game in this room.";
+  if (i_ap.GetNamespace() != m_pGame->GetServerGameInfo().GetName())
+  {
+    return "Action namespace '" + i_ap.GetNamespace() + "' doesn't match this room's active game.";
+  }
 
+  // The real game's own HandleAction already reports a rejection as a
+  // JSON full-state envelope straight to the acting player via
+  // UniCastJson (see DLLGame::HandleAction) -- nothing left for this
+  // room-level wrapper to do on top of that.
   m_pGame->HandleAction(i_Name,i_ap,m_Inhabitants);
+  return "";
 }
 
-void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
+std::string Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal NEWGAME action.");
+  if (i_ap.GetParams().size() != 1) return "Illegal NEWGAME action.";
   std::string gameName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NewGame");
 
   const GameBox *pGameBox = s_pGameCloset->GetGameBoxByName(gameName);
 
-  ROOMVALIDATE(pGameBox != NULL,"Unknown Game: " + gameName);
-  ROOMVALIDATE(m_pGame == NULL || m_pGame->IsDone(),"Room already has active game!");
+  if (pGameBox == NULL) return "Unknown Game: " + gameName;
+  if (!(m_pGame == NULL || m_pGame->IsDone())) return "Room already has active game!";
 
   if (m_pGame != NULL)
   {
@@ -172,26 +174,46 @@ void Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 
   m_pGame = pGameBox->CreateGame(m_Connections);
 
-  ROOMVALIDATE(m_pGame,"Unknown Error: could not create game!");
+  if (!m_pGame) return "Unknown Error: could not create game!";
 
   BroadcastFullState();
+  return "";
 }
 
-void Room::HandleLoadGame(const std::string &i_Name,const ActionParser &i_ap)
+std::string Room::HandleLoadGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal LOADGAME action.");
+  if (i_ap.GetParams().size() != 1) return "Illegal LOADGAME action.";
   std::string fileName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NameToLoad");
-  ROOMVALIDATE(m_pGame,"No Game to Load.");
-  ROOMVALIDATE(m_pGame->Load(fileName),"Game " + fileName + " failed to load.");
+  if (!m_pGame) return "No Game to Load.";
+  if (!m_pGame->Load(fileName)) return "Game " + fileName + " failed to load.";
   BroadcastFullState();
+  return "";
 }
 
-void Room::HandleSaveGame(const std::string &i_Name,const ActionParser &i_ap)
+std::string Room::HandleSaveGame(const std::string &i_Name,const ActionParser &i_ap)
 {
-  ROOMVALIDATE(i_ap.GetParams().size() == 1,"Illegal SAVEGAME action.");
+  if (i_ap.GetParams().size() != 1) return "Illegal SAVEGAME action.";
   std::string fileName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NameToSave");
-  ROOMVALIDATE(m_pGame,"No Game to Save.");
-  ROOMVALIDATE(m_pGame->Save(fileName),"Game " + fileName + " failed to save.");
+  if (!m_pGame) return "No Game to Save.";
+  if (!m_pGame->Save(fileName)) return "Game " + fileName + " failed to save.";
+  return "";
+}
+
+boost::json::array Room::GetLegalRoomActions(bool i_GameIsDone)
+{
+  boost::json::array result;
+
+  if (m_pGame == NULL || i_GameIsDone)
+  {
+    result.push_back(boost::json::value("NEWGAME"));
+  }
+  if (m_pGame != NULL)
+  {
+    result.push_back(boost::json::value("LOADGAME"));
+    result.push_back(boost::json::value("SAVEGAME"));
+  }
+
+  return result;
 }
 
 std::string Room::GetGameName()
@@ -226,7 +248,7 @@ RoomManager::~RoomManager()
   }
 }
 
-boost::json::object RoomManager::BuildRoomGuiState()
+boost::json::object RoomManager::BuildRoomGuiState(std::map<std::string,boost::json::array> &o_PerRoomActions)
 {
   boost::json::array gameTypes;
   std::set<std::string>::const_iterator gameit;
@@ -241,10 +263,12 @@ boost::json::object RoomManager::BuildRoomGuiState()
   for (roomit = m_Rooms.begin() ; roomit != m_Rooms.end() ; ++roomit)
   {
     Room *pRoom = roomit->second;
+    bool isDone = pRoom->GetGameIsDone();
+
     boost::json::object roomobj;
     roomobj["name"] = roomit->first;
     roomobj["gameName"] = pRoom->GetGameName();
-    roomobj["isDone"] = pRoom->GetGameIsDone();
+    roomobj["isDone"] = isDone;
     // Great Hall never allows a game to start in it -- the client's own
     // available-games list is empty/greyed out there, driven purely by this
     // being empty (there's no separate server-side NEWGAME block; it's
@@ -252,6 +276,8 @@ boost::json::object RoomManager::BuildRoomGuiState()
     roomobj["gameTypes"] = (roomit->first == INITIALROOM) ? boost::json::array() : gameTypes;
     roomobj["savedGames"] = pRoom->GetSavedGameNames();
     rooms.push_back(roomobj);
+
+    o_PerRoomActions[roomit->first] = pRoom->GetLegalRoomActions(isDone);
   }
 
   boost::json::array inhabitants;
@@ -271,9 +297,62 @@ boost::json::object RoomManager::BuildRoomGuiState()
   return state;
 }
 
+boost::json::array RoomManager::LegalActionsFor(const std::string &i_Name,
+                     const std::map<std::string,boost::json::array> &i_PerRoomActions)
+{
+  // NEWROOM/CHANGEROOM are dispatched before any room lookup (see
+  // HandleAction below), so they have no room-dependent precondition at
+  // all -- always legal for anyone connected.
+  boost::json::array result;
+  result.push_back(boost::json::value("NEWROOM"));
+  result.push_back(boost::json::value("CHANGEROOM"));
+
+  Room *pRoom = GetRoomOf(i_Name);
+  if (pRoom)
+  {
+    std::map<std::string,boost::json::array>::const_iterator findit =
+      i_PerRoomActions.find(pRoom->GetName());
+    if (findit != i_PerRoomActions.end())
+    {
+      const boost::json::array &roomActions = findit->second;
+      for (std::size_t i = 0 ; i < roomActions.size() ; ++i)
+      {
+        result.push_back(roomActions[i]);
+      }
+    }
+  }
+
+  return result;
+}
+
+boost::json::array RoomManager::ComputeLegalActions(const std::string &i_Name)
+{
+  std::map<std::string,boost::json::array> perRoomActions;
+  Room *pRoom = GetRoomOf(i_Name);
+  if (pRoom)
+  {
+    perRoomActions[pRoom->GetName()] = pRoom->GetLegalRoomActions(pRoom->GetGameIsDone());
+  }
+  return LegalActionsFor(i_Name,perRoomActions);
+}
+
+void RoomManager::SendRoomActionError(const std::string &i_Name,const std::string &i_Error,
+                                      GameServerConnectionHandlerFactory &i_Connections)
+{
+  boost::json::object envelope;
+  envelope["state"] = ROOMGUI_STATE;
+  envelope["stateDesc"] = ROOMGUI_STATEDESC;
+  envelope["legalActions"] = ComputeLegalActions(i_Name);
+  envelope["error"] = i_Error;
+
+  i_Connections.SendLineToName(i_Name,
+      boost::json::serialize(WrapFullStateEnvelope(i_Name,"ROOMGUI",m_XMLLoc,m_XMLName,envelope)));
+}
+
 void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &i_Connections)
 {
-  boost::json::object current = BuildRoomGuiState();
+  std::map<std::string,boost::json::array> perRoomActions;
+  boost::json::object current = BuildRoomGuiState(perRoomActions);
   if (current == m_LastRoomGuiState)
   {
     return;
@@ -283,8 +362,14 @@ void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &
   std::set<std::string>::const_iterator nameit;
   for (nameit = m_Inhabitants.begin() ; nameit != m_Inhabitants.end() ; ++nameit)
   {
+    boost::json::object envelope;
+    envelope["state"] = ROOMGUI_STATE;
+    envelope["stateDesc"] = ROOMGUI_STATEDESC;
+    envelope["legalActions"] = LegalActionsFor(*nameit,perRoomActions);
+    envelope["body"] = current;
+
     i_Connections.SendLineToName(*nameit,
-        boost::json::serialize(WrapFullStateEnvelope(*nameit,"ROOMGUI",m_XMLLoc,m_XMLName,current)));
+        boost::json::serialize(WrapFullStateEnvelope(*nameit,"ROOMGUI",m_XMLLoc,m_XMLName,envelope)));
   }
 }
 
@@ -307,65 +392,73 @@ void RoomManager::HandleAction(const std::string &i_Name,const ActionParser &i_a
 {
   if (i_ap.GetNamespace() == "roommanager")
   {
-    if (i_ap.GetActionName() == "NEWROOM") HandleNewRoom(i_Name,i_ap,i_Connections);
-    else if (i_ap.GetActionName() == "CHANGEROOM") HandleChangeRoom(i_Name,i_ap,i_Connections);
-    else
+    std::string error;
+    if (i_ap.GetActionName() == "NEWROOM") error = HandleNewRoom(i_Name,i_ap,i_Connections);
+    else if (i_ap.GetActionName() == "CHANGEROOM") error = HandleChangeRoom(i_Name,i_ap,i_Connections);
+    else error = std::string("Unknown roommanager action ") + i_ap.GetActionName();
+
+    if (!error.empty())
     {
-      i_Connections.SendLineToName(i_Name,"ERROR,Unknown roommanager action " + i_ap.GetActionName());
+      SendRoomActionError(i_Name,error,i_Connections);
     }
     return;
   }
 
   Room *pRoom = GetRoomOf(i_Name);
   if (!pRoom) return;
-  pRoom->HandleAction(i_Name,i_ap);
+  std::string error = pRoom->HandleAction(i_Name,i_ap);
+  if (!error.empty())
+  {
+    // A rejected room-level action is a targeted error straight to the
+    // actor -- nothing lobby-relevant changed, so no broadcast follows,
+    // same "rejected actions produce zero full-state churn" rule a real
+    // game's HandleAction already follows.
+    SendRoomActionError(i_Name,error,i_Connections);
+    return;
+  }
 
   BroadcastRoomGuiIfChanged(i_Connections);
 }
 
-void RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_ap,
+std::string RoomManager::HandleNewRoom(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
   if (i_ap.GetParams().size() != 1)
   {
-    SENDLINE(i_Name,"ERROR,Bad NEWROOM action");
-    return;
+    return "Bad NEWROOM action";
   }
   std::string newName = ExtractJsonParam<std::string>(i_ap.GetParams(),"RoomName");
 
   if (newName.size() == 0)
   {
-    SENDLINE(i_Name,"ERROR,Empty NEWROOM name");
-    return;
+    return "Empty NEWROOM name";
   }
 
   std::map<std::string,Room *>::iterator findit = m_Rooms.find(newName);
   if (findit != m_Rooms.end())
   {
-    SENDLINE(i_Name,"ERROR,NEWROOM name already exists");
-    return;
+    return "NEWROOM name already exists";
   }
 
   m_Rooms[newName] = new Room(newName,i_Connections);
 
   BroadcastRoomGuiIfChanged(i_Connections);
+  return "";
 }
 
-void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser &i_ap,
+std::string RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser &i_ap,
                      GameServerConnectionHandlerFactory &i_Connections)
 {
   if (i_ap.GetParams().size() != 1)
   {
-    SENDLINE(i_Name,"ERROR,Bad CHANGEROOM action");
-    return;
+    return "Bad CHANGEROOM action";
   }
 
   std::string newRoomName = ExtractJsonParam<std::string>(i_ap.GetParams(),"TargetRoom");
   std::map<std::string,Room *>::iterator findit = m_Rooms.find(newRoomName);
   if (findit == m_Rooms.end())
   {
-    SENDLINE(i_Name,"ERROR,Don't know which room you mean..try again...");
-    return;
+    return "Don't know which room you mean..try again...";
   }
 
   Room *pOldRoom = GetRoomOf(i_Name);
@@ -377,6 +470,7 @@ void RoomManager::HandleChangeRoom(const std::string &i_Name,const ActionParser 
   pNewRoom->AddPlayerToRoom(i_Name);
 
   BroadcastRoomGuiIfChanged(i_Connections);
+  return "";
 }
 
 

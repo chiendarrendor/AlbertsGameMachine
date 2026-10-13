@@ -32,14 +32,14 @@ def recv_envelope(client, timeout=2.0):
 
 
 def room_state(fullstate, name):
-    for room in fullstate["rooms"]:
+    for room in fullstate["body"]["rooms"]:
         if room["name"] == name:
             return room
     return None
 
 
 def inhabitant_room(fullstate, name):
-    for inhab in fullstate["inhabitants"]:
+    for inhab in fullstate["body"]["inhabitants"]:
         if inhab["name"] == name:
             return inhab["room"]
     return None

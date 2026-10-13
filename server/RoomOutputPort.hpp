@@ -13,7 +13,9 @@ public:
   void RemoveBroadcastTarget(const std::string &i_Name);
 
   virtual void UniCast(const std::string &i_Name,const std::string &i_Message) const;
-  virtual void BroadCast(const std::string &i_Message) const;
+  virtual void BroadCastFullState(const std::string &i_GuiName,
+                                  const std::string &i_XMLLoc,const std::string &i_XMLFile,
+                                  const boost::json::object &i_Envelope) const;
 private:
   std::set<std::string> m_BroadcastTargets;
   GameServerConnectionHandlerFactory &m_rConnections;

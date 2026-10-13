@@ -1499,3 +1499,151 @@ and run against the real compiled binary — confirming via `gdb` (installed fre
 previously available) rather than guessing from the backtrace-free raw `SIGSEGV`. All 5 fixes verified:
 `MoVunittests.exe` (37 cases) and the full `server/tests/` suite (15 cases, MoV no longer skipped) both
 pass; `MerchantOfVenus`/`MoVunittests.exe` rebuild clean from scratch.
+
+## `ROOMGUI`'s full-state shape decided to match a real game's exactly — designed and implemented (Albert + Claude, 2026-10-13)
+
+Surfaced while reviewing Albert's own in-progress client-side rewrite of `GuiPacketParser.java` (the
+first real Phase 3 client work, started independently — see [[component-java-client]]): cross-checking
+his new field names against the actual server output (`gamecommon/OutputPort.hpp`'s
+`WrapFullStateEnvelope`, `gamecommon/DLLGame.hpp`'s `BuildStateWalkerEnvelope`/`SendFullState`/
+`HandleAction`, `server/RoomManager.cpp`'s `BuildRoomGuiState`/`BroadcastRoomGuiIfChanged`) found that
+`ROOMGUI`'s `fullState` and a real game's `fullState` are two genuinely different shapes today:
+- A game's `fullState` is `{state, stateDesc, legalActions, body}` on success or `{state, stateDesc,
+  legalActions, error}` on rejection (`body`/`error` mutually exclusive, both only ever one layer below
+  `fullState`, both set by `DLLGame::HandleAction`/`SendFullState`'s shared `BuildStateWalkerEnvelope`).
+- `ROOMGUI`'s `fullState` is flatly `{rooms, inhabitants}` — no `state`/`stateDesc`/`legalActions`/
+  `body`/`error` at all.
+
+**A real, separately-confirmed bug this exposed, independent of the shape mismatch**: `RoomManager.cpp`/
+`Room::HandleAction`'s room-level action rejections (`"Unknown Game: " + gameName`, `"Room already has
+active game!"`, `"NEWROOM name already exists"`, `"Don't know which room you mean..try again..."`, and
+others — 8+ distinct cases) were never migrated off the pre-Phase-2 `ROOMVALIDATE`/`SENDLINE` macros,
+which still emit a bare `"ERROR,<text>"` comma-line, not JSON. Today, any room-level action rejection
+sends something a Phase-3 JSON-only client parser can't parse at all (`new JSONObject(...)` throws on
+it) — this needed fixing regardless of whether the two shapes get unified, since right now there is no
+working error path for a rejected room action at all.
+
+**Design options considered and rejected before landing on the decision below:**
+- Making `ROOMGUI`'s synthetic `state`/`stateDesc` vary (e.g. by whether the room has an active game) —
+  rejected by Albert: a real game's `state` means "which profoundly different rule set applies," a
+  concept kept deliberately orthogonal to `legalActions` (data-gated, per-transition `<allowed>`
+  conditions within one state). Making `state` also encode "what's currently clickable" would be making
+  one field do the job of two, the exact anti-pattern the game-side schema already avoids. Mapping
+  `ROOMGUI`'s real action set onto an FSM the way a game's is modeled shows it's genuinely a single-state
+  cyclic FSM — every action loops back to the same one state — so `state`/`stateDesc` should be one
+  permanently fixed constant, never varying, full stop.
+- Making `ROOMGUI`'s full-state send fully per-viewer (mirroring how a real game's `SendFullState`/
+  `HandleAction` already `UniCastJson`s a distinct, player-personalized envelope to each player, rather
+  than broadcasting one shared object) — considered as the "fully symmetric with a real game" option,
+  but initially assumed to be a bigger lift than it actually is.
+- Resolved via Albert's clarification: there is no player-vs-non-player distinction for any room-level
+  action — anyone physically in a room can `NEWGAME`/`LOADGAME`/`SAVEGAME` there, not just that room's
+  active players (an acknowledged, pre-existing, separate wart — an observer can save/load a game out
+  from under the players actually playing it — accepted as a consequence of pushing load/save into
+  common room-level code rather than per-game-FSM-gated actions; not addressed by this design). That
+  means the "per-viewer" data `legalActions` actually needs is only ever *per-room*, not per-identity:
+  everyone physically in the same room gets the identical answer. So the cheap middle path applies
+  instead of either extreme above — no new per-viewer personalization machinery needed, and no giving up
+  `BuildRoomGuiState`'s existing global cache-and-diff for the expensive part of the payload.
+
+**Decided design:**
+- `ROOMGUI`'s `fullState` becomes `{state, stateDesc, legalActions, body}` (or `{state, stateDesc,
+  legalActions, error}` on a rejected room-level action) — structurally identical to a real game's,
+  so `GuiPacketParser` (or whatever client-side class replaces it) unwraps both `GuiType`s with one code
+  path instead of two, and gets a working, uniform error-presentation mechanism for both for free.
+- `body` is exactly today's `BuildRoomGuiState()` output (`{rooms, inhabitants}`), unchanged in content
+  — still computed once and cached/diffed globally via `m_LastRoomGuiState`, since the room list itself
+  genuinely is the same for every inhabitant.
+- `state`/`stateDesc` are one fixed constant, computed once, identical for every recipient, every time —
+  exact wording not yet chosen (something like `"ROOM"` / `"Room Navigation"` would satisfy the shape;
+  needs Albert's call, same as any other user-facing string).
+- `legalActions` is computed **per recipient, inside `BroadcastRoomGuiIfChanged`'s existing per-
+  inhabitant send loop** (which already calls `GetRoomOf(name)` for other reasons), not globally:
+  `NEWROOM`/`CHANGEROOM` always included (dispatched in `RoomManager::HandleAction` before any room
+  lookup, so they have no room-dependent precondition at all); `NEWGAME` included only if that
+  recipient's current room has `m_pGame == NULL || m_pGame->IsDone()`; `LOADGAME`/`SAVEGAME` included
+  only if `m_pGame != NULL` — the exact same preconditions the existing `ROOMVALIDATE` checks in
+  `Room::HandleNewGame`/`HandleLoadGame`/`HandleSaveGame` already enforce, just surfaced proactively
+  instead of only discovered by trying and failing. Since this only depends on which room a recipient is
+  in (not their identity within it), it's cheap to compute fresh per recipient without needing any new
+  caching layer of its own.
+- Every `ROOMVALIDATE`/`SENDLINE("ERROR,...")` call site in `RoomManager.cpp`/`Room::HandleAction` gets
+  converted to send the same `{state, stateDesc, legalActions, error}` shape a rejected game action
+  already sends via `BuildStateWalkerEnvelope`/`UniCastJson` — needs its own routing path, since
+  `RoomManager` has no `OutputPort` of its own (see `OutputPort.hpp`'s existing comment on this — it
+  talks to `GameServerConnectionHandlerFactory` directly), the same way `BroadcastRoomGuiIfChanged`
+  already does for the success case via `WrapFullStateEnvelope`+`SendLineToName`.
+
+**Implemented 2026-10-13, exactly per the design above** — `RoomManager.hpp`/`.cpp`: `Room::HandleAction`/
+`HandleNewGame`/`HandleLoadGame`/`HandleSaveGame` all now return `std::string` (`""` on success, an error
+description on rejection) instead of directly `UniCast`ing via the old `ROOMVALIDATE` macro, which (along
+with `SENDLINE`) is deleted outright. `RoomManager::HandleAction`/`HandleNewRoom`/`HandleChangeRoom` follow
+the same convention, and the real routing/sending now happens in exactly one place
+(`RoomManager::SendRoomActionError`, the error-path counterpart to `BroadcastRoomGuiIfChanged`'s success
+path). `state`/`stateDesc` landed as `"ROOM"`/`"Room Navigation"` (`RoomManager.cpp`'s
+`ROOMGUI_STATE`/`ROOMGUI_STATEDESC` — easy one-line change if Albert wants different wording later).
+
+**A real bug found and fixed while implementing, not anticipated in the design above**: computing
+`legalActions` naively per-recipient (calling `Room::GetLegalRoomActions()` fresh for every inhabitant,
+as first implemented) multiplies `IsDone()` RPCs to an active game process by the number of inhabitants
+in that room, *on top of* the one `BuildRoomGuiState()` already does for the same room's `isDone` field
+— caught immediately by the existing Python e2e suite's mock scripts, which hardcode an exact expected
+RPC sequence and failed with `TimeoutError`/wrong-response-shape the moment the extra calls desynced it.
+Fixed by having `BuildRoomGuiState` take a `std::map<std::string,boost::json::array> &o_PerRoomActions`
+out-parameter and compute each room's `IsDone()` exactly once per broadcast pass, immediately feeding
+that same boolean into `Room::GetLegalRoomActions(bool i_GameIsDone)` (now a parameter, not a fresh
+internal call) — so one `IsDone()` call now correctly serves both the room-list body and that room's
+legal-actions answer, reused across every inhabitant of that room. `RoomManager::LegalActionsFor(name,
+perRoomActions)` does the per-recipient lookup against that precomputed map; `ComputeLegalActions(name)`
+(used only by `SendRoomActionError`'s single-recipient case, where one extra `IsDone()` call is fine) is
+a thin wrapper building a one-entry map and delegating to the same function.
+
+**Scope grew once implementation started, per Albert's own direct steer** ("nothing should be emitted by
+the server that isn't JSON-wrapped messages in either the LOGIN or the GAMEGUI/GAME formats") — a full
+audit of every `UniCast`/`BroadCast`/`SendLine*` call site in `server/`+`gamecommon/` turned up three more
+non-JSON emission points, all in `server/GameProcessProxy.cpp`, none of them part of the original ROOMGUI
+design:
+1. `Terminate()` (fires when the child game process dies/violates the protocol) broadcast a raw
+   `"ERROR,..."` comma-line to the whole room. Fixed by broadcasting a synthetic full-state envelope
+   instead — `{state: "TERMINATED", stateDesc: "Game process terminated unexpectedly.", legalActions: [],
+   error: i_Reason}` — via a new `OutputPort::BroadCastFullState(guiName,xmlLoc,xmlFile,envelope)`.
+   Needed as a genuinely new **virtual** method (unlike `UniCastFullState`, which can be a concrete
+   base-class default since it only needs one already-known recipient) because enumerating "every
+   recipient" is subclass-specific knowledge the base class doesn't have — implemented meaningfully in
+   `RoomOutputPort` (loops its own `m_BroadcastTargets`, calling the inherited `UniCastFullState` per
+   name) and as an explicit "not supported from here" `std::logic_error` stub in
+   `GameServerMainOutputPort` (a game process has no recipient list to enumerate and no legitimate reason
+   to broadcast a full-state envelope at all — only the server's own `Terminate()` does).
+2. `DispatchEvent`'s untargeted-event relay (the old legacy-plain-text `BroadcastERROR`-style mechanism,
+   `target` absent or `"*"`) — confirmed genuinely dead for both real games (neither `OutpostServer.xml`
+   nor `MerchantOfVenusServer.xml` declare any `<event>` at all anymore, only `AOR/AORServer.xml` does,
+   and AOR is permanently out of scope, never rebuilt) by checking what the `transitioncompiler`-generated
+   `BroadCast(Make<Event>Message(...))` codegen requires to even exist. Removed outright rather than
+   converted — there's no legitimate reason left for a game process to broadcast raw text to everyone.
+   `DispatchEvent` now throws `ProtocolError` (the same recovery path as a crash: caught by
+   `SafeSendRequest`, triggers `Terminate()`) if an event arrives with no real target, enforcing the
+   invariant structurally instead of leaving unreachable-but-present plumbing around.
+3. `HandleAction`'s own defensive path (a protocol-level `"error"` on the `handleAction` RPC response
+   itself, as opposed to a real in-game rejection, which the game process reports itself via its own
+   targeted `UniCastJson` event) unicast a raw `"ERROR,..."` string. Traced against `GameServerMain.hpp`'s
+   actual dispatch and confirmed unreachable for any real game process today (`"error"` is only ever set
+   for an unrecognized RPC method, and `"handleAction"` always is one) — kept rather than deleted, since
+   it's a real defensive boundary-check (the game process is a separate, less-trusted process across a
+   pipe) that should degrade safely rather than silently reverting to a raw string if it's ever wrong.
+   Converted to the same synthetic-envelope shape as `Terminate()`, with `state: "PROTOCOLERROR"`.
+   Fixed a stale comment in `GameServerMain.hpp` (and another in `GameProcessProxy.hpp`) that still
+   described the old pre-Generator-cleanup plain-`UniCast` behavior for in-game rejections.
+
+**Full verification**: `servertest` (9 cases, including a new `UntargetedEventIsAProtocolViolation` case
+and updated assertions in `HandleActionEmitsEventsThenSucceeds`/`HandleActionErrorBecomesSenderOnlyUnicast`/
+`CrashMidRoundTripTerminatesGameAndNotifiesRoom` for the new envelope shapes — `RecordingOutputPort`/
+`Outpost/tests/TestOutputPort` both updated from `BroadCast`/`m_BroadCasts` to `BroadCastFullState`/
+`m_BroadCastFullStates`), `outposttest` (83 cases), `MoVunittests.exe` (37 cases), and the full
+`server/tests/` Python e2e suite (15 cases — `room_state`/`inhabitant_room`'s shared shape assumption
+fixed in both `test_server_e2e.py` and its duplicate in `test_real_games_e2e.py` to look under `body`
+instead of the fullState root; `test_rejected_action_reaches_only_the_sender` and
+`test_newgame_and_join_round_trip` updated for the new JSON error shape and the now-illegal untargeted
+emit, respectively) all pass, confirmed via a genuinely from-scratch clean rebuild of `gameserver`,
+`servertest`, `Outpost`/`outposttest`, and `MerchantOfVenus`/`MoVunittests.exe` together, not just
+incremental recompiles. **Still to do, unchanged from before**: the client (`GuiPacketParser.java`,
+mid-rewrite — see [[component-java-client]]) hasn't been updated to actually consume this new shape yet.

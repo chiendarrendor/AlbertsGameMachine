@@ -44,14 +44,12 @@ BOOST_AUTO_TEST_CASE( GetNameNeverTouchesTheWire )
 
 BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
 {
-  // The targeted event is a full-state envelope now (a native JSON object,
-  // not a legacy comma-line string) -- every targeted event is, post
-  // Phase 3. The untargeted one is still legacy plain text (e.g.
-  // BroadcastERROR), which stays a string.
+  // Every event is a full-state envelope now (a native JSON object, not a
+  // legacy comma-line string) -- untargeted/broadcast events are no longer
+  // supported at all (see UntargetedEventIsAProtocolViolation below).
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
-    "\"emit\":[{\"target\":\"alice\",\"message\":{\"state\":\"Playing\",\"legalActions\":[],\"body\":{}}},"
-    "{\"message\":\"TURNORDER,alice\"}],"
+    "\"emit\":[{\"target\":\"alice\",\"message\":{\"state\":\"Playing\",\"legalActions\":[],\"body\":{}}}],"
     "\"then\":{\"result\":{}}}]");
   ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
   RecordingOutputPort port;
@@ -77,8 +75,33 @@ BOOST_AUTO_TEST_CASE( HandleActionEmitsEventsThenSucceeds )
   BOOST_CHECK_EQUAL(outer.at("XMLFile").as_string(), "TestGameClient.xml");
   BOOST_CHECK_EQUAL(outer.at("fullState").as_object().at("state").as_string(), "Playing");
 
-  BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
-  BOOST_CHECK_EQUAL(port.m_BroadCasts[0], "TURNORDER,alice");
+  BOOST_CHECK_EQUAL(port.m_BroadCastFullStates.size(), 0u);
+}
+
+BOOST_AUTO_TEST_CASE( UntargetedEventIsAProtocolViolation )
+{
+  // Nothing a real game process can legitimately emit is untargeted
+  // anymore -- the old legacy-plain-text broadcast mechanism (e.g.
+  // BroadcastERROR) is retired, not just unused. An untargeted event is
+  // now treated exactly like any other protocol violation: Terminate()
+  // notifies the room and the proxy marks itself done, same as a crash.
+  std::string dir = MakeGameDir(
+    "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
+    "\"emit\":[{\"message\":\"TURNORDER,alice\"}],"
+    "\"then\":{\"result\":{}}}]");
+  ServerGameInfo sgi("TestGame", dir, "https://example.invalid/", "TestGameClient.xml");
+  RecordingOutputPort port;
+  GameProcessProxy proxy(sgi, port, MOCK_GAME, dir);
+
+  ActionParser join("JOIN", boost::json::object());
+  std::set<std::string> roster;
+  roster.insert("alice");
+  BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join, roster));
+
+  BOOST_REQUIRE_EQUAL(port.m_BroadCastFullStates.size(), 1u);
+  BOOST_CHECK_EQUAL(port.m_BroadCastFullStates[0].at("state").as_string(), "TERMINATED");
+  BOOST_CHECK(!port.m_BroadCastFullStates[0].at("error").as_string().empty());
+  BOOST_CHECK_EQUAL(proxy.IsDone(), true);
 }
 
 BOOST_AUTO_TEST_CASE( HandleActionForwardsRosterOverTheWire )
@@ -122,8 +145,13 @@ BOOST_AUTO_TEST_CASE( HandleActionErrorBecomesSenderOnlyUnicast )
 
   BOOST_REQUIRE_EQUAL(port.m_UniCasts.size(), 1u);
   BOOST_CHECK_EQUAL(port.m_UniCasts[0].first, "alice");
-  BOOST_CHECK_EQUAL(port.m_UniCasts[0].second, "ERROR,That is not a legal move.");
-  BOOST_CHECK_EQUAL(port.m_BroadCasts.size(), 0u);
+
+  boost::json::value wrapped = boost::json::parse(port.m_UniCasts[0].second);
+  const boost::json::object &fullState = wrapped.as_object().at("fullState").as_object();
+  BOOST_CHECK_EQUAL(fullState.at("error").as_string(), "That is not a legal move.");
+  BOOST_CHECK(!fullState.contains("body"));
+
+  BOOST_CHECK_EQUAL(port.m_BroadCastFullStates.size(), 0u);
 }
 
 BOOST_AUTO_TEST_CASE( SendFullStateEmitsToRequestedPlayer )
@@ -182,7 +210,8 @@ BOOST_AUTO_TEST_CASE( CrashMidRoundTripTerminatesGameAndNotifiesRoom )
   // GameProcessProxy is the final arbiter of protocol correctness: a dead or
   // misbehaving child must never let a ProtocolError escape to RoomManager
   // (which has no per-room recovery and would take the whole server down).
-  // Instead it broadcasts one ERROR line to the room and marks itself done.
+  // Instead it broadcasts one synthetic TERMINATED full-state envelope to
+  // the room and marks itself done.
   std::string dir = MakeGameDir(
     "[{\"expect\":{\"method\":\"handleAction\",\"params\":{\"action\":\"JOIN\",\"params\":{}}},"
     "\"then\":{\"crash\":true}}]");
@@ -195,7 +224,8 @@ BOOST_AUTO_TEST_CASE( CrashMidRoundTripTerminatesGameAndNotifiesRoom )
   roster.insert("alice");
   BOOST_CHECK_NO_THROW(proxy.HandleAction("alice", join, roster));
 
-  BOOST_REQUIRE_EQUAL(port.m_BroadCasts.size(), 1u);
-  BOOST_CHECK_EQUAL(port.m_BroadCasts[0].find("ERROR,"), 0u);
+  BOOST_REQUIRE_EQUAL(port.m_BroadCastFullStates.size(), 1u);
+  BOOST_CHECK_EQUAL(port.m_BroadCastFullStates[0].at("state").as_string(), "TERMINATED");
+  BOOST_CHECK(!port.m_BroadCastFullStates[0].at("error").as_string().empty());
   BOOST_CHECK_EQUAL(proxy.IsDone(), true);
 }

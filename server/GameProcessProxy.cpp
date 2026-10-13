@@ -1,7 +1,6 @@
 #include "GameProcessProxy.hpp"
 #include "JsonLineProtocol.hpp"
 #include "OutputPort.hpp"
-#include "StringUtilities.hpp"
 #include "ActionParser.hpp"
 #include "ServerGameInfo.hpp"
 
@@ -153,7 +152,19 @@ void GameProcessProxy::Terminate(const std::string &i_Reason) const
   }
   m_Terminated = true;
 
-  GetOutputPort().BroadCast("ERROR," + UnComma("Game process failed: " + i_Reason));
+  // Synthetic, not a real StateWalker envelope -- the game is gone, there's
+  // no state/legalActions left to report. Same shape as a real rejection
+  // (state/stateDesc/legalActions/error) so this still unwraps identically
+  // on the client, just with legalActions empty (nothing is legal anymore).
+  boost::json::object envelope;
+  envelope["state"] = "TERMINATED";
+  envelope["stateDesc"] = "Game process terminated unexpectedly.";
+  envelope["legalActions"] = boost::json::array();
+  envelope["error"] = i_Reason;
+
+  GetOutputPort().BroadCastFullState(GetServerGameInfo().GetName(),
+                                     GetServerGameInfo().GetXMLLoc(),GetServerGameInfo().GetXMLFile(),
+                                     envelope);
 
   if (m_ChildPid > 0)
   {
@@ -166,34 +177,36 @@ void GameProcessProxy::Terminate(const std::string &i_Reason) const
 
 void GameProcessProxy::DispatchEvent(const boost::json::object &i_Params) const
 {
+  // Untargeted/broadcast events (the old legacy-plain-text-BroadcastERROR
+  // mechanism) are no longer supported at all -- nothing a real game
+  // process can legitimately emit is untargeted anymore (every real event
+  // is a per-player full-state envelope, every real game's custom <event>
+  // declarations are gone, see the Generator-cleanup section of
+  // .claude/server_game_interface_spec.md). A missing/"*" target now means
+  // the game process is violating the protocol, same as any other
+  // malformed message -- GameProcessProxy is the final arbiter of protocol
+  // correctness (see this class's own header comment).
   boost::json::object::const_iterator targetIt = i_Params.find("target");
-  bool isBroadcast = (targetIt == i_Params.end()) || (targetIt->value().as_string() == "*");
-
-  if (isBroadcast)
+  if (targetIt == i_Params.end() || !targetIt->value().is_string() ||
+      targetIt->value().as_string() == "*")
   {
-    // Legacy plain-text event (e.g. BroadcastERROR for a whole-game
-    // invalid-state signal) -- no FSS-carrying event is ever untargeted, so
-    // message is always a string here, never a JSON object.
-    std::string message(i_Params.at("message").as_string().c_str());
-    GetOutputPort().BroadCast(message);
+    throw ProtocolError("GameProcessProxy: untargeted/broadcast events are no longer supported; "
+                         "every event must be addressed to a specific recipient");
   }
-  else
-  {
-    std::string target(targetIt->value().as_string().c_str());
 
-    // Every targeted event is a full-state envelope now: a native JSON
-    // object (the game process's pure layers-1+2 state/legalActions/
-    // body-or-error), not a legacy comma-line string. The server already
-    // has Name/XMLLoc/XMLFile authoritatively via its own
-    // GetServerGameInfo() -- it's literally what spawned this game process
-    // with that exact data -- so it adds layers 3+4 here in one place via
-    // UniCastFullState, rather than having the game process redundantly
-    // echo static data back on every message. See
-    // .claude/server_game_interface_spec.md's Phase 3 envelope design.
-    GetOutputPort().UniCastFullState(target,GetServerGameInfo().GetName(),
-                                     GetServerGameInfo().GetXMLLoc(),GetServerGameInfo().GetXMLFile(),
-                                     i_Params.at("message").as_object());
-  }
+  std::string target(targetIt->value().as_string().c_str());
+
+  // Every event is a full-state envelope now: a native JSON object (the
+  // game process's pure layers-1+2 state/legalActions/body-or-error), not
+  // a legacy comma-line string. The server already has Name/XMLLoc/XMLFile
+  // authoritatively via its own GetServerGameInfo() -- it's literally what
+  // spawned this game process with that exact data -- so it adds layers
+  // 3+4 here in one place via UniCastFullState, rather than having the
+  // game process redundantly echo static data back on every message. See
+  // .claude/server_game_interface_spec.md's Phase 3 envelope design.
+  GetOutputPort().UniCastFullState(target,GetServerGameInfo().GetName(),
+                                   GetServerGameInfo().GetXMLLoc(),GetServerGameInfo().GetXMLFile(),
+                                   i_Params.at("message").as_object());
   // Note: a "SPECTATOR" target is phase-3-only (see the interface spec) --
   // not reachable from any phase-1 game, so not handled here yet.
 }
@@ -222,8 +235,27 @@ void GameProcessProxy::HandleAction(const std::string &i_Name,const ActionParser
 
   if (obj.contains("error"))
   {
+    // Unreachable for any real game process today (GameServerMain.hpp's
+    // dispatch never attaches "error" to a handleAction response
+    // specifically -- that only happens for an unrecognized method, and
+    // "handleAction" always is one), but kept as a defensive, correctly-
+    // JSON-shaped fallback rather than assuming it can never happen. A
+    // real in-game rejection takes a completely different path: it's
+    // reported by the game process itself, as its own targeted
+    // UniCastJson envelope (an "event" notification, dispatched above via
+    // DispatchEvent before this response is ever inspected), not via this
+    // RPC-level "error" field at all.
     std::string errorText(obj.at("error").as_string().c_str());
-    GetOutputPort().UniCast(i_Name, "ERROR," + UnComma(errorText));
+
+    boost::json::object envelope;
+    envelope["state"] = "PROTOCOLERROR";
+    envelope["stateDesc"] = "Unexpected response from game process.";
+    envelope["legalActions"] = boost::json::array();
+    envelope["error"] = errorText;
+
+    GetOutputPort().UniCastFullState(i_Name,GetServerGameInfo().GetName(),
+                                     GetServerGameInfo().GetXMLLoc(),GetServerGameInfo().GetXMLFile(),
+                                     envelope);
   }
 }
 

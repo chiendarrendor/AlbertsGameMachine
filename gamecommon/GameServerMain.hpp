@@ -74,9 +74,10 @@
 #include <boost/json.hpp>
 #include <iostream>
 #include <set>
+#include <stdexcept>
 #include <string>
 
-// The game-side counterpart to GameProcessProxy: UniCast/BroadCast each
+// The game-side counterpart to GameProcessProxy: UniCast/UniCastJson each
 // become one {"method":"event","params":{...}} line written to stdout.
 class GameServerMainOutputPort : public OutputPort
 {
@@ -88,9 +89,18 @@ public:
     EmitEvent(boost::json::value(i_Message),&i_Name);
   }
 
-  virtual void BroadCast(const std::string &i_Message) const
+  // A game process has no roster of its own to enumerate (UniCastJson/
+  // DLLGame::HandleAction already cover every real case: full-state is
+  // always addressed to one specific player) and no legitimate reason to
+  // broadcast a full-state envelope at all -- that's purely a server-side
+  // concept (GameProcessProxy::Terminate, notifying everyone in a room a
+  // game process died). Implemented to fail loudly rather than silently
+  // drop or mis-emit, in case that invariant is ever wrong.
+  virtual void BroadCastFullState(const std::string &,const std::string &,
+                                  const std::string &,const boost::json::object &) const
   {
-    EmitEvent(boost::json::value(i_Message),NULL);
+    throw std::logic_error("GameServerMainOutputPort::BroadCastFullState: "
+                            "a game process has no recipient list to broadcast to.");
   }
 
   // Nests i_Value natively into params.message instead of serializing it to
@@ -194,9 +204,10 @@ int RunGameServerMain(int argc,char **argv,int i_AutoRecursionDepth,
 
       ActionParser ap(action,actionParams);
       game.HandleAction(player,ap,roster);
-      // DLLGame::HandleAction reports a rejected action as a plain
-      // UniCast("ERROR,...") to the sender, not a distinguished failure --
-      // it always completes normally from the RPC's point of view. See the
+      // DLLGame::HandleAction reports a rejected action as a targeted
+      // UniCastJson envelope (state/stateDesc/legalActions/error) straight
+      // to the sender, not a distinguished RPC failure -- this request
+      // always completes normally from the RPC's point of view. See the
       // "one open question" note in the spec/GameServerMain design
       // discussion: this doesn't match "ERROR is a special case"'s native
       // RPC-error framing literally, but produces identical client-visible

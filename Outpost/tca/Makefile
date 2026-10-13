@@ -119,11 +119,16 @@ stageclient: OutpostClient.xml clientjava
 OutpostClient.xml: ../client/OutpostClient.xml ${CLIENTXMLFRAGMENTS}
 	${CPP} -I../client -P ../client/OutpostClient.xml > OutpostClient.xml
 
-clientjava: .actionschema.validated
+.PHONY: clientjava
+
+${CLIENTCLASSDIR}/.compiled: ${JFILES} .actionschema.validated
 	- rm -f ${CLIENTJAVADIR}/Outpost/*.class
 	- rm -rf ${CLIENTCLASSDIR}
-	- mkdir -p ${CLIENTCLASSDIR}
+	mkdir -p ${CLIENTCLASSDIR}
 	${JAVAC} -d ${CLIENTCLASSDIR} -sourcepath ${CLIENTJAVADIR} -classpath ${CLIENTJAVALIB} ${JFILES}
+	touch $@
+
+clientjava: ${CLIENTCLASSDIR}/.compiled
 
 
 %.o:%.cpp

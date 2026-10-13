@@ -15,13 +15,15 @@ public:
   {
     m_UniCasts.push_back(std::make_pair(i_Name, i_Message));
   }
-  virtual void BroadCast(const std::string &i_Message) const
+  virtual void BroadCastFullState(const std::string &i_GuiName,
+                                  const std::string &i_XMLLoc,const std::string &i_XMLFile,
+                                  const boost::json::object &i_Envelope) const
   {
-    m_BroadCasts.push_back(i_Message);
+    m_BroadCastFullStates.push_back(i_Envelope);
   }
 
   mutable std::vector<std::pair<std::string, std::string> > m_UniCasts;
-  mutable std::vector<std::string> m_BroadCasts;
+  mutable std::vector<boost::json::object> m_BroadCastFullStates;
 };
 
 #endif

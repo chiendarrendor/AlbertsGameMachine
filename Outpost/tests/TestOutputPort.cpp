@@ -14,10 +14,12 @@ void TestOutputPort::UniCast(const std::string &i_Name,const std::string &i_Mess
   m_oss << "unicast: " << i_Name << " -- " << i_Message << std::endl;
 }
 
-void TestOutputPort::BroadCast(const std::string &i_Message) const
+void TestOutputPort::BroadCastFullState(const std::string &i_GuiName,
+                                        const std::string &i_XMLLoc,const std::string &i_XMLFile,
+                                        const boost::json::object &i_Envelope) const
 {
-  m_oss << "broadcast: " << i_Message << std::endl;
-}    
+  m_oss << "broadcastfullstate: " << i_GuiName << " -- " << boost::json::serialize(i_Envelope) << std::endl;
+}
 
 std::string TestOutputPort::GetOutput() const
 {

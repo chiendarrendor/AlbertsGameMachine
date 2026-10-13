@@ -27,13 +27,15 @@ void RoomOutputPort::UniCast(const std::string &i_Name,const std::string &i_Mess
   m_rConnections.SendLineToName(i_Name,i_Message);
 }
 
-void RoomOutputPort::BroadCast(const std::string &i_Message) const
+void RoomOutputPort::BroadCastFullState(const std::string &i_GuiName,
+                                        const std::string &i_XMLLoc,const std::string &i_XMLFile,
+                                        const boost::json::object &i_Envelope) const
 {
   std::set<std::string>::iterator nameit = m_BroadcastTargets.begin();
 
   for (; nameit != m_BroadcastTargets.end() ; ++nameit)
   {
-    m_rConnections.SendLineToName(*nameit,i_Message);
+    UniCastFullState(*nameit,i_GuiName,i_XMLLoc,i_XMLFile,i_Envelope);
   }
 }
 

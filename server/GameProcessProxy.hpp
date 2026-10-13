@@ -68,8 +68,9 @@ private:
   boost::optional<boost::json::value> SafeSendRequest(const std::string &i_Method,
                                                         boost::json::object i_Params) const;
 
-  // Idempotent: broadcasts one ERROR line to the room, kills and reaps the
-  // child if still alive, and marks this instance done for good.
+  // Idempotent: broadcasts one synthetic TERMINATED full-state envelope to
+  // the room, kills and reaps the child if still alive, and marks this
+  // instance done for good.
   void Terminate(const std::string &i_Reason) const;
 
   mutable pid_t m_ChildPid;

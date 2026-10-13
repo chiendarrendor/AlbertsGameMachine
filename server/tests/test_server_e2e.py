@@ -32,14 +32,14 @@ def recv_envelope(client, timeout=2.0):
 
 
 def room_state(fullstate, name):
-    for room in fullstate["rooms"]:
+    for room in fullstate["body"]["rooms"]:
         if room["name"] == name:
             return room
     return None
 
 
 def inhabitant_room(fullstate, name):
-    for inhab in fullstate["inhabitants"]:
+    for inhab in fullstate["body"]["inhabitants"]:
         if inhab["name"] == name:
             return inhab["room"]
     return None
@@ -155,7 +155,6 @@ def test_newgame_and_join_round_trip(server):
     server.mock_game.on("isDone").respond_ok({"done": False})
     server.mock_game.on("handleAction", action="JOIN", params={}) \
         .emit(target="alice", message={"state": "Playing", "legalActions": [], "body": {"turnOrder": ["alice"]}}) \
-        .emit(message="SOME_LEGACY_BROADCAST,alice") \
         .respond_ok()
     server.mock_game.on("isDone").respond_ok({"done": False})
 
@@ -171,7 +170,6 @@ def test_newgame_and_join_round_trip(server):
     envelope = recv_envelope(alice)
     assert envelope["gui"] == "TestGame"
     assert envelope["fullState"]["state"] == "Playing"
-    assert alice.expect("SOME_LEGACY_BROADCAST,alice")
     # No ROOMGUI resend follows: isDone/gameName/inhabitants are all
     # unchanged by JOIN, so the cache-and-diff correctly suppresses it --
     # confirmed by the isDone RPC still having been consumed (the mock
@@ -219,7 +217,14 @@ def test_rejected_action_reaches_only_the_sender(server):
     drain_until_roomgui(bob, lambda fs: room_state(fs, "GameRoom")["gameName"] == "TestGame")
 
     alice.send_action("TestGame", "MOVE", space=99)
-    assert alice.expect("ERROR,That is not a legal move.")
+    # GameProcessProxy::HandleAction's own defensive path (a protocol-level
+    # "error" on the handleAction RPC response itself, as opposed to a real
+    # in-game rejection, which the game process reports itself via its own
+    # targeted event) -- now a proper JSON full-state envelope, not the old
+    # raw "ERROR,..." line.
+    envelope = recv_envelope(alice)
+    assert envelope["gui"] == "TestGame"
+    assert envelope["fullState"]["error"] == "That is not a legal move."
     # bob must see nothing at all from this rejected action -- the room's
     # game/isDone/inhabitants are unchanged, so ROOMGUI's cache-and-diff
     # means no resend reaches bob at all (a real improvement over the old

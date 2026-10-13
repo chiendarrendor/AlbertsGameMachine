@@ -122,7 +122,12 @@ void GameServerConnectionHandler::SendLoginState(bool i_Authenticated,int i_Othe
 	state["authenticated"] = i_Authenticated;
 	state["otherconnections"] = i_OtherConnections;
 	state["error"] = i_Error.empty() ? boost::json::value() : boost::json::value(i_Error);
-	SendLine(boost::json::serialize(state));
+	std::string serialized = boost::json::serialize(state);
+	// Same spirit as SendLineToName's "Sending to <name>: ..." print below,
+	// for messages sent before a connection has a confirmed name at all --
+	// the socket is the only identifier available this early.
+	std::cout << "Sending to socket " << GetSocket() << ": " << serialized << std::endl;
+	SendLine(serialized);
 }
 
 void GameServerConnectionHandler::SendCurrentLoginState(const std::string &i_Error)

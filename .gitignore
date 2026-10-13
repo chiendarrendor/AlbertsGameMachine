@@ -18,6 +18,7 @@ Outpost/tca/Outpost
 MerchantOfVenus/tca/MerchantOfVenus
 a.out
 */tca/clientstage/
+classes/
 */tca/*DLL.cpp
 */tca/*GameInfo.hpp
 */tca/*EventGenerator.hpp
