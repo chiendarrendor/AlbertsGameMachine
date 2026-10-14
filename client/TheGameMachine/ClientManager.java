@@ -60,10 +60,11 @@ public class ClientManager
     try
     {
       ConnectSocket(m_HostName,m_Port);
-      GetWelcome();
+      
+      LoginProcess(m_extUserName, m_extPassword);
 
-      m_lwindow = null;
-      DoLogin(m_extUserName,m_extPassword);
+      System.out.println("Login Process Completed");
+      while(!m_exiting) {}
 
       while(true)
       {
@@ -111,53 +112,35 @@ public class ClientManager
     }
   }
 
-  private void GetWelcome()
-  {
-    try
-    {
-      String welcomestring = m_in.readLine();
-      System.out.println("welcomed: " + welcomestring);
+/*
+  FSM for the Login Process:
+  Initial: receive initial LOGIN packet
+    a. if there is an external username and password, send them and go to HandleAuthenticate
+    b. if there is not, go to RequestLogin
+  RequestLogin: Raise Login Panel if it doesn't exist, wait for username/password, send them, and go to HandleAuthenticate
+  HandleAuthenticate: receive login packet.  
+    a. if authenticated = true and otherconnections = 0 go to login complete
+    b. if authenticated = true and otherconnections > 0 go to  ElectLogoutOther
+    c. if authenticated = false: set error in Login Panel (may have to pend this if LoginPanel doesn't exist yet) and go to RequestLogin
+  ElectLogoutOther: raise logout-other confirm dialog and wait for response
+    a. yes: send LOGOUTOTHER message and goto HandleAuthenticate
+    b. no: throw exception of of login process (which should probably exit the app)
+*/
+
+  private enum LoginState{ LoginInitial, LoginRequestLogin, LoginHandleAuthenticate, LoginElectLogoutOther, LoginComplete }
+
+  private GuiPacketParser getLoginMessage() {
+    GuiPacketParser result = null;
+    try {
+      result = new GuiPacketParser(m_in.readLine());
+    } catch (IOException ioe) {
+      throw new ClientManagerException(ioe.toString());
     }
-    catch (IOException ioe)
-    {
-      throw new ClientManagerException("IO Exception in get welcomestring");
-    }
+    if (result.getGuiType() != GuiPacketParser.GuiType.LOGIN) throw new ClientManagerException("Invalid LOGIN message");
+    return result;
   }
 
-  private void DoLogin(String i_extUserName,String i_extPassword)
-  {
-    
-    String res = "";
-
-    if (i_extUserName != null && i_extPassword != null)
-    {
-      res = SendLogin(i_extUserName,i_extPassword);
-      // null return is good...that means that we got a valid login and the Server is happy with us.
-      if (res == null) return;
-
-      res = "External Login Invalid: " + res;
-    }
-
-    m_lwindow = new LoginWindow();
-    m_lwindow.SetStatus(res);
-
-    while(true)
-    {
-      LoginWindow.LoginData ldata = m_lwindow.GetLogin();
-      m_lwindow.SetStatus("Sending Login To Server");
-      String result = SendLogin(ldata.m_login,ldata.m_password);
-
-      if (result == null)
-      {
-         m_lwindow.Deactivate();
-        return;
-      }
-
-      m_lwindow.SetStatus(result);
-    }
-  }
-
-  private void SendLoginLikeString(String i_type,String i_username,String i_password)
+  private void SendLoginString(String i_username,String i_password)
   {
     JSONObject params = new JSONObject();
     params.put("username",i_username);
@@ -165,7 +148,19 @@ public class ClientManager
 
     JSONObject envelope = new JSONObject();
     envelope.put("namespace","login");
-    envelope.put("action",i_type);
+    envelope.put("action","AUTHENTICATE");
+    envelope.put("params",params);
+
+    m_out.print(envelope.toString());
+    m_out.print("\n");
+    m_out.flush();
+  }
+
+  private void SendLogoutOther() {
+    JSONObject params = new JSONObject();
+    JSONObject envelope = new JSONObject();
+    envelope.put("namespace","login");
+    envelope.put("action","LOGOUTOTHER");
     envelope.put("params",params);
 
     m_out.print(envelope.toString());
@@ -176,44 +171,79 @@ public class ClientManager
 
 
 
-  private String SendLogin(String i_username,String i_password)
-  {
-    SendLoginLikeString("LOGIN",i_username,i_password);
+  private void LoginProcess(String i_extUserName, String i_extPassword) {
+    String errorMessage = null;
+    LoginState curstate = LoginState.LoginInitial;
+    GuiPacketParser gpp = null;
 
-    try
-    {
-	    String linein = m_in.readLine();
-	    
-	    if (linein.equals("WELCOME"))
-	    {    
-        return null;
-	    }
-      else if (linein.equals("ALREADYLOGGEDIN"))
-      {
-        int optionpaneresult = JOptionPane.showConfirmDialog(m_lwindow != null ? m_lwindow.GetFrame() : m_tabs,
+    while(true) {
+      switch (curstate) {
+        case LoginState.LoginInitial:
+          gpp = getLoginMessage();
+          System.out.println("Welcomed: " + gpp.getLoginConnectString());
+          if (i_extUserName != null && i_extPassword != null) {
+            SendLoginString(i_extUserName, i_extPassword);
+            curstate = LoginState.LoginHandleAuthenticate;
+          } else {
+            curstate = LoginState.LoginRequestLogin;
+          }
+          break;
+
+        case LoginState.LoginRequestLogin:
+          if (m_lwindow == null) {
+            m_lwindow = new LoginWindow();
+          }
+          m_lwindow.SetStatus(errorMessage);
+          errorMessage = null;
+          LoginWindow.LoginData ldata = m_lwindow.GetLogin();
+          m_lwindow.SetStatus("Sending Login to Server");
+          SendLoginString(ldata.m_login, ldata.m_password);
+          curstate = LoginState.LoginHandleAuthenticate;
+          break;
+
+
+        case LoginState.LoginHandleAuthenticate:
+          gpp = getLoginMessage();
+          if (!gpp.isLoginAuthenticated()) {
+            errorMessage = gpp.getLoginError();
+            curstate = LoginState.LoginRequestLogin;
+            break;
+          }
+          // if we get here, we're authenticated and we don't need  the login window any more.
+          if (m_lwindow != null) m_lwindow.Deactivate();
+
+          if (gpp.getLoginOtherConnectionCount() == 0) {
+            curstate = LoginState.LoginComplete;
+            break;
+          }
+          // I know we _could_ fall through here...but fallthrough cases in switch statements are the devil.
+          curstate = LoginState.LoginElectLogoutOther;
+          break;
+
+        case LoginState.LoginElectLogoutOther:
+          int optionpaneresult = JOptionPane.showConfirmDialog(m_tabs,
                                                              "You are already logged in.  Log yourself out?",
                                                              "You are already logged in",
                                                              JOptionPane.YES_NO_OPTION,
                                                              JOptionPane.QUESTION_MESSAGE);
-        if (optionpaneresult == JOptionPane.YES_OPTION)
-        {
-          SendLoginLikeString("LOGOUTOTHER",i_username,i_password);
-          return SendLogin(i_username,i_password);
-        }
+          if (optionpaneresult == JOptionPane.YES_OPTION) {
+            SendLogoutOther();
+            curstate = LoginState.LoginHandleAuthenticate;
+            break;
+          }
 
-        return "Login failed. You are already logged in elsewhere.";
+          throw new ClientManagerException("She said down!");
 
+        case LoginState.LoginComplete:
+          return;
+        default:
+          throw new ClientManagerException("Unknown Login State!");
       }
-	    else
-	    {
-        return linein;
-	    }
-    }
-    catch (java.io.IOException ioe)
-    {
-      throw new ClientManagerException("Error Sending Login: " + ioe);
     }
   }
+
+
+
 
 
   private void HandleOneLine()
