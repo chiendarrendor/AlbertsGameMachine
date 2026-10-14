@@ -55,14 +55,16 @@ bool LoginManager::IsValid()
 
 bool LoginManager::IsIllegalUsernameFormat(const std::string &i_Str) const
 {
-	return i_Str.find('\n') != std::string::npos ||
+	return i_Str.empty() ||
+	       i_Str.find('\n') != std::string::npos ||
 	       i_Str.find('\r') != std::string::npos ||
 	       i_Str.find(':') != std::string::npos;
 }
 
 bool LoginManager::IsIllegalPasswordFormat(const std::string &i_Str) const
 {
-	return i_Str.find('\n') != std::string::npos ||
+	return i_Str.empty() ||
+	       i_Str.find('\n') != std::string::npos ||
 	       i_Str.find('\r') != std::string::npos;
 }
 
