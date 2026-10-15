@@ -12,6 +12,7 @@ import json
 import shutil
 import subprocess
 
+import jsonschema
 import pytest
 
 from conftest import HOST, SERVER_BINARY, _next_port, _wait_for_port
@@ -21,6 +22,24 @@ REPO_ROOT = "/mnt/gamemachine/AlbertsGameMachine"
 OUTPOST_SERVER = REPO_ROOT + "/Outpost/tca/Outpost"
 MOV_SERVER = REPO_ROOT + "/MerchantOfVenus/tca/MerchantOfVenus"
 MOV_MAP_XML = REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusMap.xml"
+
+# Game-specific body schemas (see .claude/server_game_interface_spec.md's
+# Phase 3 section) -- hand-authored alongside each game's <refresh> rewrite,
+# but never actually wired into anything until now. Validating real captured
+# output against these here is purely a regression check that the real
+# GetClientState() implementation still matches its own documented contract
+# -- it says nothing about whether the Java client's own field access is
+# correct, since it's checking server output, not client queries.
+GAME_SCHEMAS = {
+    "Outpost": REPO_ROOT + "/Outpost/OutpostSchema.json",
+    "MerchantOfVenus": REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusSchema.json",
+}
+
+
+def assert_body_matches_schema(game_name, body):
+    with open(GAME_SCHEMAS[game_name]) as f:
+        schema = json.load(f)
+    jsonschema.validate(instance=body, schema=schema)
 
 
 def recv_envelope(client, timeout=2.0):
@@ -129,3 +148,4 @@ def test_real_game_join_round_trip(real_games_server, game_name):
     assert envelope["fullState"]["state"] == "InitialState"
     player_names = [p["name"] for p in envelope["fullState"]["body"]["players"]]
     assert "alice" in player_names
+    assert_body_matches_schema(game_name, envelope["fullState"]["body"])

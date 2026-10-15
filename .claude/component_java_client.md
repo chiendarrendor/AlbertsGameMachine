@@ -117,10 +117,23 @@ the only real work either class does) → `ClientManager`:
   - `NOTGUI` lines get broadcast to **every** currently-registered `GUIUnit` (`GUIUnitMap.ForEach`) —
     routing to the *right* one isn't done centrally here at all, it's pushed down to each `GUIUnit`.
   - `NEWGUI`/`ADDGUI` construct (`NEWGUI`) or re-parse into (`ADDGUI`) a `GUIUnit`, keyed by "gui
-    name" in a `TreeMap` (`GUIUnitMap`). `RESETGUI,<name>` synthesizes a bare `"RESET"` line and
-    re-injects it through the exact same per-unit `HandleLine` path an ordinary broadcast `RESET`
-    line would also take — two different triggers converging on identical behavior; legacy
-    duplication, not something either phase needs to preserve carefully.
+    name" in a `TreeMap` (`GUIUnitMap`). **Confirmed 2026-10-15, precisely** (`ClientManager.java`'s
+    `HandleOneLine` switch, still the live pre-Phase-3 code as of this writing): `NEWGUI` only acts
+    if no `GUIUnit` with that name exists yet — builds a brand-new `GUIUnit` (its own
+    `URLClassLoader`/`GameGui`/`ActionTransferManager`/event-schema map), registers it, and parses
+    the given XML into it; a name collision is a no-op (debug message only), never a clobber.
+    `ADDGUI` is the mirror image — it requires a `GUIUnit` with that name to already exist (an
+    unknown name is a no-op/debug message, nothing created) and, if found, parses the *given* XML
+    into the *same already-live* `GameGui` instance (`GUIUnit.ParseXML` re-invokes `GameXMLWalker`
+    against the existing `GameGui`, appending more top-level windows/tabs/events/actions onto it,
+    not replacing anything) — i.e. "load more XML content into an existing gui" vs. NEWGUI's
+    "create a new gui from scratch." **`ADDGUI` was dead wire protocol in practice**: confirmed via
+    `git log --all -p` across the whole project history that no server-side `.cpp`/`.hpp`/`.pm` file
+    has ever emitted an `ADDGUI` line — every hit is client-side code (`GuiPacketParser.java`/
+    `ClientManager.java`) or this doc; real games/rooms only ever sent `NEWGUI`. `RESETGUI,<name>`
+    synthesizes a bare `"RESET"` line and re-injects it through the exact same per-unit `HandleLine`
+    path an ordinary broadcast `RESET` line would also take — two different triggers converging on
+    identical behavior; legacy duplication, not something either phase needs to preserve carefully.
 
 `GUIUnit` (one per live game/gui instance): on `NEWGUI`, builds a `URLClassLoader` that fetches
 **`<XMLLoc>/<GuiName>.jar` over the network** — i.e. a per-game client GUI is a remotely-downloaded

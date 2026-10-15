@@ -80,7 +80,12 @@ ${COMMON}/libCommon.a:
 ${GAMECOMMON}/libGameCommon.a:
 	- (cd ${GAMECOMMON} ; make)
 
-OutpostDLL.cpp OutpostGameInfo.hpp: ../OutpostServer.xml .actionschema.validated
+# See MerchantOfVenus/tca/Makefile's identical rule (found 2026-10-15) for
+# why this needs '&:' (grouped targets, GNU Make 4.3+) rather than plain ':'
+# -- under parallel make, plain ':' with multiple targets and one recipe can
+# run tcom.pl concurrently for "separate" stale targets, racing to write
+# OutpostDLL.cpp from two processes at once.
+OutpostDLL.cpp OutpostGameInfo.hpp &: ../OutpostServer.xml .actionschema.validated
 	${TCOM} ../OutpostServer.xml
 
 # Cross-validates ../OutpostServer.xml's transition/action schema against

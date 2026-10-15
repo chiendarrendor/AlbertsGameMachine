@@ -1198,6 +1198,13 @@
 
 
       boost::json::object movemediator;
+      // GetPenaltyCost() reaches into GetPlayers().GetCurPlayer(), which is
+      // GetTurnOrder()[idx] with no bounds check -- same latent crash class
+      // as HasRemainingBuy()/GetRemainingBuys() above, guarded the same way,
+      // since <refresh> now runs unconditionally even before turn order
+      // exists (e.g. the NEWGAME-triggered full-state before anyone joins).
+      movemediator["initialPenaltyCost"] =
+        (GetPlayers().GetTurnOrder().size() == 0) ? 0 : GetMoveMediator().GetPenaltyCost();
       movemediator["isFirst"] = GetMoveMediator().IsFirst();
 
       boost::json::array dests;

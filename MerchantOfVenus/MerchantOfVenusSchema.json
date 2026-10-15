@@ -136,6 +136,7 @@
     "moveMediator": {
         "type":"object",
         "properties": {
+            "initialPenaltyCost": {"type":"integer"},
             "isFirst": {"type":"boolean"},
             "currentDests": {
                 "type":"array",

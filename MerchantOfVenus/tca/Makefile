@@ -84,7 +84,20 @@ ${COMMON}/libCommon.a:
 ${GAMECOMMON}/libGameCommon.a:
 	- (cd ${GAMECOMMON} ; make)
 
-MerchantOfVenusDLL.cpp MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp: ../MerchantOfVenusServer.xml .actionschema.validated
+#  (Found 2026-10-15: plain ':' with multiple targets and one recipe isn't a
+# single "this recipe produces all these files" rule -- Make treats it as
+# that recipe repeated once per target. Under parallel make, two of these
+# "separate" rules going stale together can run tcom.pl concurrently, with
+# both invocations truncating/writing MerchantOfVenusDLL.cpp at once,
+# corrupting it. '&:' (grouped targets, GNU Make 4.3+) is the real fix --
+# it tells Make this one recipe invocation produces all these outputs.
+# MerchantOfVenusEventGenerator.hpp was dropped from this list in the same
+# pass: tcom.pl/TransitionCompiler.pm never actually generates it any more
+# (dead since the old built-in framework events -- NEWSTATE/LEGALACTION/
+# ERROR/MESSAGE/RESET -- were removed from the generator, see TODO.md), and
+# unlike under plain ':', a grouped-target recipe that doesn't produce every
+# listed target is a hard Make error, not silently inert.)
+MerchantOfVenusDLL.cpp MerchantOfVenusGameInfo.hpp &: ../MerchantOfVenusServer.xml .actionschema.validated
 	${TCOM} ../MerchantOfVenusServer.xml
 
 # Cross-validates ../MerchantOfVenusServer.xml's transition/action schema
