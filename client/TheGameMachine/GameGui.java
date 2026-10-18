@@ -97,6 +97,12 @@ public class GameGui
     m_ostream.flush();
   }
 
+  public void HandleFullState(GuiPacketParser gpp) {
+    GameEvent ge = new GameEvent(gpp);
+    SendEventToWindows(ge);
+  }
+
+
   public void HandleEvent(String s)
   {
     // ShowDebug("Event Is: " + s);

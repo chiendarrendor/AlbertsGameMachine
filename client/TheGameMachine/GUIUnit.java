@@ -11,18 +11,26 @@ import java.net.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.DOMException;
 
+import NodeInterfacePackage.GuiPacketParser;
+
 
 
 public class GUIUnit
 {
   class PassIntoGui implements Runnable
   {
-    private String m_contents;
+    private String m_contents = null;
+    private GuiPacketParser m_gpp = null;
     private GameGui m_gamegui;
     public PassIntoGui(String i_contents,GameGui i_gamegui) { m_contents = i_contents; m_gamegui = i_gamegui;}
+    public PassIntoGui(GuiPacketParser gpp, GameGui i_gamegui) { m_gpp = gpp ; m_gamegui = i_gamegui; }
     public void run()
     {
-      m_gamegui.HandleEvent(m_contents);
+      if (m_gpp != null) {
+        m_gamegui.HandleFullState(m_gpp);
+      } else {
+        m_gamegui.HandleEvent(m_contents);
+      }
     }
   }
 
@@ -39,9 +47,9 @@ public class GUIUnit
     // assume (require?) that all User Defined Nodes of this GUI Unit are found in a jar in the same remote directory
     // as the .xml file, with the same prefix as the name of the GUI
     try {
-      URL[] urls = new URL[]{URI.create(i_gpp.GetXMLLoc() + "/" + i_gpp.GetGuiName() + ".jar").toURL()};
+      URL[] urls = new URL[]{URI.create(i_gpp.getXMLLoc() + "/" + i_gpp.getGameName() + ".jar").toURL()};
       URLClassLoader classLoader = new URLClassLoader(urls, this.getClass().getClassLoader());
-      m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader,i_gpp.GetGuiName());
+      m_gamegui = new GameGui(i_out,i_StatusWindows,i_tabs,classLoader,i_gpp.getGameName());
     } catch (MalformedURLException e) {
       throw new RuntimeException("Couldn't create remote classloader:", e);
     }
@@ -140,6 +148,10 @@ public class GUIUnit
   void HandleLine(String i_line)
   {
     javax.swing.SwingUtilities.invokeLater(new PassIntoGui(i_line,m_gamegui));
+  }
+
+  public void HandleGuiPacketParser(GuiPacketParser gpp) {
+    javax.swing.SwingUtilities.invokeLater(new PassIntoGui(gpp,m_gamegui));
   }
 
 }

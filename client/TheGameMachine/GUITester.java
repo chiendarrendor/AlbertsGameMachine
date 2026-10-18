@@ -1,5 +1,6 @@
 package TheGameMachine;
 
+import NodeInterfacePackage.GuiPacketParser;
 
 import java.io.*;
 

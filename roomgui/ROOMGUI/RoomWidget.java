@@ -12,6 +12,10 @@ import javax.swing.border.Border;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Iterator;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.doghouse.jsonpath.JsonPath;
+import java.util.List;
 
 public class RoomWidget extends JPanel 
   implements ActionListener,ActionGenerator,ActionVariableGenerator
@@ -59,64 +63,35 @@ public class RoomWidget extends JPanel
     add(m_gobutton);
   }
 
-  public void HandleEvent(GameEvent i_event)
-  {
-    boolean nameChange=false;
+  static JsonPath namePath = JsonPath.compile("name");
+  static JsonPath gameNamePath = JsonPath.compile("gameName");
+  static JsonPath inhabitantListPath = JsonPath.compile("inhabitants[]");
 
-    if (i_event.GetVarValue("eventname").equals("GUIROOM"))
-    {
-      String gamename = i_event.GetVarValue("gamename");
-      if (gamename.equals("")) gamename = "no game";
+  public void handleRoomUpdate(JSONObject roomdata) {
+    String roomName = (String)namePath.evaluate(roomdata);
+    String gameName = gameNamePath.evaluateString(roomdata, "no game");
+    List<String> inhabitants = inhabitantListPath.evaluateStringList(roomdata);
 
-      String gamestate = i_event.GetVarValue("gamestate");
-      if (gamestate.equals("")) gamestate = "no state";
+    m_statelabel.setText("<unknown>");
+    m_gamelabel.setText(gameName);
 
-      m_gamelabel.setText(gamename);
-      m_statelabel.setText(gamestate);
+    boolean inDaHouse = false;
+
+    StringBuffer sb = new StringBuffer();
+    sb.append("<HTML>Players:<ul>");
+    for (String inhabitant : inhabitants) {
+      sb.append("<li>");
+      sb.append(inhabitant);
+      sb.append("</li>");
+      if (m_iam.equals(inhabitant)) inDaHouse = true;
     }
-    if (i_event.GetVarValue("eventname").equals("INHABITANT"))
-    {
-      nameChange = true;
-      if (i_event.GetVarValue("roomname").equals(m_name))
-      {
-        m_players.add(i_event.GetVarValue("inhabitantname"));
-        if (m_iam != null && i_event.GetVarValue("inhabitantname").equals(m_iam))
-        {
-          setBorder(BorderFactory.createLineBorder(Color.green));
-        }
-      }
-      else
-      {
-        m_players.remove(i_event.GetVarValue("inhabitantname"));
-        if (m_iam != null && i_event.GetVarValue("inhabitantname").equals(m_iam))
-        {
-          setBorder(BorderFactory.createLineBorder(Color.black));
-        }
-      }
-    }
-
-    if (i_event.GetVarValue("eventname").equals("DROPINHABITANT"))
-    {
-      nameChange = true;
-      m_players.remove(i_event.GetVarValue("inhabitantname"));
-    }
-
-    if (nameChange)
-    {
-      StringBuffer sb = new StringBuffer();
-      sb.append("<HTML>Players:<ul>");
-      Iterator<String> nameit = m_players.iterator();
-      while(nameit.hasNext())
-      {
-        sb.append("<li>");
-        sb.append(nameit.next());
-        sb.append("</li>");
-      }
       sb.append("</ul></html>");
       m_playerslabel.setText(sb.toString());
-    }
+
+      setBorder(BorderFactory.createLineBorder(inDaHouse ? Color.green : Color.black));
 
   }
+
   
   public void detach()
   {

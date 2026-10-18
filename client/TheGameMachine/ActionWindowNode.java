@@ -88,13 +88,7 @@ public class ActionWindowNode extends GameNode
 
   public void MyHandleEvent(GameEvent i_event)
   {
-    String e = i_event.GetVarValue("eventname");
-
-    if (e.equals("NEWSTATE"))
-    {
-	    String v = i_event.GetVarValue("statedesc");
-	    m_StateText.setText("Current State: " + v);
-    }
+      m_StateText.setText("Current State: " + i_event.getGPP().getStateDesc());
   }
 
   public void dispose()

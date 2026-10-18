@@ -2,6 +2,7 @@ package TheGameMachine;
 
 import java.util.*;
 import DOMUtilities.*;
+import NodeInterfacePackage.GuiPacketQuery;
 
 
 public class GameXMLWalker
@@ -863,7 +864,8 @@ public class GameXMLWalker
                                               i_ParentNode,
                                               m_gamegui,
                                               false,
-                                              DOMUtil.GetAttributeWithName(i_XMLNode,"list"));
+                                              DOMUtil.GetAttributeWithName(i_XMLNode,"list"),
+                                              null);
 
 
     DOMChildIterator cit = new DOMChildIterator(i_XMLNode);
@@ -885,11 +887,24 @@ public class GameXMLWalker
   {
     AttributeChecker acheck = new AttributeChecker();
     acheck.AddAttribute("varname",true);
-    acheck.AddAttribute("listvar",true);
+    acheck.AddAttribute("listvar",false);
+    acheck.AddAttribute("listpath",false);
     acheck.AddAttribute("x",false);
     acheck.AddAttribute("y",false);
     acheck.AddAttribute("hidden",false);
     acheck.ValidateAttributes(i_XMLNode);
+
+    String listvar = DOMUtil.GetAttributeWithName(i_XMLNode,"listvar");
+    String listpath = DOMUtil.GetAttributeWithName(i_XMLNode,"listpath");
+    if ((listvar == null) == (listpath == null))
+    {
+      throw new GameXMLException("<varselection> needs exactly one of listvar or listpath");
+    }
+
+    // Compiled once, here, at gui-construction time -- a malformed listpath
+    // fails loudly and immediately when the gui loads, not silently or deep
+    // inside a later full-state delivery. See GuiPacketQuery/JsonPath.
+    GuiPacketQuery listQuery = (listpath != null) ? new GuiPacketQuery(listpath) : null;
 
     SelectionNode selnode = new SelectionNode(DOMUtil.GetAttributeWithName(i_XMLNode,"varname"),
                                               DOMUtil.GetIntAttribute(i_XMLNode,"x"),
@@ -898,7 +913,8 @@ public class GameXMLWalker
                                               i_ParentNode,
                                               m_gamegui,
                                               true,
-                                              DOMUtil.GetAttributeWithName(i_XMLNode,"listvar"));
+                                              listvar,
+                                              listQuery);
 
 
     DOMChildIterator cit = new DOMChildIterator(i_XMLNode);

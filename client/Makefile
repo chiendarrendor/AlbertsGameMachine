@@ -8,11 +8,18 @@ CLASSDIR=classes
 
 JCMD=${JAVAC} -d ${CLASSDIR} -classpath . -Xlint:unchecked -Xlint:deprecation
 
-SUBDIRS = TheGameMachine NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi org/json
+SUBDIRS = TheGameMachine NodeInterfacePackage Utilities MySwing DOMUtilities Voronoi org/json org/doghouse/jsonpath
 SUBJAVA = $(SUBDIRS:%=%/*.java)
 JAVASOURCES := $(wildcard $(SUBJAVA))
 
-.PHONY: all jar install
+.PHONY: all jar install test
+
+# No test framework (JUnit or otherwise) is vendored anywhere in this
+# project's Java client -- each class below is a plain main()-driven runner
+# (see org/doghouse/jsonpath/JsonPathTest.java), printing per-check results
+# and exiting non-zero on any failure. Hand-maintained, same spirit as the
+# explicit TESTOBJS lists the C++ side's Makefiles already use.
+TESTCLASSES = org.doghouse.jsonpath.JsonPathTest NodeInterfacePackage.GuiPacketQueryTest NodeInterfacePackage.GuiPacketParserTest
 
 # javac's own transitive reachability analysis (compile a handful of 'root'
 # files and let it pull in whatever they reference) is not reliable as a way
@@ -34,6 +41,12 @@ Client.jar: ${CLASSDIR}/.compiled
 	${JAVAJAR} cf Client.jar -C ${CLASSDIR} .
 
 jar: Client.jar
+
+test: ${CLASSDIR}/.compiled
+	@for t in ${TESTCLASSES}; do \
+	  echo "--- $$t ---"; \
+	  java -classpath ${CLASSDIR} $$t || exit 1; \
+	done
 
 install: Client.jar
 	aws s3 cp Client.jar s3://${AWSBUCKET}/

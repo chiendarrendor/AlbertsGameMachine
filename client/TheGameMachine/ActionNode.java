@@ -19,7 +19,9 @@ public class ActionNode extends GameNode implements DoActionHandler
   VisibilityType m_vis;
   ActionTransferManager.Alerter m_alerter;
   boolean m_doesAlert;
-
+  boolean m_currentlyLegal = false;
+  GuiPacketQuery m_legalActionGPQ;
+  
   public enum VisibilityType
   {
     ALWAYSON,
@@ -75,6 +77,7 @@ public class ActionNode extends GameNode implements DoActionHandler
     m_Name = i_Name;
     m_vis = i_vis;
     m_doesAlert = i_Alerts != null && i_Alerts.equals("true");
+    m_legalActionGPQ = new GuiPacketQuery(String.format("{LEGALACTION:%s}",i_Name));
 
     JPanel panel = new JPanel();
     panel.setLayout(new BorderLayout());
@@ -182,34 +185,27 @@ public class ActionNode extends GameNode implements DoActionHandler
 
   public void MyHandleEvent(GameEvent i_Event)
   {
-    if (i_Event.GetVarValue("eventname").equals("NEWSTATE"))
-    {
-      if (m_vis == VisibilityType.NEWSTATEHIDES)
-      {
-        AlterVisibility(false);
-      }
+    boolean nowLegal = m_legalActionGPQ.evaluateBoolean(i_Event,false);
+    ActionTransferManager atm = m_gamegui.GetActionTransferManager();
 
-      if (m_vis == VisibilityType.NEWSTATEHIDES || 
-          m_vis == VisibilityType.STATEDALWAYSHIDDEN)
-      {
-        m_gamegui.GetActionTransferManager().ActionLegalityChanged(m_Name,false);
-      }
+    // truth:  after the initial ingestion packet, _every_ FSS represents
+    // a state change on the server end, because FSS only comes from transitions.
+    // so let's do the stuff that is always done on a state change.
 
-      ResetVars();
-      GetCurVarVals();
+    ResetVars();
+    GetCurVarVals();
+    atm.ActionReadinessChanged(m_Name,m_curvarvals.size() == GetNumChildren());
 
-      m_gamegui.GetActionTransferManager().ActionReadinessChanged(m_Name,m_curvarvals.size() == GetNumChildren());
+    if (m_vis == VisibilityType.NEWSTATEHIDES) {
+      AlterVisibility(nowLegal);
+      if (!m_currentlyLegal && nowLegal && m_doesAlert) m_alerter.Alert();
     }
-    if (i_Event.GetVarValue("eventname").equals("LEGALACTION") &&
-        i_Event.GetVarValue("actionname").equals(m_Name))
-    {
-      if (m_vis == VisibilityType.NEWSTATEHIDES)
-      {
-        AlterVisibility(true);
-        if (m_doesAlert) m_alerter.Alert();
-      }
-      m_gamegui.GetActionTransferManager().ActionLegalityChanged(m_Name,true);
+
+    if (m_vis == VisibilityType.NEWSTATEHIDES || m_vis == VisibilityType.STATEDALWAYSHIDDEN) {
+      atm.ActionLegalityChanged(m_Name,nowLegal);
     }
+
+    m_currentlyLegal = nowLegal;
   }
 }
 

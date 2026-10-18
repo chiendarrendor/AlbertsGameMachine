@@ -23,23 +23,28 @@ OUTPOST_SERVER = REPO_ROOT + "/Outpost/tca/Outpost"
 MOV_SERVER = REPO_ROOT + "/MerchantOfVenus/tca/MerchantOfVenus"
 MOV_MAP_XML = REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusMap.xml"
 
-# Game-specific body schemas (see .claude/server_game_interface_spec.md's
-# Phase 3 section) -- hand-authored alongside each game's <refresh> rewrite,
+# Per-game and ROOMGUI body schemas (see .claude/server_game_interface_spec.md's
+# Phase 3 section) -- hand-authored alongside each full-state implementation,
 # but never actually wired into anything until now. Validating real captured
 # output against these here is purely a regression check that the real
-# GetClientState() implementation still matches its own documented contract
-# -- it says nothing about whether the Java client's own field access is
-# correct, since it's checking server output, not client queries.
+# server-side implementation still matches its own documented contract -- it
+# says nothing about whether the Java client's own field access is correct,
+# since it's checking server output, not client queries.
 GAME_SCHEMAS = {
     "Outpost": REPO_ROOT + "/Outpost/OutpostSchema.json",
     "MerchantOfVenus": REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusSchema.json",
 }
+ROOMGUI_SCHEMA = REPO_ROOT + "/roomgui/ROOMGUISchema.json"
+
+
+def assert_matches_schema(schema_path, instance):
+    with open(schema_path) as f:
+        schema = json.load(f)
+    jsonschema.validate(instance=instance, schema=schema)
 
 
 def assert_body_matches_schema(game_name, body):
-    with open(GAME_SCHEMAS[game_name]) as f:
-        schema = json.load(f)
-    jsonschema.validate(instance=body, schema=schema)
+    assert_matches_schema(GAME_SCHEMAS[game_name], body)
 
 
 def recv_envelope(client, timeout=2.0):
@@ -58,9 +63,11 @@ def room_state(fullstate, name):
 
 
 def inhabitant_room(fullstate, name):
-    for inhab in fullstate["body"]["inhabitants"]:
-        if inhab["name"] == name:
-            return inhab["room"]
+    # "inhabitants" is nested per-room (see ROOMGUISchema.json), not a single
+    # server-wide {name,room} list -- search each room's own roster.
+    for room in fullstate["body"]["rooms"]:
+        if name in room["inhabitants"]:
+            return room["name"]
     return None
 
 
@@ -123,7 +130,9 @@ def _connect(port, name):
 def test_real_game_join_round_trip(real_games_server, game_name):
     port = real_games_server
     alice = _connect(port, "alice")
-    drain_until_roomgui(alice, lambda fs: True)
+    initial_roomgui = drain_until_roomgui(alice, lambda fs: True)
+    assert_matches_schema(ROOMGUI_SCHEMA, initial_roomgui["body"])
+    assert initial_roomgui["body"]["myroom"]["name"] == "Great Hall"
 
     alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
     drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom") is not None)
@@ -134,7 +143,10 @@ def test_real_game_join_round_trip(real_games_server, game_name):
     envelope = recv_envelope(alice)
     assert envelope["gui"] == game_name
     assert envelope["fullState"]["state"] == "InitialState"
-    drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom")["gameName"] == game_name)
+    final_roomgui = drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom")["gameName"] == game_name)
+    assert_matches_schema(ROOMGUI_SCHEMA, final_roomgui["body"])
+    assert final_roomgui["body"]["myroom"]["name"] == "GameRoom"
+    assert final_roomgui["body"]["myroom"]["gameName"] == game_name
 
     # JOIN is a self-loop back to InitialState in Outpost's XML (<cyclic
     # state="InitialState"/>), so seeing a clean full-state envelope back

@@ -7,6 +7,12 @@ import java.awt.BorderLayout;
 import java.util.HashMap;
 import java.util.Iterator;
 import javax.swing.JTextField;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import org.doghouse.jsonpath.JsonPath;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public class RoomPage implements UserDefinedInterface
 {
@@ -14,6 +20,9 @@ public class RoomPage implements UserDefinedInterface
   ActionTransferManager m_atm;
   HashMap<String,RoomWidget> m_Rooms;
   String m_iam;
+  GuiPacketQuery roomsgpq = new GuiPacketQuery("rooms");
+  GuiPacketQuery namegpq = new GuiPacketQuery("{ME}");
+  JsonPath namepath = JsonPath.compile("name");
 
   public RoomPage(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
   {
@@ -29,31 +38,40 @@ public class RoomPage implements UserDefinedInterface
 
   public void HandleEvent(GameEvent i_event)
   {
-    if (i_event.GetVarValue("eventname").equals("GUIIAM"))
-    {
-      m_iam = i_event.GetVarValue("myname");
-    }
+    JSONArray rooms = (JSONArray) roomsgpq.evaluate(i_event);
+    m_iam = (String)namegpq.evaluate(i_event);
 
-    if (i_event.GetVarValue("eventname").equals("GUIROOM"))
-    {
-      String rname = i_event.GetVarValue("roomname");
-      if (!m_Rooms.containsKey(rname))
-      {
-        RoomWidget rw = new RoomWidget(rname,m_atm,m_iam);
+    Set<String> unhandledRoomNames = new HashSet<>(m_Rooms.keySet());
+
+    // this loop will handle transport to all rooms the server believes exists.
+    for (int i = 0 ; i < rooms.length() ; ++i) {
+      JSONObject room = rooms.getJSONObject(i);
+      String roomname = (String)namepath.evaluate(room);
+      unhandledRoomNames.remove(roomname);
+
+      if (!m_Rooms.containsKey(roomname)) {
+        RoomWidget rw = new RoomWidget(roomname, m_atm, m_iam); 
         m_mainpanel.add(rw);
-        m_Rooms.put(rname,rw);
+        m_Rooms.put(roomname,rw);
         m_mainpanel.revalidate();
         m_mainpanel.repaint();
       }
-      m_Rooms.get(rname).HandleEvent(i_event);
+      m_Rooms.get(roomname).handleRoomUpdate(room);
     }
-    else
-    {
-      Iterator<RoomWidget> rwi = m_Rooms.values().iterator();
-      while(rwi.hasNext())
-      {
-        rwi.next().HandleEvent(i_event);
-      }
+
+    // any rooms left in unhandledroomnames was never mentioned by the server, must be removed.
+    boolean removed = false;
+    for (String doomedname : unhandledRoomNames) {
+      removed = true;
+      RoomWidget rw = m_Rooms.get(doomedname);
+      m_mainpanel.remove(rw);
+      m_Rooms.remove(doomedname);
+      rw.detach();
+    }
+
+    if (removed) {
+      m_mainpanel.revalidate();
+      m_mainpanel.repaint();
     }
   }
 
@@ -68,10 +86,8 @@ public class RoomPage implements UserDefinedInterface
     m_mainpanel.repaint();
     m_iam = null;
 
-    Iterator<RoomWidget> rwi = m_Rooms.values().iterator();
-    while(rwi.hasNext())
-    {
-      rwi.next().detach();
+    for (RoomWidget rw : m_Rooms.values()) {
+      rw.detach();
     }
     
     m_Rooms.clear();

@@ -4,8 +4,11 @@ package TheGameMachine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
 
 import NodeInterfacePackage.GameEvent;
+import NodeInterfacePackage.GuiPacketQuery;
 import Utilities.StringUtility;
 
 
@@ -14,14 +17,16 @@ public class SelectionNode extends ActionGeneratorNode implements ActionListener
   JComboBox<String> m_box;
   String m_VarName;
   boolean m_IsVariable;
+  GuiPacketQuery m_ListPathQuery;
 
   public SelectionNode(String i_Name,int i_x,int i_y,String i_hidden,
                        GameNode i_ParentNode,GameGui i_gamegui,boolean i_IsVariable,
-                       String i_VarName)
+                       String i_VarName,GuiPacketQuery i_ListPathQuery)
   {
     super(i_ParentNode,i_hidden,i_gamegui,i_Name);
     m_VarName = i_VarName;
     m_IsVariable = i_IsVariable;
+    m_ListPathQuery = i_ListPathQuery;
 
     InitializeNode(i_ParentNode,i_x,i_y);
   }
@@ -48,7 +53,7 @@ public class SelectionNode extends ActionGeneratorNode implements ActionListener
       }
     }
   }
-    
+
   public void actionPerformed(ActionEvent i_event)
   {
     if (m_box.getItemCount() > 0 && m_box.getSelectedIndex() != 0)
@@ -84,22 +89,38 @@ public class SelectionNode extends ActionGeneratorNode implements ActionListener
       return;
     }
 
-    String contents = i_Event.GetVarValue(m_VarName);
+    List<String> entries;
 
-    if (contents == null)
+    if (m_ListPathQuery != null)
     {
-      return;
+      // A real JSON array's elements are already clean, unescaped strings --
+      // no StringUtility.ReComma needed here, that was only ever undoing the
+      // old listvar wire format's own hand-rolled comma-escaping.
+      entries = m_ListPathQuery.evaluateStringList(i_Event);
     }
+    else
+    {
+      String contents = i_Event.GetVarValue(m_VarName);
 
-    String[] entries = contents.split(",");
+      if (contents == null)
+      {
+        return;
+      }
+
+      entries = new ArrayList<String>();
+      for (String entry : contents.split(","))
+      {
+        entries.add(StringUtility.ReComma(entry));
+      }
+    }
 
     m_box.removeAllItems();
 
     m_box.addItem("");
-    
-    for (int i = 0 ; i < entries.length ; ++i)
+
+    for (String entry : entries)
     {
-      m_box.addItem(StringUtility.ReComma(entries[i]));
+      m_box.addItem(entry);
     }
   }
 }

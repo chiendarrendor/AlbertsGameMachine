@@ -1647,3 +1647,46 @@ emit, respectively) all pass, confirmed via a genuinely from-scratch clean rebui
 `servertest`, `Outpost`/`outposttest`, and `MerchantOfVenus`/`MoVunittests.exe` together, not just
 incremental recompiles. **Still to do, unchanged from before**: the client (`GuiPacketParser.java`,
 mid-rewrite — see [[component-java-client]]) hasn't been updated to actually consume this new shape yet.
+
+**Follow-up 2026-10-17 (Albert + Claude): added a `myroom` field to `body`, a per-viewer convenience
+duplicate of whichever `rooms[]` entry the recipient currently occupies.** Deliberate, explicit syntactic
+sugar for the client's sake — Albert's framing: not unreasonable to shape the FSS around what makes the
+client simpler, especially since the original Event architecture already did exactly this in plenty of
+places (`IAM` being the clearest example) for the same reason, just less consciously. Directly mirrors
+Outpost's existing `myHand`/`myPurchaseInfo` pattern (`OutpostSchema.json`), which already solves the
+identical "don't make the client search an array to find itself" problem for per-player game data —
+`ROOMGUI` just didn't have an equivalent yet. Implemented in `RoomManager::BroadcastRoomGuiIfChanged`:
+since `myroom` varies per recipient, it's computed inside the existing per-inhabitant send loop (same
+loop that already calls `GetRoomOf(name)` for `legalActions`) and spliced into a per-recipient copy of
+the shared `body`, rather than folded into `BuildRoomGuiState`/the cached-and-diffed `current` object,
+which must stay recipient-independent for the `m_LastRoomGuiState` short-circuit to keep working. `null`
+only if a connection somehow isn't in any room, which shouldn't happen in practice. `roomgui/ROOMGUISchema.json`
+added at the same time (ROOMGUI had never had one, unlike both real games), reusing a `$defs`/`$ref` for
+the room shape shared between `rooms[]` and `myroom` specifically to avoid the kind of required/properties
+drift that was just caught in `MerchantOfVenusSchema.json` (see `TODO.md`'s schema-validation item) — a
+hand-maintained second copy of the same shape is exactly how that bug happened. Schema validation wired
+into `server/tests/test_real_games_e2e.py` (`ROOMGUI_SCHEMA`/`assert_matches_schema`, exercised against
+both the initial Great-Hall `ROOMGUI` state and the post-`NEWGAME` state for each parametrized game).
+
+**Follow-up 2026-10-19 (Albert + Claude): moved `inhabitants` from a single server-wide flat
+`[{name,room}]` list to a nested `inhabitants: [string]` array on each `rooms[]`/`myroom` entry.**
+Raised by Albert while designing the client-side `RoomWidget` rewrite (a parent widget iterating
+`rooms[]`, needing each room's own roster to build per-room UI) — his observation, confirmed by
+grep across the whole client tree: the room-navigation widget is the *only* consumer anywhere in the
+client of "who's in which room," so carrying a second, independently-cross-referenced representation
+of the same fact (the old flat list, built by iterating the server-wide `RoomManager::m_Inhabitants`
+and calling `GetRoomOf()` per name) bought nothing and was itself a smaller instance of the
+two-copies-of-one-shape risk `myroom`'s schema `$ref` was already built to avoid. Also simplifies the
+server implementation, not just the client: `Room` already tracks its own membership
+(`Room::GetInhabitantSet()`), so `BuildRoomGuiState`'s per-room loop now reads that directly instead
+of cross-referencing the global set — the old global `RoomManager::m_Inhabitants` set itself is
+unchanged and still used for its original purpose (enumerating who to send full-state updates to),
+only the *JSON output shape* changed. `ROOMGUISchema.json`'s `$defs/Room` gained a required
+`inhabitants` array of plain strings (no more `{name,room}` pairs — room is implicit from nesting);
+the top-level `inhabitants` property was removed outright, not deprecated. `server/tests/
+test_server_e2e.py`/`test_real_games_e2e.py`'s shared `inhabitant_room()` helper and a few
+hardcoded exact-dict room-state assertions updated to match; `servertest`/`MoVunittests.exe`/
+`outposttest` untouched (none reference this shape). Client-side payoff, not yet implemented as of
+this writing: `RoomWidget`'s planned `updateFromRoomData(JSONObject roomData)` can now read
+`roomData`'s own `"inhabitants"` directly, with no separate per-room grouping pass needed in
+`RoomPage` at all.

@@ -275,25 +275,30 @@ boost::json::object RoomManager::BuildRoomGuiState(std::map<std::string,boost::j
     // enforced by never offering a choice).
     roomobj["gameTypes"] = (roomit->first == INITIALROOM) ? boost::json::array() : gameTypes;
     roomobj["savedGames"] = pRoom->GetSavedGameNames();
+
+    // Nested per-room, not a top-level flat {name,room} list cross-referenced
+    // by the client -- confirmed (2026-10-19) that the room-navigation client
+    // widget is the only consumer of "who's in which room" anywhere in the
+    // client, so there's no reason to carry two representations of the same
+    // fact. This also matches Room's own data model directly (GetInhabitantSet()),
+    // rather than rebuilding the same information by cross-referencing the
+    // server-wide m_Inhabitants set against GetRoomOf() per name.
+    boost::json::array roomInhabitants;
+    const std::set<std::string> &roomNames = pRoom->GetInhabitantSet();
+    std::set<std::string>::const_iterator inhabit;
+    for (inhabit = roomNames.begin() ; inhabit != roomNames.end() ; ++inhabit)
+    {
+      roomInhabitants.push_back(boost::json::value(*inhabit));
+    }
+    roomobj["inhabitants"] = roomInhabitants;
+
     rooms.push_back(roomobj);
 
     o_PerRoomActions[roomit->first] = pRoom->GetLegalRoomActions(isDone);
   }
 
-  boost::json::array inhabitants;
-  std::set<std::string>::const_iterator nameit;
-  for (nameit = m_Inhabitants.begin() ; nameit != m_Inhabitants.end() ; ++nameit)
-  {
-    Room *pRoom = GetRoomOf(*nameit);
-    boost::json::object inhab;
-    inhab["name"] = *nameit;
-    inhab["room"] = pRoom ? pRoom->GetName() : "";
-    inhabitants.push_back(inhab);
-  }
-
   boost::json::object state;
   state["rooms"] = rooms;
-  state["inhabitants"] = inhabitants;
   return state;
 }
 
@@ -359,14 +364,35 @@ void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &
   }
   m_LastRoomGuiState = current;
 
+  // "myroom" is a per-viewer convenience field, same spirit as Outpost's
+  // myHand/myPurchaseInfo (see .claude/TODO.md's Phase 3 item) -- an exact
+  // duplicate of whichever "rooms" entry the recipient currently occupies,
+  // so the client never has to search the rooms array by name itself.
+  // Keyed here (not folded into BuildRoomGuiState/the cached+diffed
+  // "current") because it varies per recipient, unlike the rest of the body.
+  std::map<std::string,boost::json::value> roomsByName;
+  const boost::json::array &rooms = current.at("rooms").as_array();
+  for (std::size_t i = 0 ; i < rooms.size() ; ++i)
+  {
+    const boost::json::object &roomobj = rooms[i].as_object();
+    roomsByName[std::string(roomobj.at("name").as_string().c_str())] = rooms[i];
+  }
+
   std::set<std::string>::const_iterator nameit;
   for (nameit = m_Inhabitants.begin() ; nameit != m_Inhabitants.end() ; ++nameit)
   {
+    Room *pRoom = GetRoomOf(*nameit);
+    std::map<std::string,boost::json::value>::const_iterator foundit =
+      pRoom ? roomsByName.find(pRoom->GetName()) : roomsByName.end();
+
+    boost::json::object body = current;
+    body["myroom"] = (foundit != roomsByName.end()) ? foundit->second : boost::json::value();
+
     boost::json::object envelope;
     envelope["state"] = ROOMGUI_STATE;
     envelope["stateDesc"] = ROOMGUI_STATEDESC;
     envelope["legalActions"] = LegalActionsFor(*nameit,perRoomActions);
-    envelope["body"] = current;
+    envelope["body"] = body;
 
     i_Connections.SendLineToName(*nameit,
         boost::json::serialize(WrapFullStateEnvelope(*nameit,"ROOMGUI",m_XMLLoc,m_XMLName,envelope)));

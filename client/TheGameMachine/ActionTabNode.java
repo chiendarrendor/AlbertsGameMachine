@@ -2,6 +2,7 @@ package TheGameMachine;
 
 import NodeInterfacePackage.GameEvent;
 import NodeInterfacePackage.ActionTransferManager;
+import NodeInterfacePackage.GuiPacketQuery;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.awt.BorderLayout;
@@ -10,6 +11,7 @@ import javax.swing.BoxLayout;
 public class ActionTabNode extends TabNode
 {
   JLabel m_StateText;
+  GuiPacketQuery gpq;
 
   public ActionTabNode(ActionTransferManager i_atm,String i_Name,TabbedWindow i_tabloc)
   {
@@ -27,16 +29,11 @@ public class ActionTabNode extends TabNode
     mainpanel.setLayout(new BoxLayout(mainpanel,BoxLayout.Y_AXIS));
 
     SetComponent(GetVisibilityComponent(),mainpanel);
+    gpq = new GuiPacketQuery("{STATEDESC}");
   }
 
   public void MyHandleEvent(GameEvent i_event)
   {
-    String e = i_event.GetVarValue("eventname");
-
-    if (e.equals("NEWSTATE"))
-    {
-	    String v = i_event.GetVarValue("statedesc");
-	    m_StateText.setText("Current State: " + v);
-    }
+    m_StateText.setText("Current State: " + gpq.evaluateString(i_event,""));
   }
 }

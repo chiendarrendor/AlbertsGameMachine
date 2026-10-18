@@ -39,9 +39,11 @@ def room_state(fullstate, name):
 
 
 def inhabitant_room(fullstate, name):
-    for inhab in fullstate["body"]["inhabitants"]:
-        if inhab["name"] == name:
-            return inhab["room"]
+    # "inhabitants" is nested per-room (see ROOMGUISchema.json), not a single
+    # server-wide {name,room} list -- search each room's own roster.
+    for room in fullstate["body"]["rooms"]:
+        if name in room["inhabitants"]:
+            return room["name"]
     return None
 
 
@@ -87,7 +89,8 @@ def test_login_and_room_navigation_needs_no_game_process(server):
     assert envelope["gui"] == "ROOMGUI"
     assert envelope["recipient"] == "alice"
     assert room_state(envelope["fullState"], "Great Hall") == {
-        "name": "Great Hall", "gameName": "", "isDone": True, "gameTypes": [], "savedGames": []}
+        "name": "Great Hall", "gameName": "", "isDone": True, "gameTypes": [], "savedGames": [],
+        "inhabitants": ["alice"]}
     assert inhabitant_room(envelope["fullState"], "alice") == "Great Hall"
 
     alice.send_action("roommanager", "NEWROOM", RoomName="Clubhouse")
@@ -95,9 +98,11 @@ def test_login_and_room_navigation_needs_no_game_process(server):
     # Great Hall never allows a game to start in it, so its gameTypes is
     # always empty; every other room gets the full registered list. No game
     # is attached yet, so savedGames is empty too -- it only ever reflects
-    # whatever game is currently attached to *this* room.
+    # whatever game is currently attached to *this* room. alice hasn't
+    # CHANGEROOM'd into it yet, so its inhabitants are still empty too.
     assert room_state(fullstate, "Clubhouse") == {
-        "name": "Clubhouse", "gameName": "", "isDone": True, "gameTypes": ["TestGame"], "savedGames": []}
+        "name": "Clubhouse", "gameName": "", "isDone": True, "gameTypes": ["TestGame"], "savedGames": [],
+        "inhabitants": []}
 
     alice.send_action("roommanager", "CHANGEROOM", TargetRoom="Clubhouse")
     drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "alice") == "Clubhouse")
@@ -164,7 +169,7 @@ def test_newgame_and_join_round_trip(server):
     assert envelope["fullState"]["legalActions"] == ["JOIN"]
     drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom") == {
         "name": "GameRoom", "gameName": "TestGame", "isDone": False, "gameTypes": ["TestGame"],
-        "savedGames": []})
+        "savedGames": [], "inhabitants": ["alice"]})
 
     alice.send_action("TestGame", "JOIN")
     envelope = recv_envelope(alice)

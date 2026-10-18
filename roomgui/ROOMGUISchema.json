@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ROOMGUIState",
+  "description": "Body of the ROOMGUI full-state send -- the server-wide room/lobby roster, broadcast to every connected player after any roommanager/room-namespace action (see .claude/server_game_interface_spec.md).",
+  "type": "object",
+  "$defs": {
+    "Room": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "gameName": { "type": "string", "description": "Empty string if no game is currently attached to this room." },
+        "isDone": { "type": "boolean", "description": "True if this room has no game, or its game has finished." },
+        "gameTypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Game types startable in this room; always empty for the Great Hall."
+        },
+        "savedGames": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "inhabitants": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of the players currently in this specific room. Nested per-room rather than a single server-wide list, since the room-navigation client widget is the only consumer of this information anywhere in the client, and it only ever cares about one room's roster at a time."
+        }
+      },
+      "required": ["name", "gameName", "isDone", "gameTypes", "savedGames", "inhabitants"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "rooms": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Room" }
+    },
+    "myroom": {
+      "description": "Per-viewer convenience field: an exact duplicate of whichever 'rooms' entry the recipient currently occupies -- lets the client find its own room without searching the 'rooms' array by name. Null only if the recipient somehow isn't in any room, which shouldn't happen in practice: every connection is placed in a room (the Great Hall by default) as soon as it logs in.",
+      "anyOf": [
+        { "$ref": "#/$defs/Room" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "required": ["rooms", "myroom"],
+  "additionalProperties": false
+}

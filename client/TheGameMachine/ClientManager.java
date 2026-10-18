@@ -5,6 +5,8 @@ import java.net.*;
 import Utilities.StringUtility;
 import javax.swing.JOptionPane;
 import org.json.JSONObject;
+import NodeInterfacePackage.GuiPacketParser;
+import org.doghouse.jsonpath.JsonPath;
 
 
 public class ClientManager
@@ -14,7 +16,10 @@ public class ClientManager
   BufferedReader m_in;
   StatusWindows m_statuswindows = null;
   TabbedWindow m_tabs = null;
-  GUIUnitMap m_gum;
+  GUIUnit m_rooms = null;
+  GUIUnit m_game = null;
+  String m_gamename = null;
+  String m_currentroom = null;
   LoginWindow m_lwindow = null;
 
   String m_HostName;
@@ -24,28 +29,12 @@ public class ClientManager
 
   boolean m_exiting;
 
-  class HandleLine implements GUIUnitMap.GUIUnitFunctor
-  {
-    private String m_s;
-    public HandleLine(String i_s)
-    {
-      m_s = i_s;
-    }
-
-    public void Do(GUIUnit i_guiunit)
-    {
-      i_guiunit.HandleLine(m_s);
-    }
-  }
-
-
   public ClientManager(String i_HostName,int i_Port,String i_extUserName,String i_extPassword)
   {
     m_HostName = i_HostName;
     m_Port = i_Port;
     m_extUserName = i_extUserName;
     m_extPassword = i_extPassword;
-    m_gum = new GUIUnitMap();
     m_exiting = false;
 
     String topdloc = "https://" + i_HostName;
@@ -64,7 +53,6 @@ public class ClientManager
       LoginProcess(m_extUserName, m_extPassword);
 
       System.out.println("Login Process Completed");
-      while(!m_exiting) {}
 
       while(true)
       {
@@ -90,7 +78,8 @@ public class ClientManager
 
     if (m_tabs != null) m_tabs.dispose();
     if (m_lwindow != null) m_lwindow.dispose();
-    m_gum.dispose();
+    if (m_rooms != null) m_rooms.dispose();
+    if (m_game != null) m_game.dispose();
   }
 
   private void ConnectSocket(String i_HostName,int i_Port)
@@ -242,111 +231,104 @@ public class ClientManager
     }
   }
 
-
-
-
+  // So, the new server send mechanism sends full-state-sends (FSS) for roomgui and 
+  // for the game that is in the player's current room, if there is one.
+  // There are no longer an arbitrary number of different Guis that can be handled, just 
+  // two, and each one, if it exists, consumes only its own FSS packet.
+  // m_rooms
+  // m_game
+  // m_currentroom
+  // m_gamename
 
   private void HandleOneLine()
   {
-    String instring;
-    try
-    {
-      instring = m_in.readLine();
-    }
-    catch(IOException ioe)
-    {
-      if (!m_exiting)
-      {
-        throw new ClientManagerException("Error in reading line: " + ioe);
-      }
-      else
-      {
+    GuiPacketParser gpp = null;
+    try {
+      String instring = m_in.readLine();
+      if (instring == null) {
+        m_statuswindows.ShowDebug("Error: Server Closed Connection");
         return;
       }
+      gpp = new GuiPacketParser(instring);
+    } catch (Exception ex) {
+      if (m_statuswindows != null) {
+        m_statuswindows.ShowDebug("Error: " + ex);
+      }
+      return;
     }
 
-    if (instring == null)
-    {
-      throw new ClientManagerException("Server Closed Connection.");
+    // if we get here, we have a valid GPP.
+    if (gpp.getGuiType() == GuiPacketParser.GuiType.LOGIN) {
+      m_statuswindows.ShowDebug("Warning: Why did we get a Login packet?");
+      return;
     }
 
-    GuiPacketParser gpp = new GuiPacketParser(instring);
-    GUIUnit opguiunit;
-
-    switch(gpp.GetGuiType())
-    {
-    case GuiPacketParser.NOTGUI:
-      HandleLine hl = new HandleLine(instring);
-      m_gum.ForEach(hl);
-      break;
-    case GuiPacketParser.SERVERERROR:
-      m_statuswindows.ShowDebug("Error: " + gpp.GetText());
-      break;
-    case GuiPacketParser.MESSAGE:
-      m_statuswindows.ShowDebug(gpp.GetText());
-      break;
-    case GuiPacketParser.RESETGUI:
-      opguiunit = m_gum.Get(gpp.GetGuiName());
-      if (opguiunit == null)
-      {
-        m_statuswindows.ShowDebug("Can't find GUI " + gpp.GetGuiName() + " to reset.");
-      }
-      else
-      {
-        opguiunit.HandleLine("RESET");
-      }
-      break;
-    case GuiPacketParser.DROPGUI:
-      opguiunit = m_gum.PullFromMap(gpp.GetGuiName());
-      if (opguiunit != null)
-      {
-        opguiunit.dispose();
-      }
-      else
-      {
-        m_statuswindows.ShowDebug("Can't Find Gui to Drop: " + gpp.GetGuiName());
-      }
-      break;
-    case GuiPacketParser.NEWGUI:
-      opguiunit = null;
-      if (!m_gum.IsInMap(gpp.GetGuiName()))
-      {
-        opguiunit = new GUIUnit(m_out,m_statuswindows,m_tabs,gpp);
-        m_gum.AddToMap(gpp.GetGuiName(),opguiunit);
-        System.out.println("New Gui Created: " + gpp.GetGuiName());
-        ParseXML(opguiunit,gpp);
-      }
-      else
-      {
-        m_statuswindows.ShowDebug("We already have a gui with name: " + gpp.GetGuiName());
-      }
-      break;
-    case GuiPacketParser.ADDGUI:
-      opguiunit = m_gum.Get(gpp.GetGuiName());
-      if (opguiunit != null)
-      {
-        ParseXML(opguiunit,gpp);
-      }
-      else
-      {
-        m_statuswindows.ShowDebug("Can't find gui with name: " + gpp.GetGuiName());
-      }
-      break;
-    default:
-      m_statuswindows.ShowDebug("Bad Gui-level packet: " + instring);
-      break;
+    // if we get here, we either have a room gui or a game gui
+    if (gpp.getGuiType() == GuiPacketParser.GuiType.ROOMGUI) {
+      HandleRoomPacket(gpp);
+    } else {
+      HandleGamePacket(gpp);
     }
+  }
+
+  private JsonPath myroomnamepath = JsonPath.compile("myroom.name");
+  private JsonPath myroomgamepath = JsonPath.compile("myroom.gameName"); 
+
+
+  private void HandleRoomPacket(GuiPacketParser gpp) {
+    if (gpp.getErrorMessage() != null) {
+      m_statuswindows.ShowDebug("Error in Room Gui: " + gpp.getErrorMessage());
+      return;
+    }
+
+    if (m_rooms == null) {
+      m_rooms = new GUIUnit(m_out,m_statuswindows,m_tabs,gpp);
+      System.out.println("New Room Gui Created");
+      ParseXML(m_rooms,gpp);
+    }
+
+    String newRoomName = (String)myroomnamepath.evaluate(gpp.getBody());
+    String newRoomGame = (String)myroomgamepath.evaluate(gpp.getBody());
+
+    if (m_game != null && m_gamename != null && !m_gamename.equals(newRoomGame)) {
+      m_game.dispose();
+      m_game = null;
+    }
+
+    m_currentroom = newRoomName;
+    m_gamename = newRoomGame;
+    m_rooms.HandleGuiPacketParser(gpp);
+  }
+
+  private void HandleGamePacket(GuiPacketParser gpp) {
+    if (m_game != null && !m_gamename.equals(gpp.getGameName())) {
+      m_game.dispose();
+      m_game = null;
+    }
+    if (m_game == null) {
+      m_game = new GUIUnit(m_out, m_statuswindows, m_tabs, gpp);
+      System.out.println("New Game Gui created: " + gpp.getGameName());
+      ParseXML(m_game,gpp);
+    }
+
+    m_gamename = gpp.getGameName();
+
+    if (gpp.getErrorMessage() != null) {
+      m_statuswindows.ShowDebug("Error in Game Gui: " + gpp.getErrorMessage());
+    } 
+
+    m_game.HandleGuiPacketParser(gpp);
   }
 
   private void ParseXML(GUIUnit i_gu,GuiPacketParser i_gpp)
   {
-    if (!i_gu.ParseXML(i_gpp.GetGuiName(),i_gpp.GetXMLLoc(),i_gpp.GetXMLName()))
+    if (!i_gu.ParseXML(i_gpp.getGameName(),i_gpp.getXMLLoc(),i_gpp.getXMLFile()))
     {
-      m_statuswindows.ShowDebug("GUI " + i_gpp.GetGuiName() + " XML not parsed");
+      m_statuswindows.ShowDebug("GUI " + i_gpp.getGameName() + " XML not parsed");
     }
     else
     {
-      System.out.println("GUI " + i_gpp.GetGuiName() + " XML successfully parsed");
+      System.out.println("GUI " + i_gpp.getGameName() + " XML successfully parsed");
     }
   }
 

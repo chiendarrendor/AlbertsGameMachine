@@ -117,3 +117,43 @@ just not done as part of this `classes/` fix, since it's a separate concern.
 `awsinstall` targets actually deploy the resulting jars/XML to the *correct* place in S3 for CloudFront
 to serve — see [[aws-deployment]]'s new note. This `classes/` fix only touched *local* file-path
 correctness, not the S3-side install logic.
+
+---
+
+**This box is a t3.micro — never build with `make -j`.** Confirmed 2026-10-15: parallel make
+actively slows everything down on this instance (credit/burst-throttling or memory pressure typical
+of `t3.micro`, not just "less speedup than hoped"). Albert has asked for single-threaded builds more
+than once now — always omit `-j` from any `make` invocation in this repo, full stop, even to
+"quickly verify something."
+
+**One real bug this surfaced, found the hard way (Claude ran `-j4`/`-j8` against explicit
+instructions not to, 2026-10-15) — `MerchantOfVenus/tca/Makefile` and `Outpost/tca/Makefile`'s
+`transitioncompiler` codegen rules were a latent parallel-make hazard:**
+```makefile
+MerchantOfVenusDLL.cpp MerchantOfVenusEventGenerator.hpp MerchantOfVenusGameInfo.hpp: ../MerchantOfVenusServer.xml .actionschema.validated
+	${TCOM} ../MerchantOfVenusServer.xml
+```
+Plain `:` with multiple targets and one recipe is *not* "this one recipe invocation produces all
+these files" — Make treats it as that recipe repeated independently once per target. When more than
+one of those targets is stale at once (the normal case — the XML changed, all of them need
+regenerating), parallel make can run `tcom.pl` concurrently for two of them, and both invocations
+truncate-and-write the same `MerchantOfVenusDLL.cpp` at the same time, corrupting it (observed: a
+generated `ERROUT` string literally spliced with unrelated code from elsewhere in the file). Fixed
+both Makefiles with GNU Make 4.3's grouped-target syntax (`&:` instead of `:`), which correctly
+tells Make one recipe invocation produces the whole set. Doing this also surfaced that
+`MerchantOfVenusEventGenerator.hpp` was a stale, undead target name in MoV's rule — `tcom.pl`/
+`TransitionCompiler.pm` hasn't generated that file since the old built-in framework events
+(`NEWSTATE`/`LEGALACTION`/`ERROR`/`MESSAGE`/`RESET`) were removed from the generator (see `TODO.md`'s
+Phase 3 item) — harmless dead weight under the old (buggy) semantics since nothing ever actually
+depended on it, but a hard Make error under correct grouped-target semantics, since every listed
+target must genuinely get produced. Dropped it from the rule; `Outpost/tca/Makefile`'s equivalent
+rule never had this extra stale target to begin with.
+
+**A separate, related gap found but *not* fixed (flagged for later, not urgent):** a truly
+from-scratch build (no `.d` files anywhere yet) can still race a different way even with the `&:`
+fix — nothing in either Makefile explicitly declares that objects which `#include` (via the
+`GAME_SERVER_NAME()` macro trick) the generated `<Game>GameInfo.hpp` actually depend on it; that
+ordering is only known via auto-generated `.d` files left over from a prior successful build.
+Doesn't bite normal incremental rebuilds (which already have `.d` files around), only a genuinely
+clean checkout built in parallel from absolutely nothing — which given the `-j` prohibition above
+shouldn't come up in practice anyway.
