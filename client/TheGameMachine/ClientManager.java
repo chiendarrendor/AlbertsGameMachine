@@ -20,6 +20,7 @@ public class ClientManager
   GUIUnit m_game = null;
   String m_gamename = null;
   String m_currentroom = null;
+  String m_gameuuid = null;
   LoginWindow m_lwindow = null;
 
   String m_HostName;
@@ -293,6 +294,7 @@ public class ClientManager
     if (m_game != null && m_gamename != null && !m_gamename.equals(newRoomGame)) {
       m_game.dispose();
       m_game = null;
+      m_gameuuid = null;
     }
 
     m_currentroom = newRoomName;
@@ -311,6 +313,12 @@ public class ClientManager
       ParseXML(m_game,gpp);
     }
 
+    if (m_gameuuid != null && !m_gameuuid.equals(gpp.getUUID())) {
+      m_game.HandleLine("RESET");
+    }
+
+
+    m_gameuuid = gpp.getUUID();
     m_gamename = gpp.getGameName();
 
     if (gpp.getErrorMessage() != null) {

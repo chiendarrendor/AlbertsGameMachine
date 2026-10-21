@@ -102,6 +102,7 @@ public class GuiPacketParserTest
       "{\"gui\":\"ROOMGUI\",\"recipient\":\"alice\",\"XMLLoc\":\"loc\",\"XMLFile\":\"file.xml\","
       + "\"fullState\":{\"state\":\"ROOM\",\"stateDesc\":\"Room Navigation\","
       + "\"legalActions\":[\"NEWROOM\",\"CHANGEROOM\"],"
+      + "\"gameInstanceId\":\"00000000-0000-0000-0000-000000000000\","
       + "\"body\":{"
       + "\"rooms\":["
       +   "{\"name\":\"Great Hall\",\"gameName\":\"\",\"isDone\":true,\"gameTypes\":[\"Outpost\"],\"savedGames\":[]},"
@@ -126,6 +127,13 @@ public class GuiPacketParserTest
     check("ROOMGUI legal action absent", !gpp.hasLegalAction("NEWGAME"));
     check("ROOMGUI no error", gpp.getErrorMessage() == null);
     check("ROOMGUI body present", gpp.getBody() != null);
+    // ROOMGUI isn't a real "game instance" (it's a fixed single-state FSM
+    // shared across every room, not reloadable from a save file), so the
+    // server sends a fixed nil UUID here rather than omitting the field --
+    // keeps every envelope's shape identical regardless of gui type. See
+    // RoomManager.cpp's ROOMGUI_INSTANCE_ID / StateWalker::GetInstanceId.
+    check("ROOMGUI gameInstanceId is the fixed nil UUID",
+        "00000000-0000-0000-0000-000000000000".equals(gpp.getUUID()));
   }
 
   private static void testRoomGuiError()
@@ -133,7 +141,9 @@ public class GuiPacketParserTest
     GuiPacketParser gpp = new GuiPacketParser(
         "{\"gui\":\"ROOMGUI\",\"recipient\":\"alice\",\"XMLLoc\":\"loc\",\"XMLFile\":\"file.xml\","
         + "\"fullState\":{\"state\":\"ROOM\",\"stateDesc\":\"Room Navigation\","
-        + "\"legalActions\":[\"NEWROOM\",\"CHANGEROOM\"],\"error\":\"Don't know which room you mean\"}}");
+        + "\"legalActions\":[\"NEWROOM\",\"CHANGEROOM\"],"
+        + "\"gameInstanceId\":\"00000000-0000-0000-0000-000000000000\","
+        + "\"error\":\"Don't know which room you mean\"}}");
 
     check("ROOMGUI error message", "Don't know which room you mean".equals(gpp.getErrorMessage()));
     check("ROOMGUI body absent on error", gpp.getBody() == null);
@@ -144,7 +154,9 @@ public class GuiPacketParserTest
   private static final String GAMEGUI_SUCCESS =
       "{\"gui\":\"Outpost\",\"recipient\":\"alice\",\"XMLLoc\":\"loc\",\"XMLFile\":\"file.xml\","
       + "\"fullState\":{\"state\":\"InitialState\",\"stateDesc\":\"Setting up\","
-      + "\"legalActions\":[\"JOIN\",\"VALIDATESETUP\"],\"body\":{\"myPlayerId\":0,\"options\":{}}}}";
+      + "\"legalActions\":[\"JOIN\",\"VALIDATESETUP\"],"
+      + "\"gameInstanceId\":\"11111111-1111-1111-1111-111111111111\","
+      + "\"body\":{\"myPlayerId\":0,\"options\":{}}}}";
 
   private static void testGameGuiSuccess()
   {
@@ -157,6 +169,11 @@ public class GuiPacketParserTest
     check("GAMEGUI legal action absent", !gpp.hasLegalAction("DONE"));
     check("GAMEGUI body present", gpp.getBody() != null);
     check("GAMEGUI body field readable", gpp.getBody().getInt("myPlayerId") == 0);
+    // Unlike ROOMGUI's fixed nil, a real game's gameInstanceId is a genuine
+    // per-instance random UUID from StateWalker::GetInstanceId -- this test
+    // doesn't need the actual generation behavior (that's server-side/C++
+    // tested), just that GuiPacketParser reads whatever value is there.
+    check("GAMEGUI gameInstanceId", "11111111-1111-1111-1111-111111111111".equals(gpp.getUUID()));
   }
 
   private static void testGameGuiError()
@@ -164,7 +181,9 @@ public class GuiPacketParserTest
     GuiPacketParser gpp = new GuiPacketParser(
         "{\"gui\":\"Outpost\",\"recipient\":\"alice\",\"XMLLoc\":\"loc\",\"XMLFile\":\"file.xml\","
         + "\"fullState\":{\"state\":\"InitialState\",\"stateDesc\":\"Setting up\","
-        + "\"legalActions\":[\"JOIN\"],\"error\":\"That is not a legal move.\"}}");
+        + "\"legalActions\":[\"JOIN\"],"
+        + "\"gameInstanceId\":\"11111111-1111-1111-1111-111111111111\","
+        + "\"error\":\"That is not a legal move.\"}}");
 
     check("GAMEGUI error message", "That is not a legal move.".equals(gpp.getErrorMessage()));
     check("GAMEGUI body absent on error", gpp.getBody() == null);

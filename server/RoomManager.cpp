@@ -9,6 +9,8 @@
 #include "GameBox.hpp"
 #include "Game.hpp"
 #include "FileUtilities.hpp"
+#include <boost/uuid/nil_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 const char *INITIALROOM = "Great Hall";
 
@@ -22,6 +24,16 @@ const char *INITIALROOM = "Great Hall";
 // conditional availability actually belongs.
 const char *ROOMGUI_STATE = "ROOM";
 const char *ROOMGUI_STATEDESC = "Room Navigation";
+
+// Same spirit: ROOMGUI isn't a "game instance" that can ever be reloaded
+// from an unrelated save file (see StateWalker::GetInstanceId -- a real
+// game's unique per-instance id, added to its envelope so the client can
+// detect it's looking at a different instance than before), so there's
+// nothing for this to actually distinguish. But keeping ROOMGUI's envelope
+// shape identical to every real game's means GuiPacketParser never needs
+// to treat gameInstanceId as GUI-type-conditional -- fixed nil UUID,
+// always present, never varies.
+const std::string ROOMGUI_INSTANCE_ID = boost::uuids::to_string(boost::uuids::nil_uuid());
 
 const GameCloset *Room::s_pGameCloset(NULL);
 
@@ -348,6 +360,7 @@ void RoomManager::SendRoomActionError(const std::string &i_Name,const std::strin
   envelope["state"] = ROOMGUI_STATE;
   envelope["stateDesc"] = ROOMGUI_STATEDESC;
   envelope["legalActions"] = ComputeLegalActions(i_Name);
+  envelope["gameInstanceId"] = ROOMGUI_INSTANCE_ID;
   envelope["error"] = i_Error;
 
   i_Connections.SendLineToName(i_Name,
@@ -392,6 +405,7 @@ void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &
     envelope["state"] = ROOMGUI_STATE;
     envelope["stateDesc"] = ROOMGUI_STATEDESC;
     envelope["legalActions"] = LegalActionsFor(*nameit,perRoomActions);
+    envelope["gameInstanceId"] = ROOMGUI_INSTANCE_ID;
     envelope["body"] = body;
 
     i_Connections.SendLineToName(*nameit,

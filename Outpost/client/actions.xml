@@ -1,30 +1,12 @@
 
-<define name="MegaCard">
-  <javaclass classname="CommodityCard" commtype="nCIDn" value="nMVn" ismega="true" isavg="false" issel="false" hidden="y">
-    <eventhandler>
-      <showhide CommodityNumber="nCIDn"/>
-    </eventhandler>
-  </javaclass>
-</define>
-
 <define name="BuyMen">
   <panel>
     <image image="iIMAGEi" x="5"/>
     <minmaxvarselection varname="iOUTVARi" min="1" max="iINVARi" x="50"/>
-    <panel x="100">
-      <forupto varname="vPNUMv" low="0" high="9">
-        <panel hidden="y">
-	  <eventhandler>
-	    <showif eventname="IAM" PlayerNumber="vPNUMv"/>
-	    <passif PlayerNumber="vPNUMv"/>
-          </eventhandler>
-          <text>
-	    <replace from="rCOSTr" eventvar="PeopleCost" initial="0"/>
+    <text>
+	    <replace from="rCOSTr" eventvar="myPurchaseInfo.manCost" initial="0"/>
 	    @ rCOSTr each.
-          </text>
-        </panel>
-      </forupto>
-    </panel>
+    </text>
   </panel>
 </define>
 
@@ -66,49 +48,49 @@
 
   <action name="BUYMEN" text="Buy Men" alerts="true">
     <var name="NumMen" paramname="i_nummen" paramtype="int" text="Number of Men to Buy" noreset="y">
-      <named name="BuyMen" iOUTVARi="NumMen" iINVARi="NumPurMen" iIMAGEi="Man.PNG"/>
+      <named name="BuyMen" iOUTVARi="NumMen" iINVARi="myPurchaseInfo.numMen" iIMAGEi="Man.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYROBOTS" text="Buy Robots" alerts="true">
     <var name="NumRobots" paramname="i_numrobots" paramtype="int" text="Number of Robots to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumRobots" iINVARi="NumPurRobots" iCOSTi="10" iIMAGEi="Robot.PNG"/>
+      <named name="BuyThing" iOUTVARi="NumRobots" iINVARi="myPurchaseInfo.numRobots" iCOSTi="10" iIMAGEi="Robot.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYOREFACTORIES" text="Buy Ore Factories" alerts="true">
     <var name="NumOre" paramname="i_numfactories" paramtype="int" text="Number of Ore Factories to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumOre" iINVARi="NumPurOre" iCOSTi="10" iIMAGEi="Ore.PNG"/>
+      <named name="BuyThing" iOUTVARi="NumOre" iINVARi="myPurchaseInfo.numOre" iCOSTi="10" iIMAGEi="Ore.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYWATERFACTORIES" text="Buy Water Factories" alerts="true">
     <var name="NumWater" paramname="i_numfactories" paramtype="int" text="Number of Water Factories to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumWater" iINVARi="NumPurWater" iCOSTi="20" iIMAGEi="Water.PNG"/>
+      <named name="BuyThing" iOUTVARi="NumWater" iINVARi="myPurchaseInfo.numWater" iCOSTi="20" iIMAGEi="Water.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYTITANIUMFACTORIES" text="Buy Titanium Factories" alerts="true">
     <var name="NumTite" paramname="i_numfactories" paramtype="int" text="Number of Titanium Factories to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumTite" iINVARi="NumPurTite" iCOSTi="30" iIMAGEi="Titanium.PNG"/>
+      <named name="BuyThing" iOUTVARi="NumTite" iINVARi="myPurchaseInfo.numTitanium" iCOSTi="30" iIMAGEi="Titanium.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYRESEARCHFACTORIES" text="Buy Research Centers" alerts="true">
     <var name="NumResearch" paramname="i_numfactories" paramtype="int" text="Number of Research Factories to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumResearch" iINVARi="NumPurResearch" iCOSTi="40" iIMAGEi="Research.PNG"/>
+      <named name="BuyThing" iOUTVARi="NumResearch" iINVARi="myPurchaseInfo.numResearch" iCOSTi="40" iIMAGEi="Research.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
   </action>
 
   <action name="BUYNEWCHEMFACTORIES" text="Buy New Chemical Factories" alerts="true">
     <var name="NumNewChem" paramname="i_numfactories" paramtype="int" text="Number of NewChem Factories to Buy" noreset="y">
-      <named name="BuyThing" iOUTVARi="NumNewChem" iINVARi="NumPurNewChem" 
+      <named name="BuyThing" iOUTVARi="NumNewChem" iINVARi="myPurchaseInfo.numNewChem" 
              iCOSTi="60, incl. 1 Research," iIMAGEi="NewChemicals.PNG"/>
     </var>
     <var name="DiscardString" paramname="i_discardstring" hidden="y" noreset="y" text="Discard String"/>
@@ -141,15 +123,8 @@
   <action name="NUMMEGAS" text="Select # of Megas" alerts="true">
     <var name="MegaCount" paramname="i_count" paramtype="int" text="Number of Megas to Draw" noreset="y">
       <panel>
-        <eventhandler>
-          <passif eventname="MEGAREQUEST"/>
-        </eventhandler>
-	<named name="MegaCard" nCIDn="2" nMVn="30"/>
-	<named name="MegaCard" nCIDn="3" nMVn="44"/>
-	<named name="MegaCard" nCIDn="4" nMVn="56"/>
-	<named name="MegaCard" nCIDn="6" nMVn="88"/>
-
-        <minmaxvarselection varname="MegaCount" min="0" max="MaxMegas" x="90" y="30"/>
+        <javaclass classname="CommodityMegaSelector"/>
+        <minmaxvarselection varname="MegaCount" min="0" max="megaRequest.maxMegas" x="90" y="30"/>
       </panel>
     </var>
   </action>
@@ -161,7 +136,7 @@
   <action name="PURCHASEBID" text="Purchase Item" alerts="true">
     <var name="DiscardString" paramname="i_discardstring" noreset="y" text="Discard String">
       <text>
-        <replace from="rCOSTr" eventvar="PurchasePrice" initial="0"/>
+        <replace from="rCOSTr" eventvar="bidInfo.price" initial="0"/>
 	  Winning Bid will cost: rCOSTr
       </text>
     </var>

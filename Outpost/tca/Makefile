@@ -44,10 +44,11 @@ OBJS= Commodity.o \
 
 ARTIFACTOBJS=OutpostDLL.o 
 
-CLIENTJAVA=ItemCard.java CommodityCard.java CommodityHand.java Factories.java \
+CLIENTJAVA=CommodityHand.java Factories.java \
 	ItemList.java ShipList.java TurnOrder.java StateSensitiveTextBox.java \
 	OptionSelector.java BidItemWatcher.java Spends.java ResourceDecks.java \
-	PlayerDisplay.java PlayerWindow.java
+	PlayerDisplay.java PlayerWindow.java CommodityMegaSelector.java ItemStockGrid.java \
+	OptionRow.java
 
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/Outpost/%)
 

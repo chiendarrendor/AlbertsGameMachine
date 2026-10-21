@@ -19,6 +19,10 @@ public class OptionSelector implements UserDefinedInterface,ActionVariableGenera
   private String m_varname;
   private boolean m_onecount;
 
+  private static final GuiPacketQuery stategpq = new GuiPacketQuery("{STATE}");
+  private GuiPacketQuery optiongpq;
+
+
   public OptionSelector(HashMap<String,String> i_Options,
                        String i_DataLoc,
                        JPanel i_Panel,
@@ -29,12 +33,14 @@ public class OptionSelector implements UserDefinedInterface,ActionVariableGenera
 
     if (!i_Options.containsKey("varname")) throw new NodeInterfacePackageException("missing option varname");
     if (!i_Options.containsKey("values")) throw new NodeInterfacePackageException("missing option values");
+    if (!i_Options.containsKey("optionpath")) throw new NodeInterfacePackageException("missing option optionpath");
     if (i_Options.containsKey("zerocount") && i_Options.get("zerocount").equals("true"))
     {
       m_onecount = false;
     }
 
     m_varname = i_Options.get("varname");
+    optiongpq = new GuiPacketQuery(i_Options.get("optionpath"));
 
     m_atm.AddVariableGenerator(m_varname,this);
 
@@ -86,18 +92,12 @@ public class OptionSelector implements UserDefinedInterface,ActionVariableGenera
 
   public void HandleEvent(GameEvent i_event)
   {
-    if (i_event.GetVarValue("eventname").equals("NEWSTATE"))
-    {
-      m_box.setVisible(i_event.GetVarValue("statename").equals("InitialState"));
-    }
-
-    if (i_event.GetVarValue("eventname").equals("OPTIONS"))
-    {
-      String field = i_event.GetVarValue(m_varname);
-      int idx = Integer.parseInt(field) - (m_onecount ? 1 : 0);
-      m_box.setSelectedIndex(idx);
-      m_label.setText(m_names.get(idx));
-    }
+    m_box.setVisible(((String)stategpq.evaluate(i_event)).equals("InitialState"));
+   
+    int idx = (Integer)optiongpq.evaluate(i_event)- (m_onecount ? 1 : 0);
+    m_box.setSelectedIndex(idx);
+    m_label.setText(m_names.get(idx));
+    
   }
 
   public void actionPerformed(ActionEvent i_event)

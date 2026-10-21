@@ -48,6 +48,15 @@ test: ${CLASSDIR}/.compiled
 	  java -classpath ${CLASSDIR} $$t || exit 1; \
 	done
 
-install: Client.jar
+# Standalone, dependency-free bootstrap -- see Launcher.java's own header
+# comment. Deliberately not part of ${CLASSDIR}/the Client.jar build: it has
+# no package, isn't loaded by anything, and is meant to be downloaded once
+# and kept forever, not rebuilt/reinstalled alongside every Client.jar
+# iteration.
+Launcher.class: Launcher.java
+	${JAVAC} -Xlint:unchecked -Xlint:deprecation Launcher.java
+
+install: Client.jar Launcher.class
 	aws s3 cp Client.jar s3://${AWSBUCKET}/
+	aws s3 cp Launcher.class s3://${AWSBUCKET}/
 	aws cloudfront create-invalidation --distribution-id ${CFDISTID} --paths "/*"

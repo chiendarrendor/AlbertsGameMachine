@@ -2,6 +2,8 @@ package TheGameMachine;
 import java.util.*;
 
 import NodeInterfacePackage.GameEvent;
+import NodeInterfacePackage.GuiPacketQuery;
+import org.doghouse.jsonpath.JsonQueryException;
 import Utilities.StringUtility;
 
 class EventStringReplacer
@@ -15,9 +17,7 @@ class EventStringReplacer
     public String m_EventVarName;
     public String m_InitialValue;
     public String m_CurValue;
-
-    // only use showhide and hideshow events in this handler.
-    private GameEventHandler m_Handler;
+    private GuiPacketQuery m_Query;
 
     public Replacement (String i_TextToReplace,
                         String i_EventVarName,
@@ -26,7 +26,7 @@ class EventStringReplacer
       m_TextToReplace = i_TextToReplace;
       m_EventVarName = i_EventVarName;
       m_InitialValue = i_InitialValue;
-      m_Handler = null;
+      m_Query = (i_EventVarName == null) ? null : new GuiPacketQuery(i_EventVarName);
       Reset();
     }
 
@@ -40,24 +40,6 @@ class EventStringReplacer
       {
         m_CurValue = m_InitialValue;
       }
-    }
-
-    public GameEventHandler GetEventHandler()
-    {
-      if (m_Handler == null)
-      {
-        m_Handler = new GameEventHandler();
-      }
-      return m_Handler;
-    }
-
-    public boolean IsValid(GameEvent i_event)
-    {
-      if (m_Handler == null) return true;
-
-      m_Handler.ParseEvent(i_event);
-
-      return m_Handler.IsVisible();
     }
   };
 
@@ -109,13 +91,6 @@ class EventStringReplacer
 
   private void CalculateText()
   {
-    GameEvent dummyevent = new GameEvent("");
-    CalculateText(dummyevent);
-  }
-
-
-  private void CalculateText(GameEvent i_event)
-  {
     if (m_BaseText == null)
     {
       m_LastText = null;
@@ -127,7 +102,6 @@ class EventStringReplacer
     for (i = 0 ; i < m_Replacements.size() ; ++i)
     {
       Replacement rep = m_Replacements.get(i);
-      if (!rep.IsValid(i_event)) continue;
 
       m_LastText = StringUtility.GlobalReplaceString(m_LastText,
                                                      rep.m_TextToReplace,
@@ -154,16 +128,21 @@ class EventStringReplacer
     {
       Replacement rep = m_Replacements.get(i);
 
-      if (rep.m_EventVarName == null) continue;
-        
-      String val = i_event.GetVarValue(rep.m_EventVarName);
+      if (rep.m_Query == null) continue;
 
-      if (val != null)
+      try
       {
-        rep.m_CurValue = val;
+        Object val = rep.m_Query.evaluate(i_event);
+        if (val != null)
+        {
+          rep.m_CurValue = String.valueOf(val);
+        }
+      }
+      catch (JsonQueryException jqe)
+      {
       }
     }
-    CalculateText(i_event);
+    CalculateText();
   }
 }
 

@@ -3,46 +3,34 @@ package Outpost;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JButton;
-import NodeInterfacePackage.*;
 import MySwing.LockLayout;
 import java.awt.Point;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.util.HashMap;
-
 
 public class ShipItem extends JPanel implements ActionListener
 {
+  // Outpost.hpp's NO_PLAYER_INDEX (C++-side only, nothing to import here) --
+  // the sentinel GetUnownedItems().ClearPurchases() uses for "not bought".
+  private static final int NO_PLAYER_INDEX = 3000;
+
   JLabel m_unboughtjl;
   JLabel m_redback;
   JLabel m_greenback;
   JButton m_jb;
   String m_idx;
-  int m_item;
-  boolean m_rightstate;
   ShipActionGo m_sag;
-  HashMap<String,String> m_playernames;
-
-  int m_lastboughtitem;
 
   JLabel m_boughtjl;
   JLabel m_buyername;
   JLabel m_buyercost;
 
-
-
-
-  public ShipItem(ShipActionGo i_sag,String i_idx,HashMap<String,String> i_playernames)
+  public ShipItem(ShipActionGo i_sag,String i_idx)
   {
     super();
 
-    m_playernames = i_playernames;
-    m_lastboughtitem = 0;
-
     m_sag = i_sag;
     m_idx = i_idx;
-    m_item = 0;
-    m_rightstate = false;
 
     setLayout(new LockLayout());
 
@@ -80,95 +68,33 @@ public class ShipItem extends JPanel implements ActionListener
     m_redback.setVisible(true);
   }
 
-  public void alterItem(int i_newitem,int i_robotnumber)
-  {
-    if (i_newitem == 7) ItemByNumber.alterJLabel(m_unboughtjl,i_robotnumber);
-    else ItemByNumber.alterJLabel(m_unboughtjl,i_newitem);
-
-    m_item = i_newitem;
-    m_jb.setVisible(m_item != 0 && m_rightstate);
-
-    RecalculateVisible();
-  }
-
-  private void RecalculateVisible()
-  {
-    if (m_item == 0 && m_lastboughtitem != 0)
-    {
-      m_boughtjl.setVisible(true);
-      m_unboughtjl.setVisible(false);
-      m_buyername.setVisible(true);
-      m_buyercost.setVisible(true);
-    }
-    else
-    {
-      m_boughtjl.setVisible(false);
-      m_unboughtjl.setVisible(true);
-      m_buyername.setVisible(false);
-      m_buyercost.setVisible(false);
-    }
-  }
-
   public void ClearRed()
   {
     m_redback.setVisible(false);
   }
 
-  public void HandleEvent(GameEvent i_event)
+  // Called once per delivery by ShipList, which has already resolved every
+  // value below from the FSS -- this class knows nothing about GuiPacketQuery
+  // or the wire format at all, same split as RoomWidget/RoomPage.
+  public void update(int i_itemId,int i_robotIconNumber,boolean i_canBid,boolean i_isBeingBidOn,
+                     int i_purchasedItemId,int i_buyerPlayerId,int i_cost,String i_buyerName)
   {
-    if (i_event.GetVarValue("eventname").equals("BIDITEM"))
+    ItemByNumber.alterJLabel(m_unboughtjl,i_itemId == 7 ? i_robotIconNumber : i_itemId);
+    m_greenback.setVisible(i_isBeingBidOn);
+
+    boolean sold = (i_itemId == 0 && i_purchasedItemId != 0);
+    m_boughtjl.setVisible(sold);
+    m_unboughtjl.setVisible(!sold);
+    m_buyername.setVisible(sold);
+    m_buyercost.setVisible(sold);
+
+    if (sold)
     {
-      ClearRed();
-      if (i_event.GetVarValue("ShipSlotNumber").equals(m_idx))
-      {
-        m_greenback.setVisible(true);
-      }
-      else
-      {
-        m_greenback.setVisible(false);
-      }
+      ItemByNumber.alterJLabel(m_boughtjl,i_purchasedItemId);
+      m_buyername.setText(i_buyerPlayerId == NO_PLAYER_INDEX ? "" : i_buyerName);
+      m_buyercost.setText("Cost: " + i_cost);
     }
 
-
-    if (i_event.GetVarValue("eventname").equals("NEWSTATE"))
-    {
-      m_jb.setVisible(false);
-    }
-    
-    if (i_event.GetVarValue("eventname").equals("LEGALACTION") &&
-        i_event.GetVarValue("actionname").equals("OPENBID"))
-    {
-      m_jb.setVisible(m_item != 0);
-    }
-
-
-    if (i_event.GetVarValue("eventname").equals("PURCHASEDATA") &&
-        i_event.GetVarValue("ShipSlotNumber").equals(m_idx))
-    {
-      String istring= i_event.GetVarValue("ItemNumber");
-
-      m_lastboughtitem = Integer.parseInt(istring);
-      RecalculateVisible();
-
-      ItemByNumber.alterJLabel(m_boughtjl,m_lastboughtitem);
-      
-      String plidx = i_event.GetVarValue("PlayerNumber");
-      if (plidx.equals("3000"))
-      {
-        m_buyername.setText("");
-      }
-      else if (m_playernames.containsKey(plidx))
-      {
-        m_buyername.setText(m_playernames.get(plidx));
-      }
-      else
-      {
-        m_buyername.setText("???");
-      }
-
-      m_buyercost.setText("Cost: " + i_event.GetVarValue("Cost"));
-    }
+    m_jb.setVisible(i_canBid && i_itemId != 0);
   }
 }
-
-        

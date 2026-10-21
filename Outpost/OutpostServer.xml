@@ -1138,13 +1138,28 @@
           boost::json::value(static_cast<int>(GetPlayers().GetPlayerId(i_PlayerName))) :
           boost::json::value(nullptr);
 
-      if (i_StateName == InitialState || i_StateName == ValidateSetup)
+      // Unlike every other in-game-only field below, there's no reason this
+      // one needs to wait for STARTGAME -- it's just empty (rather than
+      // absent) until GetUnownedItems().Initialize() gives it real slots,
+      // same shape either way. GetShipItem() itself would throw
+      // std::out_of_range before Initialize() runs (its backing vector is
+      // still default-constructed/empty), hence the Initialized() guard.
+      boost::json::array supplyShip;
+      if (GetUnownedItems().Initialized())
       {
-        return result;
+        for (size_t shipIndex = 0 ; shipIndex < GetPlayers().size() ; ++shipIndex)
+        {
+          supplyShip.push_back(static_cast<int>(GetUnownedItems().GetShipItem(shipIndex)));
+        }
       }
+      result["supplyShip"] = supplyShip;
 
-      result["turnNum"] = GetCurTurn();
-
+      // Same reasoning as supplyShip, but resolved one level down: unlike
+      // m_SupplyShip, GetUnownedItems()'s m_ItemCount is always a full
+      // 14-entry, zero-filled vector from construction (see UnownedItems's
+      // own constructor) regardless of whether the game has started, so
+      // GetItemCount() is unconditionally safe here -- this loop needs no
+      // Initialized() guard at all, unlike supplyShip's.
       boost::json::array itemStock;
       for (int itemType = DATA_LIBRARY ; itemType <= MOON_BASE ; ++itemType)
       {
@@ -1155,6 +1170,13 @@
       }
       result["itemStock"] = itemStock;
 
+      if (i_StateName == InitialState || i_StateName == ValidateSetup)
+      {
+        return result;
+      }
+
+      result["turnNum"] = GetCurTurn();
+
       boost::json::array turnOrder;
       for (size_t i = 0 ; i < GetPlayers().GetTurnOrder().size() ; ++i)
       {
@@ -1162,15 +1184,13 @@
       }
       result["turnOrder"] = turnOrder;
 
-      boost::json::array supplyShip;
-      for (size_t shipIndex = 0 ; shipIndex < GetPlayers().size() ; ++shipIndex)
-      {
-        boost::json::object shipslotobj;
-        shipslotobj["slot"] = static_cast<int>(shipIndex);
-        shipslotobj["itemId"] = static_cast<int>(GetUnownedItems().GetShipItem(shipIndex));
-        supplyShip.push_back(shipslotobj);
-      }
-      result["supplyShip"] = supplyShip;
+      result["currentTurnPlayerId"] = GetPlayers().AllPlayersDone() ?
+          boost::json::value(nullptr) :
+          boost::json::value(static_cast<int>(GetPlayers().GetCurTurnPlayer().GetId()));
+
+      result["currentBidderId"] = (i_StateName == Bid) ?
+          boost::json::value(static_cast<int>(GetPlayers().GetCurBidPlayer().GetId())) :
+          boost::json::value(nullptr);
 
       boost::json::array commodityStock;
       for (int commType = ORE_COMMODITY ; commType <= MOON_ORE_COMMODITY ; ++commType)
@@ -1222,6 +1242,7 @@
             GetProductionManager().IsProductionDone() || !GetOptions().GetBlindDraws());
 
         boost::json::object purchaseInfo;
+        purchaseInfo["manCost"] = me.GetOwnedItems().GetPeopleCost();
         purchaseInfo["numRobots"] = me.GetMaxPurchasable(ROBOT_PURCHASABLE,GetOptions().GetRobotMechanism());
         purchaseInfo["numMen"] = me.GetMaxPurchasable(MAN_PURCHASABLE,GetOptions().GetRobotMechanism());
         purchaseInfo["numOre"] = me.GetMaxPurchasable(ORE_FACTORY_PURCHASABLE,GetOptions().GetRobotMechanism());
@@ -1252,7 +1273,7 @@
       if (i_StateName == Bid)
       {
         boost::json::object bidInfo;
-        bidInfo["itemId"] = static_cast<int>(GetUnownedItems().GetBidIndex());
+        bidInfo["itemShipIndex"] = static_cast<int>(GetUnownedItems().GetBidIndex());
         bidInfo["price"] = GetPlayers().GetHighBidPlayer().GetHighBid() -
             GetPlayers().GetHighBidPlayer().GetOwnedItems().GetDiscount(
                 GetUnownedItems().GetShipItem(GetUnownedItems().GetBidIndex()));

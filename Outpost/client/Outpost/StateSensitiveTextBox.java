@@ -5,6 +5,7 @@ import java.awt.Point;
 import NodeInterfacePackage.*;
 import javax.swing.JPanel;
 import java.util.HashMap;
+import java.util.Objects;
 import javax.swing.JTextField;
 import javax.swing.text.*;
 import javax.swing.event.DocumentListener;
@@ -12,10 +13,14 @@ import javax.swing.event.DocumentEvent;
 
 public class StateSensitiveTextBox implements UserDefinedInterface,DocumentListener,ActionVariableGenerator
 {
-  private ServerStateHistory m_ssh;
+  private static final GuiPacketQuery s_stateQuery = new GuiPacketQuery("{STATE}");
+  private static final GuiPacketQuery s_bidderQuery = new GuiPacketQuery("currentBidderId");
+
   private ActionTransferManager m_atm;
   String m_ActionVariableName;
   NumericTextField m_ntf;
+  private String m_lastState = null;
+  private int m_lastBidderId = Integer.MIN_VALUE;
 
   private class NumericTextField extends JTextField
   {
@@ -54,7 +59,6 @@ public class StateSensitiveTextBox implements UserDefinedInterface,DocumentListe
                                ActionTransferManager i_atm)
   {
     m_atm = i_atm;
-    m_ssh = new ServerStateHistory();
 
     if (!i_Options.containsKey("varname")) throw new NodeInterfacePackageException("missing option varname");
     m_ActionVariableName = i_Options.get("varname");
@@ -92,15 +96,16 @@ public class StateSensitiveTextBox implements UserDefinedInterface,DocumentListe
 
   public void HandleEvent(GameEvent i_event)
   {
-    m_ssh.HandleEvent(i_event);
+    String curState = (String)s_stateQuery.evaluate(i_event);
+    int curBidder = s_bidderQuery.evaluateInt(i_event,-1);
 
-    if (i_event.GetVarValue("eventname").equals("NEWSTATE"))
+    if (!Objects.equals(curState,m_lastState) || curBidder != m_lastBidderId)
     {
-      if (!m_ssh.GetLastState().equals(m_ssh.GetCurState()))
-      {
-        Reset();
-      }
+      Reset();
     }
+
+    m_lastState = curState;
+    m_lastBidderId = curBidder;
   }
 
   public void changedUpdate(DocumentEvent i_event)

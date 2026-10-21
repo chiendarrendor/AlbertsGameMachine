@@ -1869,12 +1869,9 @@ void CheckInGamePublicCardset1(const boost::json::object &i_result)
 
   const boost::json::array &supplyShip = i_result.at("supplyShip").as_array();
   BOOST_REQUIRE_EQUAL(supplyShip.size() , 3u);
-  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("slot").as_int64() , 0);
-  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("itemId").as_int64() , 9);
-  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("slot").as_int64() , 1);
-  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("itemId").as_int64() , 0);
-  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("slot").as_int64() , 2);
-  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("itemId").as_int64() , 13);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_int64() , 9);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_int64() , 13);
 
   static const int expectedCommodity[9][4] = {
     {26,0,0,3}, {39,0,30,7}, {53,0,44,10}, {32,0,56,13}, {16,0,0,17},
@@ -1936,12 +1933,9 @@ void CheckInGamePublicCardset2(const boost::json::object &i_result)
 
   const boost::json::array &supplyShip = i_result.at("supplyShip").as_array();
   BOOST_REQUIRE_EQUAL(supplyShip.size() , 3u);
-  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("slot").as_int64() , 0);
-  BOOST_CHECK_EQUAL(supplyShip[0].as_object().at("itemId").as_int64() , 9);
-  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("slot").as_int64() , 1);
-  BOOST_CHECK_EQUAL(supplyShip[1].as_object().at("itemId").as_int64() , 0);
-  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("slot").as_int64() , 2);
-  BOOST_CHECK_EQUAL(supplyShip[2].as_object().at("itemId").as_int64() , 13);
+  BOOST_CHECK_EQUAL(supplyShip[0].as_int64() , 9);
+  BOOST_CHECK_EQUAL(supplyShip[1].as_int64() , 0);
+  BOOST_CHECK_EQUAL(supplyShip[2].as_int64() , 13);
 
   static const int expectedCommodity[9][4] = {
     {26,0,0,3}, {39,0,30,7}, {53,0,44,10}, {29,0,56,13}, {16,0,0,17},
@@ -2141,7 +2135,7 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
     CheckNoPrivateInfo(r);
     BOOST_CHECK(r.at("megaRequest").is_null());
     const boost::json::object &bidInfo = r.at("bidInfo").as_object();
-    BOOST_CHECK_EQUAL(bidInfo.at("itemId").as_int64() , 2);
+    BOOST_CHECK_EQUAL(bidInfo.at("itemShipIndex").as_int64() , 2);
     BOOST_CHECK_EQUAL(bidInfo.at("price").as_int64() , 10);
     BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
   }
@@ -2154,7 +2148,7 @@ BOOST_AUTO_TEST_CASE( StateMachineRefresh )
     CheckPrivateInfo(r,"|MI18A|", 0,1,1,0,0,0,0);
     BOOST_CHECK(r.at("megaRequest").is_null());
     const boost::json::object &bidInfo2 = r.at("bidInfo").as_object();
-    BOOST_CHECK_EQUAL(bidInfo2.at("itemId").as_int64() , 2);
+    BOOST_CHECK_EQUAL(bidInfo2.at("itemShipIndex").as_int64() , 2);
     BOOST_CHECK_EQUAL(bidInfo2.at("price").as_int64() , 10);
     BOOST_CHECK_EQUAL(r.at("winners").as_array().size() , 0u);
   }

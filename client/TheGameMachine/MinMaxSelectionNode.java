@@ -5,7 +5,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-import NodeInterfacePackage.GameEvent;
+import NodeInterfacePackage.*;
+import org.doghouse.jsonpath.JsonQueryException;
 
 
 public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionListener
@@ -19,6 +20,9 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
   boolean m_maxok;
   private int m_minint;
   private int m_maxint;
+  private GuiPacketQuery m_mingpq = null;
+  private GuiPacketQuery m_maxgpq = null;
+
 
   public MinMaxSelectionNode(String i_VarName,int i_x,int i_y,String i_hidden,
                              GameNode i_ParentNode,GameGui i_gamegui,
@@ -41,6 +45,7 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
       m_minint = 0;
       m_varmin = true;
       m_minok = false;
+      m_mingpq = new GuiPacketQuery(m_Min);
     }
 
     try
@@ -54,6 +59,7 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
       m_maxint = -1;
       m_varmax = true;
       m_maxok = false;
+      m_maxgpq = new GuiPacketQuery(m_Max);
     }
 
     BuildBox();
@@ -139,12 +145,11 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
     {
       try
       {
-        String ms = i_Event.GetVarValue(m_Min);
-        m_minint = Integer.parseInt(ms);
+        m_minint = (Integer)m_mingpq.evaluate(i_Event);
         m_minok = true;
         update = true;
       }
-      catch (NumberFormatException nfe)
+      catch (JsonQueryException jqe)
       {
       }
     }
@@ -153,12 +158,11 @@ public class MinMaxSelectionNode extends ActionGeneratorNode implements ActionLi
     {
       try
       {
-        String ms = i_Event.GetVarValue(m_Max);
-        m_maxint = Integer.parseInt(ms);
+        m_maxint = (Integer)m_maxgpq.evaluate(i_Event);
         m_maxok = true;
         update = true;
       }
-      catch (NumberFormatException nfe)
+      catch (JsonQueryException jqe)
       {
       }
     }

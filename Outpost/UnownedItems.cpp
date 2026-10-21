@@ -5,7 +5,13 @@
 #include <iostream>
 
 UnownedItems::UnownedItems() :
-  m_ItemCount(),
+  // Unlike m_SupplyShip/m_Purchases (sized by player count, only known once
+  // Initialize() runs), m_ItemCount's size is the fixed ItemType range --
+  // always 14 regardless of game state -- so it can be pre-sized (and
+  // zero-filled, same as std::vector<int>(14) in Initialize() itself) right
+  // here, making GetItemCount() unconditionally safe to call even before
+  // the game starts, with no caller needing to know or care.
+  m_ItemCount(14),
   m_SupplyShip(),
   m_Purchases(),
   m_BidIndex(NO_BID_INDEX)

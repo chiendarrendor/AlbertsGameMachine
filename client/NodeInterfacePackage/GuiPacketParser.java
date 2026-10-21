@@ -26,6 +26,7 @@ public class GuiPacketParser
   private String m_gamename;
   private String m_xmlloc;
   private String m_xmlfile;
+  private String m_uuid;
 
   private String m_statename;
   private String m_statedesc;
@@ -50,6 +51,7 @@ public class GuiPacketParser
   public String getXMLFile() { return m_xmlfile; }
   public String getStateName() { return m_statename; }
   public String getStateDesc() { return m_statedesc; }
+  public String getUUID() { return m_uuid; }
   public boolean hasLegalAction(String actionName) { return m_legalactions.contains(actionName); }
   public JSONObject getBody() { return m_body; }
 
@@ -70,6 +72,7 @@ public class GuiPacketParser
   private static JsonPath legalactionpath = JsonPath.compile("fullState.legalActions[]");
   private static JsonPath errorpath = JsonPath.compile("fullState.error");
   private static JsonPath bodypath = JsonPath.compile("fullState.body");
+  private static JsonPath uuidpath = JsonPath.compile("fullState.gameInstanceId");
   
 
   public GuiPacketParser(String i_string)
@@ -95,6 +98,7 @@ public class GuiPacketParser
       m_xmlfile = (String)xmlfilepath.evaluate(packetJSON);
       m_statename = (String)statenamepath.evaluate(packetJSON);
       m_statedesc = (String)statedescpath.evaluate(packetJSON);
+      m_uuid = (String)uuidpath.evaluate(packetJSON);
 
       List<String> legalActions = legalactionpath.evaluateStringList(packetJSON);
 

@@ -271,7 +271,6 @@ public class GameXMLWalker
       if      (cname.equals("image"))     { WalkImageNode(childNode,i_PanelNode); }
       else if (cname.equals("text"))      { WalkTextNode(childNode,i_PanelNode); }
       else if (cname.equals("textbox"))   { WalkTextBoxNode(childNode,i_PanelNode); }
-      else if (cname.equals("checkbox")) { WalkCheckBoxNode(childNode,i_PanelNode); }
       else if (cname.equals("fixedselection")) { WalkFixedSelectionNode(childNode,i_PanelNode); }
       else if (cname.equals("varselection")) { WalkVarSelectionNode(childNode,i_PanelNode); }
       else if (cname.equals("minmaxvarselection")) { WalkMinMaxVarSelectionNode(childNode,i_PanelNode); }
@@ -370,49 +369,29 @@ public class GameXMLWalker
           throw new GameXMLException("invalid attributes of replace node");
         }
 
-        EventStringReplacer.Replacement rep = i_GameNode.AddReplacer(from,evar,init);
-        WalkReplaceChildren(childNode,rep);
+        // <replace> no longer supports nested <if>/<ifnot> visibility units --
+        // that capability piggybacked on GameEventHandler purely to gate one
+        // substitution's applicability, but no real XML ever used it (every
+        // live <replace> is self-closed), and it's gone now that
+        // EventStringReplacer is GuiPacketQuery-based. An actual element
+        // child is therefore always a mistake (incidental #text/#comment
+        // between/around attributes is still fine).
+        DOMChildIterator replaceChildren = new DOMChildIterator(childNode);
+        org.w3c.dom.Node replaceChild;
+        while ((replaceChild = replaceChildren.GetNext()) != null)
+        {
+          String replaceChildName = replaceChild.getNodeName();
+          if (!replaceChildName.equals("#text") && !replaceChildName.equals("#comment"))
+          {
+            throw new GameXMLException("<replace> no longer supports child nodes (e.g. <if>/<ifnot>)");
+          }
+        }
+
+        i_GameNode.AddReplacer(from,evar,init);
       }
       else
       {
         throw new GameXMLException("Unknown subnode of Replaceable Text Node: " + cname);
-      }
-    }
-  }
-
-  private void WalkReplaceChildren(org.w3c.dom.Node i_XMLNode,EventStringReplacer.Replacement i_Rep) throws GameXMLException
-  {
-    DOMChildIterator cit = new DOMChildIterator(i_XMLNode);
-    org.w3c.dom.Node childNode;
-
-    while((childNode = cit.GetNext()) != null)
-    {
-      String cname = childNode.getNodeName();
-      if      (cname.equals("if") || cname.equals("ifnot"))
-      {
-        if (childNode.hasChildNodes())
-        {
-          throw new GameXMLException("replace if/ifnot shouldn't have child nodes!");
-        }
-
-        int ut;
-        if      (cname.equals("if"))       ut = GameEventHandler.UNIT_SHOWHIDE;
-        else                               ut = GameEventHandler.UNIT_HIDESHOW;
-
-        i_Rep.GetEventHandler().AddEntry(ut);
-
-        if (!childNode.hasAttributes()) continue;
-        int i;
-        for (i = 0 ; i < childNode.getAttributes().getLength() ; ++i)
-        {
-          org.w3c.dom.Node attrnode = childNode.getAttributes().item(i);
-          i_Rep.GetEventHandler().AddVarVal(attrnode.getNodeName(),attrnode.getNodeValue());
-        }
-      }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
-      else
-      {
-        throw new GameXMLException("Unknown subnode of replace " + cname);
       }
     }
   }
@@ -805,38 +784,6 @@ public class GameXMLWalker
     {
       String cname = childNode.getNodeName();
       if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,tbnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
-      else
-      {
-        throw new GameXMLException("Unknown subnode of TextBox " + cname);
-      }
-    }
-  }
-
-  private void WalkCheckBoxNode(org.w3c.dom.Node i_XMLNode,GameNode i_ParentNode) throws GameXMLException
-  {
-    AttributeChecker acheck = new AttributeChecker();
-    acheck.AddAttribute("varname",true);
-    acheck.AddAttribute("x",false);
-    acheck.AddAttribute("y",false);
-    acheck.AddAttribute("hidden",false);
-    acheck.ValidateAttributes(i_XMLNode);
-
-    CheckBoxNode cbnode = new CheckBoxNode(DOMUtil.GetAttributeWithName(i_XMLNode,"varname"),
-                                         DOMUtil.GetIntAttribute(i_XMLNode,"x"),
-                                         DOMUtil.GetIntAttribute(i_XMLNode,"y"),
-                                         DOMUtil.GetAttributeWithName(i_XMLNode,"hidden"),
-                                         i_ParentNode,
-                                         m_gamegui);
-
-
-    DOMChildIterator cit = new DOMChildIterator(i_XMLNode);
-    org.w3c.dom.Node childNode;
-
-    while((childNode = cit.GetNext()) != null)
-    {
-      String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,cbnode); }
       else if (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {

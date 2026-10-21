@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "OutpostClientState",
-  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId only) and the full in-game snapshot (everything else too, some fields nullable depending on state).",
+  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId/supplyShip/itemStock only) and the full in-game snapshot (everything else too, some fields nullable depending on state). supplyShip and itemStock are the two exceptions to the pre-STARTGAME/in-game split -- both are always present (empty/zeroed before GetUnownedItems() is initialized) rather than being omitted like every other in-game field.",
   "type": "object",
   "properties": {
     "options": {
@@ -72,7 +72,7 @@
     "turnNum": { "type": "integer" },
     "itemStock": {
       "type": "array",
-      "description": "Remaining count in the central item supply per ItemType (NO_ITEM excluded).",
+      "description": "Remaining count in the central item supply per ItemType (NO_ITEM excluded). Always present, even pre-STARTGAME: counts are simply 0 until GetUnownedItems() fills them in, not omitted.",
       "items": {
         "type": "object",
         "properties": { "itemId": {"type":"integer"}, "count": {"type":"integer"} },
@@ -84,14 +84,18 @@
       "description": "Player ids in turn order for this round; array position is the turn rank -- the old TURNORDER event's separate i_turnorder field was redundant with that position, so it's dropped here.",
       "items": { "type": "integer" }
     },
+    "currentTurnPlayerId": {
+      "description": "Whose overall purchase-phase turn it currently is, or null once every player is done for the round.",
+      "type": ["integer", "null"]
+    },
+    "currentBidderId": {
+      "description": "Whose turn it is to respond (raise/pass/pass out) in the current bid round -- independent of currentTurnPlayerId, since the player who opened the bid keeps their own turn throughout. Null outside state Bid.",
+      "type": ["integer", "null"]
+    },
     "supplyShip": {
       "type": "array",
-      "description": "The current supply ship's slots in order; itemId is an ItemType, NO_ITEM meaning empty.",
-      "items": {
-        "type": "object",
-        "properties": { "slot": {"type":"integer"}, "itemId": {"type":"integer"} },
-        "required": ["slot", "itemId"], "additionalProperties": false
-      }
+      "description": "The current supply ship's slots in order -- array position is the slot/shipIndex, each value an ItemType (NO_ITEM meaning empty). Always present, even pre-STARTGAME: it's simply [] until GetUnownedItems() is initialized, not omitted.",
+      "items": { "type": "integer" }
     },
     "commodityStock": {
       "type": "array",
@@ -149,11 +153,12 @@
       "description": "This viewer's own current purchase limits -- null if the viewer isn't seated.",
       "type": ["object", "null"],
       "properties": {
+        "manCost": {"type":"integer", "description": "Current per-man purchase cost; the only purchasable with a variable cost, hence BuyMen's own XML template instead of BuyThing's fixed iCOSTi."},
         "numRobots": {"type":"integer"}, "numMen": {"type":"integer"}, "numOre": {"type":"integer"},
         "numWater": {"type":"integer"}, "numTitanium": {"type":"integer"}, "numResearch": {"type":"integer"},
         "numNewChem": {"type":"integer"}
       },
-      "required": ["numRobots","numMen","numOre","numWater","numTitanium","numResearch","numNewChem"],
+      "required": ["manCost","numRobots","numMen","numOre","numWater","numTitanium","numResearch","numNewChem"],
       "additionalProperties": false
     },
     "megaRequest": {
@@ -166,8 +171,11 @@
     "bidInfo": {
       "description": "Present only in state Bid; same for every viewer (not viewer-specific, unlike megaRequest).",
       "type": ["object", "null"],
-      "properties": { "itemId": {"type":"integer"}, "price": {"type":"integer"} },
-      "required": ["itemId", "price"],
+      "properties": {
+        "itemShipIndex": {"type":"integer", "description": "The supplyShip slot currently up for bid -- index into supplyShip, not an ItemType itself."},
+        "price": {"type":"integer"}
+      },
+      "required": ["itemShipIndex", "price"],
       "additionalProperties": false
     },
     "winners": {
@@ -176,6 +184,6 @@
       "items": { "type": "integer" }
     }
   },
-  "required": ["options", "players", "myPlayerId"],
+  "required": ["options", "players", "myPlayerId", "supplyShip", "itemStock"],
   "additionalProperties": false
 }

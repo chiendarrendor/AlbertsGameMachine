@@ -7,6 +7,11 @@
 
 #include <vector>
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
+
 enum ExecuteStatus { NO_STATE,TRANSITION_NOT_FOUND, EXECUTE_FAILED, RECURSION_LIMIT, EXECUTE_OK };
 
 template <class T_GameInfo>
@@ -28,6 +33,17 @@ public:
 
   ExecuteStatus Execute(const std::string &i_PlayerName,const ActionParser &i_ap);
 
+  // Identifies this one game instance -- generated fresh in the
+  // constructor, so every genuinely new game gets a new id, but a reload of
+  // an existing save restores the id that was saved with it via
+  // SERIALIZE_LOAD_FUNC below (overwriting the constructor's throwaway
+  // one). Lets a client detect "this FSS is actually a different game
+  // instance than the last one I saw for this same game name" -- e.g.
+  // switching rooms into another instance of the same game, or someone
+  // loading an unrelated save file into a room -- without any individual
+  // widget having to reason about it itself. See TODO.md.
+  std::string GetInstanceId() const;
+
 private:
   ExecuteStatus ExecuteAuto(int i_AutoRecursionDepth);
 
@@ -35,6 +51,7 @@ private:
   T_GameInfo &m_rGameInfo;
   const StateMachineType &m_rMachine;
   const typename StateMachineType::StateType *m_pCurState;
+  boost::uuids::uuid m_InstanceId;
 
   SERIALIZE_FRIENDSHIP;
 
@@ -43,6 +60,7 @@ private:
     std::string curstate;
     SERIALIZE(curstate);
     SetCurStateByName(curstate);
+    SERIALIZE(m_InstanceId);
   }
 
   SERIALIZE_SAVE_FUNC
@@ -53,6 +71,7 @@ private:
       curstate = GetCurStateName();
     }
     SERIALIZE(curstate);
+    SERIALIZE(m_InstanceId);
   }
   BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
@@ -61,9 +80,16 @@ template <class T_GameInfo>
 StateWalker<T_GameInfo>::StateWalker(const StateMachineType &i_Machine,T_GameInfo &i_rGameInfo,int i_AutoRecursionDepth) :
   m_AutoRecursionDepth(i_AutoRecursionDepth),
   m_rGameInfo(i_rGameInfo),
-  m_rMachine(i_Machine)
+  m_rMachine(i_Machine),
+  m_InstanceId(boost::uuids::random_generator()())
 {
   m_pCurState = m_rMachine.GetState(INITIALSTATENAME);
+}
+
+template <class T_GameInfo>
+std::string StateWalker<T_GameInfo>::GetInstanceId() const
+{
+  return boost::uuids::to_string(m_InstanceId);
 }
 
 
@@ -279,7 +305,7 @@ ExecuteStatus StateWalker<T_GameInfo>::ExecuteAuto(int i_AutoRecursionLimit)
     return RECURSION_LIMIT;
   }
 
-  ActionParser dummyap("");
+  ActionParser dummyap("",boost::json::object());
 #ifdef STATEDEBUG
   std::cout << "ExecuteAuto: executing auto transition " << pAutoTrans->GetName() << std::endl;
 #endif

@@ -28,6 +28,7 @@ public class GuiPacketQueryTest
   {
     String packet = "{\"gui\":\"Outpost\",\"recipient\":\"alice\",\"XMLLoc\":\"x\",\"XMLFile\":\"y\","
         + "\"fullState\":{\"state\":\"S\",\"stateDesc\":\"D\",\"legalActions\":[\"DONE\"],"
+        + "\"gameInstanceId\":\"00000000-0000-0000-0000-000000000000\","
         + "\"body\":{\"status\":\"RealStringValue\",\"names\":[{\"n\":\"a\"},{\"n\":\"b\"}],"
         + "\"count\":7,\"flag\":true}}}";
     return new GameEvent(new GuiPacketParser(packet));

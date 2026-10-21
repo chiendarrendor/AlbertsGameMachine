@@ -136,6 +136,7 @@ boost::json::object DLLGame<T_GameSet,T_DLLGameInfo>::BuildStateWalkerEnvelope
   envelope["state"] = m_StateWalker.GetCurStateName();
   envelope["stateDesc"] = m_StateWalker.GetCurStateDesc();
   envelope["legalActions"] = legalactions;
+  envelope["gameInstanceId"] = m_StateWalker.GetInstanceId();
   return envelope;
 }
 
