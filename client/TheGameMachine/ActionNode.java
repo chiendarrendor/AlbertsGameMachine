@@ -207,6 +207,16 @@ public class ActionNode extends GameNode implements DoActionHandler
 
     m_currentlyLegal = nowLegal;
   }
+
+  void ResetMe()
+  {
+    super.ResetMe();
+    // Otherwise a stale "already legal" from a prior game instance could
+    // suppress a legitimate alert the first time this same action becomes
+    // legal again in a brand new instance -- see the Alerter edge-trigger
+    // check in MyHandleEvent above, which only fires on !m_currentlyLegal.
+    m_currentlyLegal = false;
+  }
 }
 
 

@@ -91,6 +91,12 @@ public class ActionWindowNode extends GameNode
       m_StateText.setText("Current State: " + i_event.getGPP().getStateDesc());
   }
 
+  void ResetMe()
+  {
+    super.ResetMe();
+    m_StateText.setText("Current State:");
+  }
+
   public void dispose()
   {
     m_frame.dispose();

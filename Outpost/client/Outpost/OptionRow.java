@@ -77,5 +77,6 @@ public class OptionRow implements UserDefinedInterface,ItemListener,ActionVariab
   public void Reset()
   {
     m_checkbox.setSelected(false);
+    m_valueLabel.setText("false");
   }
 }

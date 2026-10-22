@@ -36,4 +36,10 @@ public class ActionTabNode extends TabNode
   {
     m_StateText.setText("Current State: " + gpq.evaluateString(i_event,""));
   }
+
+  void ResetMe()
+  {
+    super.ResetMe();
+    m_StateText.setText("Current State: ");
+  }
 }

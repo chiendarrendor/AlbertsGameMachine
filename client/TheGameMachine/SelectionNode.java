@@ -74,7 +74,15 @@ public class SelectionNode extends ActionGeneratorNode implements ActionListener
 
   void DoReset()
   {
-    if (m_box.getItemCount() > 0)
+    if (m_IsVariable)
+    {
+      // Pristine construction state for the dynamic-list case is zero
+      // items (InitializeNode only pre-populates the fixed-list case) --
+      // without this, a stale list from a prior game/room instance (e.g.
+      // room A's gameTypes) would persist indefinitely across a reset.
+      m_box.removeAllItems();
+    }
+    else if (m_box.getItemCount() > 0)
     {
       m_box.setSelectedIndex(0);
     }

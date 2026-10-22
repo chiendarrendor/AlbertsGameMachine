@@ -62,5 +62,10 @@ public class ItemStockGrid implements UserDefinedInterface
 
   public void Reset()
   {
+    for (int i = 1 ; i <= 13 ; ++i)
+    {
+      m_counts[i].setText("0");
+    }
+    ItemByNumber.alterJLabel(m_icons[7],7);
   }
 }

@@ -141,6 +141,7 @@ public class ShipList implements UserDefinedInterface,ActionVariableGenerator,Sh
   public void Reset()
   {
     RebuildSlots(0);
+    m_Selection = null;
     m_lastState = null;
     m_lastBidderId = Integer.MIN_VALUE;
   }

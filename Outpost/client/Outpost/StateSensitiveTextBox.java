@@ -78,6 +78,8 @@ public class StateSensitiveTextBox implements UserDefinedInterface,DocumentListe
   public void Reset()
   {
     m_ntf.setText("");
+    m_lastState = null;
+    m_lastBidderId = Integer.MIN_VALUE;
   }
 
   public void ActionVariableReset()
