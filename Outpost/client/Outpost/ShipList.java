@@ -19,7 +19,6 @@ public class ShipList implements UserDefinedInterface,ActionVariableGenerator,Sh
   private static final GuiPacketQuery s_shipQuery = new GuiPacketQuery("supplyShip[]");
   private static final GuiPacketQuery s_purchaseQuery = new GuiPacketQuery("purchaseData[]");
   private static final GuiPacketQuery s_bidItemQuery = new GuiPacketQuery("bidInfo.itemShipIndex");
-  private static final GuiPacketQuery s_robotsQuery = new GuiPacketQuery("options.robots");
   private static final GuiPacketQuery s_playersQuery = new GuiPacketQuery("players[]");
   private static final GuiPacketQuery s_legalOpenBidQuery = new GuiPacketQuery("{LEGALACTION:OPENBID}");
 
@@ -116,7 +115,7 @@ public class ShipList implements UserDefinedInterface,ActionVariableGenerator,Sh
 
     int bidShipIndex = s_bidItemQuery.evaluateInt(i_event,-1);
     boolean legalOpenBid = s_legalOpenBidQuery.evaluateBoolean(i_event,false);
-    int robotIconNumber = 70 + (Integer)s_robotsQuery.evaluate(i_event);
+    int robotIconNumber = EventHelper.getRobotItemId(i_event);
 
     for (int i = 0 ; i < n ; ++i)
     {

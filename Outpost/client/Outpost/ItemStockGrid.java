@@ -13,7 +13,6 @@ import javax.swing.SwingConstants;
 public class ItemStockGrid implements UserDefinedInterface
 {
   private static final GuiPacketQuery s_stockQuery = new GuiPacketQuery("itemStock[]");
-  private static final GuiPacketQuery s_robotsQuery = new GuiPacketQuery("options.robots");
 
   private JLabel[] m_icons = new JLabel[14];
   private JLabel[] m_counts = new JLabel[14];
@@ -52,8 +51,7 @@ public class ItemStockGrid implements UserDefinedInterface
       m_counts[itemId].setText(String.valueOf(item.getInt("count")));
     }
 
-    int robots = (Integer)s_robotsQuery.evaluate(i_event);
-    ItemByNumber.alterJLabel(m_icons[7],70 + robots);
+    ItemByNumber.alterJLabel(m_icons[7],EventHelper.getRobotItemId(i_event));
   }
 
   public void Refresh()

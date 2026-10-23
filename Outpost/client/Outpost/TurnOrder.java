@@ -2,40 +2,89 @@ package Outpost;
 
 import NodeInterfacePackage.*;
 import MySwing.HTMLTable;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
-import java.awt.Color;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.SwingConstants;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.doghouse.jsonpath.JsonQueryException;
 
 public class TurnOrder implements UserDefinedInterface
 {
-  Vector<PlayerInfo> m_playerinfos;
-  int[] m_turnorders;
-  boolean m_winstate;
-  boolean m_bidstate;
-  JLabel m_label;
+  private static final GuiPacketQuery s_stateQuery = new GuiPacketQuery("{STATE}");
+  private static final GuiPacketQuery s_myPlayerIdQuery = new GuiPacketQuery("myPlayerId");
+  private static final GuiPacketQuery s_playersQuery = new GuiPacketQuery("players[]");
+  private static final GuiPacketQuery s_turnOrderQuery = new GuiPacketQuery("turnOrder[]");
+  private static final GuiPacketQuery s_winnersQuery = new GuiPacketQuery("winners[]");
 
-  
-  private class PlayerInfo
+  private JLabel m_label;
+
+  // Plain per-delivery value object -- rebuilt fresh from players[] on every
+  // HandleEvent, never persisted. Replaces the old sparse, incrementally-
+  // grown Vector<PlayerInfo> that waited for ~8 different broadcast events
+  // to trickle in; players[] already arrives as the complete picture every
+  // single time, so there's nothing left to accumulate.
+  private static class PlayerInfo
   {
-    String m_name;
-    boolean m_iam;
-    int m_vp;
-    int m_costsum;
-    int m_pstate;
-    int m_bstate;
-    boolean m_haspurchased;
-    int m_highbid;
-    int m_lastbid;
-    boolean m_okstartup;
-    boolean m_wins;
-    int m_resources;
-    int m_factoryincome;
-    HashMap<String,String> m_items;
+    final int m_id;
+    final String m_name;
+    final boolean m_iam;
+    final boolean m_okstartup;
+    final int m_vp;
+    final int m_costsum;
+    final int m_pstate;
+    final int m_bstate;
+    final boolean m_haspurchased;
+    final int m_highbid;
+    final int m_lastbid;
+    final boolean m_wins;
+    final int m_resources;
+    final int m_income;
+
+    PlayerInfo(JSONObject i_player,Integer i_myPlayerId,Set<Integer> i_winners)
+    {
+      m_id = i_player.getInt("id");
+      m_name = i_player.getString("name");
+      m_iam = i_myPlayerId != null && i_myPlayerId == m_id;
+      m_okstartup = i_player.getBoolean("okstartup");
+      m_vp = i_player.getInt("victoryPoints");
+      m_costsum = i_player.getInt("itemCostSum");
+      m_pstate = i_player.getInt("purchaseState");
+      m_bstate = i_player.getInt("bidState");
+      m_haspurchased = i_player.getBoolean("hasPurchased");
+      m_highbid = i_player.getInt("highBid");
+      m_lastbid = i_player.getInt("lastBid");
+      m_wins = i_winners.contains(m_id);
+
+      int resources = 0;
+      for (CommodityInfo ci : CommodityInfo.ParseCommodityString(i_player.getString("cardBackDescription")))
+      {
+        resources += ci.GetValue();
+      }
+      m_resources = resources;
+
+      int income = 0;
+      for (FactoryWidget fw : FactoryWidget.ParseFactoryString(i_player.getString("factoryDescription"),"",false,null))
+      {
+        if (fw.GetManType() != 'U')
+        {
+          income += fw.GetFactoryMeanValue();
+        }
+      }
+
+      JSONArray items = i_player.getJSONArray("items");
+      for (int i = 0 ; i < items.length() ; ++i)
+      {
+        int itemId = items.getInt(i);
+        if (itemId == 5) income += 13;
+        if (itemId == 6) income += 17;
+      }
+      m_income = income;
+    }
 
     public String GetName() { return m_name; }
     public boolean IAm() { return m_iam; }
@@ -49,92 +98,12 @@ public class TurnOrder implements UserDefinedInterface
     public boolean OkStartup() { return m_okstartup; }
     public boolean Wins() { return m_wins; }
     public int GetResources() { return m_resources; }
-
-    public int GetIncome() 
-    { 
-      int itemincome = 0;
-      Object[] values = m_items.values().toArray();
-      int i;
-      for (i = 0 ; i < values.length ; ++i)
-      {
-        if (((String)values[i]).equals("5")) itemincome += 13;
-        if (((String)values[i]).equals("6")) itemincome += 17;
-      }
-
-      return m_factoryincome + itemincome; 
-    }
-
-    PlayerInfo(String i_name)
-    {
-      m_name = i_name;
-      m_iam = false;
-      m_vp = 0;
-      m_costsum = 0;
-      m_pstate = 3;
-      m_bstate = 3;
-      m_haspurchased = false;
-      m_highbid = -1;
-      m_lastbid = -1;
-      m_okstartup = false;
-      m_wins = false;
-      m_resources = 0;
-      m_factoryincome = 0;
-      m_items = new HashMap<String,String>();
-    }
-
-    void SetResources(int i_resources)
-    {
-      m_resources = i_resources;
-    }
-    
-    void SetItem(String i_itemindex,String i_itemvalue)
-    {
-      m_items.put(i_itemindex,i_itemvalue);
-    }
-
-    void SetFactoryIncome(int i_factoryincome)
-    {
-      m_factoryincome = i_factoryincome;
-    }
-
-    void SetWin()
-    {
-      m_wins = true;
-    }
-
-    void SetIAm(boolean i_iam)
-    {
-      m_iam = i_iam;
-    }
-
-    void SetOkStartup(boolean i_oktostart)
-    {
-      m_okstartup = i_oktostart;
-    }
-
-    void SetPlayerState(int i_vp,int i_costsum,int i_pstate,int i_bstate,
-                        boolean i_haspurchased,int i_highbid,int i_lastbid)
-    {
-      m_vp = i_vp;
-      m_costsum = i_costsum;
-      m_pstate = i_pstate;
-      m_bstate = i_bstate;
-      m_haspurchased = i_haspurchased;
-      m_highbid = i_highbid;
-      m_lastbid = i_lastbid;
-    }
+    public int GetIncome() { return m_income; }
   }
-
-
 
   public TurnOrder(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,
                    ActionTransferManager i_atm)
   {
-    m_winstate = false;
-    m_bidstate = false;
-    m_playerinfos = new Vector<PlayerInfo>();
-    m_turnorders = null;
-
     m_label = new JLabel();
     i_Panel.add(m_label);
   }
@@ -162,11 +131,11 @@ public class TurnOrder implements UserDefinedInterface
     }
   }
 
-  private void SetBidLabel(HTMLTable.CellContents i_jlabel,int i_bidstate)
+  private void SetBidLabel(HTMLTable.CellContents i_jlabel,int i_bidstate,boolean i_bidStateActive)
   {
-    if (m_bidstate == false)
+    if (!i_bidStateActive)
     {
-      i_jlabel.SetForeColor("#BEBEBE").SetBackColor("#FFFFFF").SetText("n/a").SetHAlign("center"); 
+      i_jlabel.SetForeColor("#BEBEBE").SetBackColor("#FFFFFF").SetText("n/a").SetHAlign("center");
       return;
     }
 
@@ -187,281 +156,170 @@ public class TurnOrder implements UserDefinedInterface
     }
   }
 
-  private void Redraw()
+  private void RedrawPreGame(List<PlayerInfo> i_players)
   {
-    // display:
-    // prior to turnorder being established:
-    //   name (>name< if IAM is true)
-    //   OK or blank (okstartup)
-    // after turnorder being established:
-    //   name (>name< if IAM is true)
-    //   VP(costsum)
-    //   Purchase State: DONE/INTERNAL DONE is gray, UNPLAYED is green, INTERNALIZING is yellow, ACTIVE is red
-    //   Bid State: PASS_OUT is gray, UNBID is green, PASS is blue, HAS BID is yellow, CURBID is red
-    //   High Bid: only display if not -1
-    //   Purchased: mark with X or not.
-
-    int newRows;
-    int i;
-
-    if (m_turnorders == null) newRows = 2;
-    else if (m_winstate) newRows = 3;
-    else newRows = 7;
-
-    int newCols = m_playerinfos.size() + 1;
-
-    HTMLTable ht = new HTMLTable(newCols,newRows,false);
+    HTMLTable ht = new HTMLTable(i_players.size()+1,2,false);
 
     ht.GetCell(0,0).SetText("Names:").SetHAlign("right");
+    ht.GetCell(0,1).SetText("Okayed Start:").SetHAlign("right");
 
-    if (newRows == 2)
+    for (int i = 0 ; i < i_players.size() ; ++i)
     {
-      ht.GetCell(0,1).SetText("Okayed Start:").SetHAlign("right");
-    }
-    else if (newRows == 3)
-    {
-      ht.GetCell(0,1).SetText("VP:").SetHAlign("right");
-      ht.GetCell(0,2).SetText("Won?").SetHAlign("right");
-    }
-    else
-    {
-      ht.GetCell(0,1).SetText("VP(Item Cost):").SetHAlign("right");
-      ht.GetCell(0,2).SetText("Est. Resources/Income:").SetHAlign("right");
-      ht.GetCell(0,3).SetText("Action Status:").SetHAlign("right");
-      ht.GetCell(0,4).SetText("Bidding Status:").SetHAlign("right");
-      ht.GetCell(0,5).SetText("Last Bids:").SetHAlign("right");
-      ht.GetCell(0,6).SetText("Has Purchased Item:").SetHAlign("right");
+      PlayerInfo pi = i_players.get(i);
+      ht.GetCell(i+1,0).SetText(pi.GetName()).SetHAlign("center");
+      if (pi.IAm())
+      {
+        ht.GetCell(i+1,0).SetBackColor("#00FF00");
+      }
+      ht.GetCell(i+1,1).SetText(pi.OkStartup() ? "OK" : "").SetHAlign("center");
     }
 
-
-    if (newRows == 2)
-    {
-      for (i = 0 ; i < m_playerinfos.size() ; ++i)
-      {
-        PlayerInfo pi = m_playerinfos.get(i);
-        ht.GetCell(i+1,0).SetText(pi.GetName()).SetHAlign("center");
-        
-        if (pi.IAm())
-        {
-          ht.GetCell(i+1,0).SetBackColor("#00FF00");
-        }
-        ht.GetCell(i+1,1).SetText(pi.OkStartup() ? "OK" : "").SetHAlign("center");
-      }
-    }
-    else if (newRows == 3)
-    {
-      int[] ivec = new int[m_playerinfos.size()];
-      for (i = 0 ; i < m_playerinfos.size() ; ++i)
-      {
-        ivec[i] = i;
-      }
-
-      int iteridx;
-      for (iteridx = 0 ; iteridx < m_playerinfos.size() ; ++iteridx)
-      {
-        int highidx = -1;
-        int highvalue = -1;
-
-        for (i = 0 ; i < m_playerinfos.size() ; ++i)
-        {
-          if (ivec[i] == -1) continue;
-          PlayerInfo pi = m_playerinfos.get(ivec[i]);
-          if (pi.GetVP() > highvalue)
-          {
-            highvalue = pi.GetVP();
-            highidx = i;
-          }
-        }
-
-        PlayerInfo pi = m_playerinfos.get(ivec[highidx]);
-        ivec[highidx] = -1;
-
-        ht.GetCell(iteridx+1,0).SetText(pi.GetName()).SetHAlign("center");
-        
-        if (pi.IAm())
-        {
-          ht.GetCell(iteridx+1,0).SetBackColor("#00FF00");
-        }
-        ht.GetCell(iteridx+1,1).SetText("" + pi.GetVP()).SetHAlign("center");
-        ht.GetCell(iteridx+1,2).SetText(pi.Wins() ? "YES!" : "").SetHAlign("center");
-      }
-    }      
-    else
-    {
-      int legendcol = 0;
-      int namerow = 0;
-      int vprow = 1;
-      int estrow = 2;
-      int actrow = 3;
-      int bidrow = 4;
-      int bhistrow = 5;
-      int hasprow = 6;
-
-      if (m_bidstate == true)
-      {
-        ht.GetCell(legendcol,bidrow).SetBackColor("#00FF00");
-      }
-
-      for (i = 0 ; i < m_playerinfos.size() ; ++i)
-      {
-        PlayerInfo pi = m_playerinfos.get(m_turnorders[i]);
-        int playercol = i + 1;
-        ht.GetCell(playercol,namerow).SetText(pi.GetName()).SetHAlign("center");
-        
-        if (pi.IAm())
-        {
-          ht.GetCell(playercol,namerow).SetBackColor("#00FF00");
-        }
-
-
-        ht.GetCell(playercol,vprow).SetText(pi.GetVP() + "(" + pi.GetCostSum() + ")").SetHAlign("center");
-        SetPurchaseLabel(ht.GetCell(playercol,actrow),pi.GetPurchaseState());
-        SetBidLabel(ht.GetCell(playercol,bidrow),pi.GetBidState());
-
-        if (pi.GetLastBid() != -1)
-        {
-          ht.GetCell(playercol,bhistrow).SetText(""+pi.GetLastBid()).SetHAlign("center");
-          if (pi.GetHighBid() != -1)
-          {
-            ht.GetCell(playercol,bhistrow).SetBackColor("#00FF00");
-            if (pi.GetBidState() == 1) // cur bidder and high bid -> player is buying item.
-            {
-              ht.GetCell(playercol,bidrow).SetText("buying").SetHAlign("center").SetBackColor("#FF00FF");
-            }
-          }
-        }
-        ht.GetCell(playercol,hasprow).SetText(pi.HasPurchased() ? "X" : "").SetHAlign("center");
-        ht.GetCell(playercol,estrow).SetText("" + pi.GetResources() + "/" + pi.GetIncome() ).SetHAlign("center");
-      }
-    }
     m_label.setText(ht.GetHTML());
   }
 
-  public void HandleEvent(GameEvent i_event)
+  private void RedrawTerminal(List<PlayerInfo> i_players)
   {
-    String ename = i_event.GetVarValue("eventname");
+    List<PlayerInfo> byVP = new ArrayList<PlayerInfo>(i_players);
+    byVP.sort((a,b) -> b.GetVP() - a.GetVP());
 
-    if (ename.equals("PLAYER"))
+    HTMLTable ht = new HTMLTable(byVP.size()+1,3,false);
+
+    ht.GetCell(0,0).SetText("Names:").SetHAlign("right");
+    ht.GetCell(0,1).SetText("VP:").SetHAlign("right");
+    ht.GetCell(0,2).SetText("Won?").SetHAlign("right");
+
+    for (int i = 0 ; i < byVP.size() ; ++i)
     {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      int i;
-      for (i = m_playerinfos.size() ; i <= pnum ; ++i)
+      PlayerInfo pi = byVP.get(i);
+      ht.GetCell(i+1,0).SetText(pi.GetName()).SetHAlign("center");
+      if (pi.IAm())
       {
-        m_playerinfos.add(null);
+        ht.GetCell(i+1,0).SetBackColor("#00FF00");
       }
-      if (m_playerinfos.get(pnum) == null)
-      {
-        m_playerinfos.set(pnum,new PlayerInfo(i_event.GetVarValue("PlayerName")));
-      }
-      Redraw();
+      ht.GetCell(i+1,1).SetText(""+pi.GetVP()).SetHAlign("center");
+      ht.GetCell(i+1,2).SetText(pi.Wins() ? "YES!" : "").SetHAlign("center");
     }
 
-    if (ename.equals("IAM"))
+    m_label.setText(ht.GetHTML());
+  }
+
+  private void RedrawInGame(List<PlayerInfo> i_playersInTurnOrder,boolean i_bidStateActive)
+  {
+    int legendcol = 0;
+    int namerow = 0;
+    int vprow = 1;
+    int estrow = 2;
+    int actrow = 3;
+    int bidrow = 4;
+    int bhistrow = 5;
+    int hasprow = 6;
+
+    HTMLTable ht = new HTMLTable(i_playersInTurnOrder.size()+1,7,false);
+
+    ht.GetCell(legendcol,namerow).SetText("Names:").SetHAlign("right");
+    ht.GetCell(legendcol,vprow).SetText("VP(Item Cost):").SetHAlign("right");
+    ht.GetCell(legendcol,estrow).SetText("Est. Resources/Income:").SetHAlign("right");
+    ht.GetCell(legendcol,actrow).SetText("Action Status:").SetHAlign("right");
+    ht.GetCell(legendcol,bidrow).SetText("Bidding Status:").SetHAlign("right");
+    ht.GetCell(legendcol,bhistrow).SetText("Last Bids:").SetHAlign("right");
+    ht.GetCell(legendcol,hasprow).SetText("Has Purchased Item:").SetHAlign("right");
+
+    if (i_bidStateActive)
     {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      if (m_playerinfos.get(pnum) != null)
+      ht.GetCell(legendcol,bidrow).SetBackColor("#00FF00");
+    }
+
+    for (int i = 0 ; i < i_playersInTurnOrder.size() ; ++i)
+    {
+      PlayerInfo pi = i_playersInTurnOrder.get(i);
+      int playercol = i + 1;
+
+      ht.GetCell(playercol,namerow).SetText(pi.GetName()).SetHAlign("center");
+      if (pi.IAm())
       {
-        m_playerinfos.get(pnum).SetIAm(true);
-        Redraw();
+        ht.GetCell(playercol,namerow).SetBackColor("#00FF00");
       }
-    }
 
-    if (ename.equals("PLAYERCARDBACKS"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      Vector<CommodityInfo> vci = CommodityInfo.ParseCommodityString(i_event.GetVarValue("BackString"));
-      int i;
-      int isum = 0;
-      for (i = 0 ; i < vci.size() ; ++i)
+      ht.GetCell(playercol,vprow).SetText(pi.GetVP() + "(" + pi.GetCostSum() + ")").SetHAlign("center");
+      SetPurchaseLabel(ht.GetCell(playercol,actrow),pi.GetPurchaseState());
+      SetBidLabel(ht.GetCell(playercol,bidrow),pi.GetBidState(),i_bidStateActive);
+
+      if (pi.GetLastBid() != -1)
       {
-        isum += vci.get(i).GetValue();
-      }
-      m_playerinfos.get(pnum).SetResources(isum);
-      Redraw();
-    }
-
-    if (ename.equals("PLAYERFACTORIES"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      Vector<FactoryWidget> vfw = FactoryWidget.ParseFactoryString(i_event.GetVarValue("FactoryString"),"",false,null);
-      int i;
-      int isum = 0;
-      for (i = 0 ; i < vfw.size() ; ++i)
-      {
-        FactoryWidget fw = vfw.get(i);
-        if (fw.GetManType() == 'U') continue;
-        isum += fw.GetFactoryMeanValue();
-      }
-      m_playerinfos.get(pnum).SetFactoryIncome(isum);
-      Redraw();
-    }
-
-    if (ename.equals("PLAYERITEMS"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      m_playerinfos.get(pnum).SetItem(i_event.GetVarValue("PlayerSlotNumber"),
-                                      i_event.GetVarValue("ItemNumber"));
-      Redraw();
-    }
-
-    if (ename.equals("PLAYERSTATE"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      if (m_playerinfos.get(pnum) != null)
-      {
-        m_playerinfos.get(pnum).SetPlayerState(Integer.parseInt(i_event.GetVarValue("VictoryPoints")),
-                                               Integer.parseInt(i_event.GetVarValue("ItemCostSum")),
-                                               Integer.parseInt(i_event.GetVarValue("PurchaseState")),
-                                               Integer.parseInt(i_event.GetVarValue("BidState")),
-                                               i_event.GetVarValue("HasPurchased").equals("1") ? true : false,
-                                               Integer.parseInt(i_event.GetVarValue("HighBid")),
-                                               Integer.parseInt(i_event.GetVarValue("LastBid"))
-                                               );
-        Redraw();
-      }
-    }
-
-    if (ename.equals("PLAYEROKSTARTUP"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      if (m_playerinfos.get(pnum) != null)
-      {
-        m_playerinfos.get(pnum).SetOkStartup(i_event.GetVarValue("OkToStart").equals("1"));
-        Redraw();
-      }
-    }
-
-    if (ename.equals("TURNORDER"))
-    {
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      if (m_turnorders == null)
-      {
-        m_turnorders = new int[m_playerinfos.size()];
-        int i;
-        for (i = 0 ; i < m_turnorders.length ; ++i)
+        ht.GetCell(playercol,bhistrow).SetText(""+pi.GetLastBid()).SetHAlign("center");
+        if (pi.GetHighBid() != -1)
         {
-          m_turnorders[i] = 0;
+          ht.GetCell(playercol,bhistrow).SetBackColor("#00FF00");
+          if (pi.GetBidState() == 1) // cur bidder and high bid -> player is buying item.
+          {
+            ht.GetCell(playercol,bidrow).SetText("buying").SetHAlign("center").SetBackColor("#FF00FF");
+          }
         }
       }
-      m_turnorders[Integer.parseInt(i_event.GetVarValue("TurnOrder"))-1] = pnum;
-      Redraw();
+      ht.GetCell(playercol,hasprow).SetText(pi.HasPurchased() ? "X" : "").SetHAlign("center");
+      ht.GetCell(playercol,estrow).SetText("" + pi.GetResources() + "/" + pi.GetIncome()).SetHAlign("center");
     }
 
-    if (ename.equals("PLAYERWINS"))
+    m_label.setText(ht.GetHTML());
+  }
+
+  @SuppressWarnings("unchecked")
+  public void HandleEvent(GameEvent i_event)
+  {
+    List<Object> playersRaw = (List<Object>)s_playersQuery.evaluate(i_event);
+    Integer myPlayerId = (Integer)s_myPlayerIdQuery.evaluate(i_event);
+
+    // turnOrder/winners are both built on the far side of the same
+    // InitialState/ValidateSetup early return in GetClientState -- neither
+    // is present yet pre-STARTGAME. Reading one tells us about both.
+    List<Object> turnOrderRaw;
+    List<Object> winnersRaw;
+    try
     {
-      m_winstate = true;
-      int pnum = Integer.parseInt(i_event.GetVarValue("PlayerNumber"));
-      if (m_playerinfos.get(pnum) != null)
+      turnOrderRaw = (List<Object>)s_turnOrderQuery.evaluate(i_event);
+      winnersRaw = (List<Object>)s_winnersQuery.evaluate(i_event);
+    }
+    catch (JsonQueryException jqe)
+    {
+      turnOrderRaw = null;
+      winnersRaw = null;
+    }
+
+    Set<Integer> winners = new HashSet<Integer>();
+    if (winnersRaw != null)
+    {
+      for (Object o : winnersRaw)
       {
-        m_playerinfos.get(pnum).SetWin();
+        winners.add((Integer)o);
       }
-      Redraw();
     }
 
-    if (ename.equals("NEWSTATE"))
+    HashMap<Integer,PlayerInfo> byId = new HashMap<Integer,PlayerInfo>();
+    List<PlayerInfo> inPlayerOrder = new ArrayList<PlayerInfo>();
+    for (Object o : playersRaw)
     {
-      m_bidstate = i_event.GetVarValue("statename").equals("Bid");
-      Redraw();
+      PlayerInfo pi = new PlayerInfo((JSONObject)o,myPlayerId,winners);
+      byId.put(pi.m_id,pi);
+      inPlayerOrder.add(pi);
+    }
+
+    if (turnOrderRaw == null)
+    {
+      RedrawPreGame(inPlayerOrder);
+    }
+    else if (!winners.isEmpty())
+    {
+      RedrawTerminal(inPlayerOrder);
+    }
+    else
+    {
+      List<PlayerInfo> inTurnOrder = new ArrayList<PlayerInfo>();
+      for (Object o : turnOrderRaw)
+      {
+        inTurnOrder.add(byId.get((Integer)o));
+      }
+      boolean bidStateActive = "Bid".equals((String)s_stateQuery.evaluate(i_event));
+      RedrawInGame(inTurnOrder,bidStateActive);
     }
   }
 
@@ -471,9 +329,6 @@ public class TurnOrder implements UserDefinedInterface
 
   public void Reset()
   {
-    m_winstate = false;
-    m_turnorders = null;
-    m_playerinfos.removeAllElements();
-    Redraw();
+    m_label.setText("");
   }
 }

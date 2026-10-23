@@ -6,24 +6,23 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.io.File;
 import javax.swing.BoxLayout;
-
-import Outpost.Item;
+import org.json.JSONObject;
+import org.doghouse.jsonpath.JsonPath;
+import java.util.List;
 
 public class ItemList implements UserDefinedInterface
 {
   private JPanel m_panel;
-  private String m_PlayerNum;
-  private int m_largestslot;
+  private String m_PlayerName;
   private int m_robotnumber;
 
   public ItemList(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
   {
     ItemByNumber.DoOnce(i_DataLoc);
 
-    if (!i_Options.containsKey("playernum")) throw new NodeInterfacePackageException("missing option commtype");
-    m_PlayerNum = i_Options.get("playernum");
+    if (!i_Options.containsKey("playername")) throw new NodeInterfacePackageException("missing option playername");
+    m_PlayerName = i_Options.get("playername");
 
-    m_largestslot = -1;
     m_robotnumber = 7;
 
     m_panel = new JPanel();
@@ -40,32 +39,20 @@ public class ItemList implements UserDefinedInterface
     return i_item;
   }
 
+  private static JsonPath itemListPath = JsonPath.compile("items[]");
+  @SuppressWarnings("unchecked")
   public void HandleEvent(GameEvent i_event)
   {
-    if (i_event.GetVarValue("eventname").equals("PLAYERITEMS") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
-    {
-      int slot = Integer.parseInt(i_event.GetVarValue("PlayerSlotNumber"));
-      int item = Integer.parseInt(i_event.GetVarValue("ItemNumber"));
+    m_robotnumber = EventHelper.getRobotItemId(i_event);
+    JSONObject player = EventHelper.getJSONOfPlayer(m_PlayerName, i_event);
+    List<Integer> items = (List<Integer>)itemListPath.evaluate(player);
 
-      if (slot > m_largestslot)
-      {
-        int i;
-        for (i = m_largestslot+1 ; i <= slot ; ++i)
-        {
-          m_panel.add(ItemByNumber.createJLabel(0));
-        }
-        m_panel.revalidate();
-        m_panel.repaint();
-        m_largestslot = slot;
-      }
-      ItemByNumber.alterJLabel((JLabel)(m_panel.getComponents()[slot]),GetItemNumber(item));
+    m_panel.removeAll();
+    for (int item : items) {
+      m_panel.add(ItemByNumber.createJLabel(GetItemNumber(item)));
     }
-
-    if (i_event.GetVarValue("eventname").equals("OPTIONS"))
-    {
-      m_robotnumber = 70 + Integer.parseInt(i_event.GetVarValue("Robots"));
-    }
+    m_panel.revalidate();
+    m_panel.repaint();
   }
 
   public void Refresh()
@@ -74,7 +61,6 @@ public class ItemList implements UserDefinedInterface
 
   public void Reset()
   {
-    m_largestslot = -1;
     m_robotnumber = 7;
     m_panel.removeAll();
   }

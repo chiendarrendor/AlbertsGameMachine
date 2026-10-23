@@ -14,10 +14,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JButton;
 import javax.swing.Icon;
+import org.json.JSONObject;
+import org.doghouse.jsonpath.JsonPath;
+import java.util.List;
 
 public class CommodityHand implements UserDefinedInterface,ActionListener
 {
-  private String m_PlayerNum;
+  private String m_PlayerName;
   private boolean m_IAM;
   private JPanel m_panel;
   private CommodityNotesPanel m_notepanel;
@@ -26,6 +29,7 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
   private ActionTransferManager m_atm;
   private Vector<CommodityInfo> m_vci;
   private Vector<JCheckBox> m_boxes;
+  private String m_lastPString = null;
 
   public CommodityHand(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
   {
@@ -35,8 +39,8 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
     m_vci = new Vector<CommodityInfo>();
     m_boxes = new Vector<JCheckBox>();
 
-    if (!i_Options.containsKey("playernum")) throw new NodeInterfacePackageException("missing option commtype");
-    m_PlayerNum = i_Options.get("playernum");
+    if (!i_Options.containsKey("playername")) throw new NodeInterfacePackageException("missing option playername");
+    m_PlayerName = i_Options.get("playername");
 
     m_panel = new JPanel();
     m_panel.setOpaque(false);
@@ -54,50 +58,36 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
     m_panel.add(m_cardpanel);
   }
 
+  private static GuiPacketQuery selfQuery = new GuiPacketQuery("{ME}");
+  private static GuiPacketQuery smallResearchQuery = new GuiPacketQuery("options.smallresearch");
+  private static GuiPacketQuery smallMicroQuery = new GuiPacketQuery("options.smallmicro");
+  private static JsonPath playerHandSizePath = JsonPath.compile("handLimit");
+  private static JsonPath cardBackDescriptionPath = JsonPath.compile("cardBackDescription");
+  private static GuiPacketQuery playerCardFrontDescriptionQuery = new GuiPacketQuery("myHand");
+
   public void HandleEvent(GameEvent i_event)
   {
-    if (i_event.GetVarValue("eventname").equals("OPTIONS"))
-    {
-      m_notepanel.SetSmalls(i_event.GetVarValue("SmallResearch").equals("1"),
-                            i_event.GetVarValue("SmallMicro").equals("1"));
-      m_notepanel.Redraw();
-      return;
-    }
+    String me = (String)selfQuery.evaluate(i_event);
+    m_IAM = me.equals(m_PlayerName);
+    JSONObject player = EventHelper.getJSONOfPlayer(m_PlayerName, i_event);
 
-    if (i_event.GetVarValue("eventname").equals("PLAYERSTATE") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
-    {
-      m_notepanel.SetMaxWeight(Integer.parseInt(i_event.GetVarValue("HandLimit")));
-      m_notepanel.Redraw();
-      return;
-    }
-
-
-    if (i_event.GetVarValue("eventname").equals("IAM") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
-    {
-      m_IAM = true;
+    m_notepanel.SetSmalls((Boolean)smallResearchQuery.evaluate(i_event),(Boolean)smallMicroQuery.evaluate(i_event));
+    m_notepanel.SetMaxWeight((Integer)playerHandSizePath.evaluate(player));
+    if (m_IAM) {
       m_notepanel.SetIAM();
-      if (m_listener == null) m_listener = new HandListener(m_atm,m_vci,m_notepanel);
-      m_notepanel.Redraw();
-      return;
+      if (m_listener == null) m_listener = new HandListener(m_atm, m_vci, m_notepanel);
     }
+    m_notepanel.Redraw();
 
-    String pstring = null;
-    if (!m_IAM &&
-        i_event.GetVarValue("eventname").equals("PLAYERCARDBACKS") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
-    {
-      pstring = i_event.GetVarValue("BackString");
-    }
+    String cardBacks = (String)cardBackDescriptionPath.evaluate(player);
+    // this can be null if me is not a player, or if we haven't gotten to commodity cards yet, but
+    // the standard string for "no cards" is "||" so we'll keep that.
+    String cardFronts = (String)playerCardFrontDescriptionQuery.evaluateString(i_event,"||");
 
-    if (m_IAM &&
-        i_event.GetVarValue("eventname").equals("PLAYERCARDS"))
-    {
-      pstring = i_event.GetVarValue("CardString");
-    }
+    String pstring = m_IAM ? cardFronts : cardBacks;
 
-    if (pstring == null) return;
+    if (m_lastPString != null && pstring.equals(m_lastPString)) return;
+    m_lastPString = pstring;
 
     try
     {
@@ -174,12 +164,13 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
 
   public void odispose()
   {
-    if (m_listener == null) m_listener.odispose();
+    if (m_listener != null) m_listener.odispose();
   }
 
   public void Reset()
   {
     m_cardpanel.removeAll();
+    m_lastPString = null;
   }
 
   // action listener
