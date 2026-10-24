@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "OutpostClientState",
-  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId/supplyShip/itemStock only) and the full in-game snapshot (everything else too, some fields nullable depending on state). supplyShip and itemStock are the two exceptions to the pre-STARTGAME/in-game split -- both are always present (empty/zeroed before GetUnownedItems() is initialized) rather than being omitted like every other in-game field.",
+  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId/supplyShip/itemStock/commodityStock/spends only) and the full in-game snapshot (everything else too, some fields nullable depending on state). supplyShip, itemStock, commodityStock, and spends are the exceptions to the pre-STARTGAME/in-game split -- all four are always present (empty/zeroed before GetUnownedItems() is initialized, simply reflecting CommodityManager's fixed constructor-time deck data for commodityStock, or simply empty until any spend has happened for spends) rather than being omitted like every other in-game field.",
   "type": "object",
   "properties": {
     "options": {
@@ -99,7 +99,7 @@
     },
     "commodityStock": {
       "type": "array",
-      "description": "Central commodity market state per CommodityType (NO_COMMODITY excluded).",
+      "description": "Central commodity market state per CommodityType (NO_COMMODITY excluded). Always present, even pre-STARTGAME: CommodityManager's decks are fully populated at construction time, so there's no uninitialized state to special-case, unlike supplyShip/itemStock.",
       "items": {
         "type": "object",
         "properties": {
@@ -130,7 +130,7 @@
     },
     "spends": {
       "type": "array",
-      "description": "Historical log of every commodity-hand spend this game.",
+      "description": "Historical log of every commodity-hand spend this game. Always present, even pre-STARTGAME: it's simply [] until GetSpends() has anything in it, not omitted.",
       "items": {
         "type": "object",
         "properties": {
@@ -184,6 +184,6 @@
       "items": { "type": "integer" }
     }
   },
-  "required": ["options", "players", "myPlayerId", "supplyShip", "itemStock"],
+  "required": ["options", "players", "myPlayerId", "supplyShip", "itemStock", "commodityStock", "spends"],
   "additionalProperties": false
 }

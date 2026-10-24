@@ -92,6 +92,11 @@ def test_login_and_room_navigation_needs_no_game_process(server):
         "name": "Great Hall", "gameName": "", "isDone": True, "gameTypes": [], "savedGames": [],
         "inhabitants": ["alice"]}
     assert inhabitant_room(envelope["fullState"], "alice") == "Great Hall"
+    # Great Hall's gameTypes is always empty (asserted above), so NEWGAME
+    # must never be legal there either -- there'd be nothing to select.
+    # Regression test for the bug Albert found 2026-10-24: GetLegalRoomActions
+    # used to only check m_pGame/IsDone(), never the room itself.
+    assert envelope["fullState"]["legalActions"] == ["NEWROOM", "CHANGEROOM"]
 
     alice.send_action("roommanager", "NEWROOM", RoomName="Clubhouse")
     fullstate = drain_until_roomgui(alice, lambda fs: room_state(fs, "Clubhouse") is not None)
@@ -105,7 +110,25 @@ def test_login_and_room_navigation_needs_no_game_process(server):
         "inhabitants": []}
 
     alice.send_action("roommanager", "CHANGEROOM", TargetRoom="Clubhouse")
-    drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "alice") == "Clubhouse")
+    fullstate = drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "alice") == "Clubhouse")
+    # Clubhouse has a real (non-empty) gameTypes list, so NEWGAME is legal
+    # there -- the counterpart to the Great Hall check above.
+    assert fullstate["legalActions"] == ["NEWROOM", "CHANGEROOM", "NEWGAME"]
+
+
+def test_newgame_rejected_in_great_hall(server):
+    # Companion to the legalActions check in
+    # test_login_and_room_navigation_needs_no_game_process: legalActions is
+    # only a client hint, so Room::HandleNewGame has its own authoritative
+    # rejection too -- a hand-crafted NEWGAME naming a real game must still
+    # fail server-side even though the client was never offered the choice.
+    alice = server.connect("alice")
+    drain_until_roomgui(alice, lambda fs: True)
+
+    alice.send_action("room", "NEWGAME", NewGame="TestGame")
+    envelope = recv_envelope(alice)
+    assert envelope["gui"] == "ROOMGUI"
+    assert envelope["fullState"]["error"] == "Cannot start a game in Great Hall."
 
 
 def test_logoutother_drops_stale_session(server):

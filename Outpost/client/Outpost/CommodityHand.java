@@ -58,7 +58,6 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
     m_panel.add(m_cardpanel);
   }
 
-  private static GuiPacketQuery selfQuery = new GuiPacketQuery("{ME}");
   private static GuiPacketQuery smallResearchQuery = new GuiPacketQuery("options.smallresearch");
   private static GuiPacketQuery smallMicroQuery = new GuiPacketQuery("options.smallmicro");
   private static JsonPath playerHandSizePath = JsonPath.compile("handLimit");
@@ -67,7 +66,7 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
 
   public void HandleEvent(GameEvent i_event)
   {
-    String me = (String)selfQuery.evaluate(i_event);
+    String me = EventHelper.getMe(i_event);
     m_IAM = me.equals(m_PlayerName);
     JSONObject player = EventHelper.getJSONOfPlayer(m_PlayerName, i_event);
 

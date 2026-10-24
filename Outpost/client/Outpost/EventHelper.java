@@ -40,4 +40,9 @@ public class EventHelper {
     static public int getRobotItemId(GameEvent i_event) {
         return 70 + (Integer)robotOptiongpq.evaluate(i_event);
     }
+
+    private static GuiPacketQuery megpq = new GuiPacketQuery("{ME}");
+    public static String getMe(GameEvent i_event) {
+        return (String)megpq.evaluate(i_event);
+    }
 }

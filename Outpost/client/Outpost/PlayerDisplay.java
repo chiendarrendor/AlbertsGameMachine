@@ -86,7 +86,6 @@ public class PlayerDisplay implements UserDefinedInterface
     m_atm = i_atm;
   }
 
-  private static GuiPacketQuery selfnamegpq = new GuiPacketQuery("{ME}");
   private static GuiPacketQuery playergpq = new GuiPacketQuery("players[]");
   // these read data from the Player JSON object.
   private static JsonPath playerNameQuery = JsonPath.compile("name");
@@ -101,7 +100,7 @@ public class PlayerDisplay implements UserDefinedInterface
   @SuppressWarnings("unchecked")
   public void HandleEvent(GameEvent i_event)
   {
-    String me = (String)selfnamegpq.evaluate(i_event);
+    String me = EventHelper.getMe(i_event);
     Set<String> playersNotSeen = new HashSet<>(m_playermap.keySet());
     
     for (JSONObject player : (List<JSONObject>)playergpq.evaluate(i_event)) {

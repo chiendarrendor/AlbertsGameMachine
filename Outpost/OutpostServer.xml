@@ -1170,6 +1170,35 @@
       }
       result["itemStock"] = itemStock;
 
+      boost::json::array commodityStock;
+      for (int commType = ORE_COMMODITY ; commType <= MOON_ORE_COMMODITY ; ++commType)
+      {
+        const CommodityDeck &deck = GetCommodities().GetDeck((CommodityType)commType);
+        boost::json::object commobj;
+        commobj["commodityId"] = commType;
+        commobj["drawCount"] = deck.GetDeckSize();
+        commobj["discardCount"] = deck.GetDiscardSize();
+        commobj["megaValue"] = deck.GetMegaValue();
+        commobj["averageValue"] = deck.GetAverageValue();
+        commodityStock.push_back(commobj);
+      }
+      result["commodityStock"] = commodityStock;
+
+      boost::json::array spends;
+      for (size_t i = 0 ; i < GetSpends().size() ; ++i)
+      {
+        const Spend &s = GetSpends()[i];
+        boost::json::object spendobj;
+        spendobj["turnNum"] = s.GetTurnNum();
+        spendobj["playerId"] = static_cast<int>(s.GetPlayerNum());
+        spendobj["spendType"] = static_cast<int>(s.GetSpendType());
+        spendobj["spendItem"] = s.GetSpendItem();
+        spendobj["spendCost"] = s.GetSpendCost();
+        spendobj["resources"] = s.GetCommodityHand().GetHandDescription(true,true);
+        spends.push_back(spendobj);
+      }
+      result["spends"] = spends;
+
       if (i_StateName == InitialState || i_StateName == ValidateSetup)
       {
         return result;
@@ -1192,20 +1221,6 @@
           boost::json::value(static_cast<int>(GetPlayers().GetCurBidPlayer().GetId())) :
           boost::json::value(nullptr);
 
-      boost::json::array commodityStock;
-      for (int commType = ORE_COMMODITY ; commType <= MOON_ORE_COMMODITY ; ++commType)
-      {
-        const CommodityDeck &deck = GetCommodities().GetDeck((CommodityType)commType);
-        boost::json::object commobj;
-        commobj["commodityId"] = commType;
-        commobj["drawCount"] = deck.GetDeckSize();
-        commobj["discardCount"] = deck.GetDiscardSize();
-        commobj["megaValue"] = deck.GetMegaValue();
-        commobj["averageValue"] = deck.GetAverageValue();
-        commodityStock.push_back(commobj);
-      }
-      result["commodityStock"] = commodityStock;
-
       boost::json::array purchaseData;
       for (size_t shipIndex = 0 ; shipIndex < GetPlayers().size() ; ++shipIndex)
       {
@@ -1218,21 +1233,6 @@
         purchaseData.push_back(purchaseobj);
       }
       result["purchaseData"] = purchaseData;
-
-      boost::json::array spends;
-      for (size_t i = 0 ; i < GetSpends().size() ; ++i)
-      {
-        const Spend &s = GetSpends()[i];
-        boost::json::object spendobj;
-        spendobj["turnNum"] = s.GetTurnNum();
-        spendobj["playerId"] = static_cast<int>(s.GetPlayerNum());
-        spendobj["spendType"] = static_cast<int>(s.GetSpendType());
-        spendobj["spendItem"] = s.GetSpendItem();
-        spendobj["spendCost"] = s.GetSpendCost();
-        spendobj["resources"] = s.GetCommodityHand().GetHandDescription(true,true);
-        spends.push_back(spendobj);
-      }
-      result["spends"] = spends;
 
       if (GetPlayers().IsPlayer(i_PlayerName))
       {

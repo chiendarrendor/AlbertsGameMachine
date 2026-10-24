@@ -171,6 +171,7 @@ std::string Room::HandleAction(const std::string &i_Name,const ActionParser &i_a
 std::string Room::HandleNewGame(const std::string &i_Name,const ActionParser &i_ap)
 {
   if (i_ap.GetParams().size() != 1) return "Illegal NEWGAME action.";
+  if (m_RoomName == INITIALROOM) return "Cannot start a game in Great Hall.";
   std::string gameName = ExtractJsonParam<std::string>(i_ap.GetParams(),"NewGame");
 
   const GameBox *pGameBox = s_pGameCloset->GetGameBoxByName(gameName);
@@ -215,7 +216,10 @@ boost::json::array Room::GetLegalRoomActions(bool i_GameIsDone)
 {
   boost::json::array result;
 
-  if (m_pGame == NULL || i_GameIsDone)
+  // Great Hall never has any legal game types (see BuildRoomGuiState's
+  // gameTypes special-case below), so NEWGAME must never be legal there --
+  // otherwise the client would offer an action with nothing to select.
+  if ((m_pGame == NULL || i_GameIsDone) && m_RoomName != INITIALROOM)
   {
     result.push_back(boost::json::value("NEWGAME"));
   }
@@ -283,8 +287,9 @@ boost::json::object RoomManager::BuildRoomGuiState(std::map<std::string,boost::j
     roomobj["isDone"] = isDone;
     // Great Hall never allows a game to start in it -- the client's own
     // available-games list is empty/greyed out there, driven purely by this
-    // being empty (there's no separate server-side NEWGAME block; it's
-    // enforced by never offering a choice).
+    // being empty. GetLegalRoomActions() and HandleNewGame() both separately
+    // gate on INITIALROOM too, so this is just the UI hint; actual legality
+    // and enforcement live there.
     roomobj["gameTypes"] = (roomit->first == INITIALROOM) ? boost::json::array() : gameTypes;
     roomobj["savedGames"] = pRoom->GetSavedGameNames();
 

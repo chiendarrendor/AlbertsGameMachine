@@ -18,12 +18,15 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
 import java.awt.Cursor;
 import java.awt.Toolkit;
+import java.util.List;
+import org.json.JSONObject;
+import org.doghouse.jsonpath.JsonPath;
 
 public class Factories implements UserDefinedInterface
 {
   private static String s_actionvarname = "ManString";
   private static String s_actionname = "ALTERMANNING";
-  private String m_PlayerNum;
+  private String m_PlayerName;
   private String m_DataLoc;
   private JPanel m_mainpanel;
   private JPanel m_itempanel;
@@ -50,6 +53,7 @@ public class Factories implements UserDefinedInterface
   private static final int ROBOT_SOURCE_DRAGGER = -1;
   private FactoryMousingManager m_fmm;
   private ActionTransferManager m_atm;
+  private String m_lastFactoryString = null;
 
 
   private class FactoryMousingManager implements ActionVariableGenerator,MyMouseListener,ActionGenerator
@@ -267,8 +271,8 @@ public class Factories implements UserDefinedInterface
 
 
 
-    if (!i_Options.containsKey("playernum")) throw new NodeInterfacePackageException("missing option commtype");
-    m_PlayerNum = i_Options.get("playernum");
+    if (!i_Options.containsKey("playername")) throw new NodeInterfacePackageException("missing option playername");
+    m_PlayerName = i_Options.get("playername");
 
     m_fmm = null;
     m_DataLoc = i_DataLoc;
@@ -386,52 +390,49 @@ public class Factories implements UserDefinedInterface
     m_itempanel.repaint();
   }
 
+  private static JsonPath numPeoplePath = JsonPath.compile("numHumans");
+  private static JsonPath numRobotsPath = JsonPath.compile("numRobots");
+  private static JsonPath maxPeoplePath = JsonPath.compile("popLimit");
+  private static JsonPath maxRobotsPath = JsonPath.compile("robotLimit");
+  private static JsonPath factoryStringPath = JsonPath.compile("factoryDescription");
+  
   public void HandleEvent(GameEvent i_event)
   {
-    if (i_event.GetVarValue("eventname").equals("IAM") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
-    {
-      m_IAM = true;
+    JSONObject player = EventHelper.getJSONOfPlayer(m_PlayerName, i_event);
+    String myName = EventHelper.getMe(i_event);
+    boolean becomingMe = !m_IAM && myName.equals(m_PlayerName);
+    m_IAM = myName.equals(m_PlayerName);
+
+    if (becomingMe) {
       m_fmm = new FactoryMousingManager();
       m_manjl.setListener(m_fmm);
       m_robotjl.setListener(m_fmm);
       m_atm.AddVariableGenerator(s_actionvarname,m_fmm);
       m_atm.AddButtonPresser(s_actionname,m_fmm);
       RealizeFactories();
-      UpdateCounts();
-      
-      return;
     }
 
-    if (i_event.GetVarValue("eventname").equals("PLAYERSTATE") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
+    m_mancount = (Integer)numPeoplePath.evaluate(player);
+    m_robotcount = (Integer)numRobotsPath.evaluate(player);
+    m_maxmen = (Integer)maxPeoplePath.evaluate(player);
+    m_maxrobots = (Integer)maxRobotsPath.evaluate(player);
+    String facstring = (String)factoryStringPath.evaluate(player);
+    UpdateCounts();
+
+    if (m_lastFactoryString != null && m_lastFactoryString.equals(facstring)) return;
+    m_lastFactoryString = facstring;
+
+    Vector<FactoryWidget> tfac;
+    try
     {
-      m_mancount = Integer.parseInt(i_event.GetVarValue("NumberPeople"));
-      m_robotcount = Integer.parseInt(i_event.GetVarValue("NumberRobots"));
-      m_maxmen = Integer.parseInt(i_event.GetVarValue("PeopleLimit"));
-      m_maxrobots = Integer.parseInt(i_event.GetVarValue("RobotLimit"));
+      tfac = FactoryWidget.ParseFactoryString(facstring,m_DataLoc,m_IAM,m_fmm);
+      m_factories = tfac;
+      RealizeFactories();
       UpdateCounts();
-      return;
+      if (m_fmm != null) m_fmm.ResetBaseline();
     }
-
-    if (i_event.GetVarValue("eventname").equals("PLAYERFACTORIES") &&
-        i_event.GetVarValue("PlayerNumber").equals(m_PlayerNum))
+    catch(NodeInterfacePackageException nipe)
     {
-      String facstring = i_event.GetVarValue("FactoryString");
-
-      Vector<FactoryWidget> tfac;
-      try
-      {
-        tfac = FactoryWidget.ParseFactoryString(facstring,m_DataLoc,m_IAM,m_fmm);
-        m_factories = tfac;
-        RealizeFactories();
-        UpdateCounts();
-        if (m_fmm != null) m_fmm.ResetBaseline();
-      }
-      catch(NodeInterfacePackageException nipe)
-      {
-        return;
-      }
     }
   }
 
@@ -447,6 +448,7 @@ public class Factories implements UserDefinedInterface
     m_usedrobots = 0;
     m_maxmen = 0;
     m_maxrobots = 0;
+    m_lastFactoryString = null;
 
     UpdateCounts();
 
