@@ -27,7 +27,13 @@ void ConnectionHandler::SendLine(const std::string &i_string)
 
   //	std::cout << "Sending: (" << tosend << ")" << std::endl;
 
-	if (!send(m_MySocket,tosend.c_str(),tosend.size(),0))
+	// send() returns the byte count sent, or SOCKET_ERROR (-1) on failure --
+	// it practically never returns exactly 0 for a non-empty buffer, so the
+	// previous "if (!send(...))" check never actually caught a real write
+	// failure (e.g. writing to a connection a NAT/middlebox already dropped),
+	// which is a real contributor to "the server never reports a lost
+	// connection" -- see the "Connection reset" investigation, 2026-10-25.
+	if (send(m_MySocket,tosend.c_str(),tosend.size(),0) == SOCKET_ERROR)
 	{
 		std::cerr << "Can't send on socket: " << ERRSTRING << std::endl;
 		Shutdown();
@@ -98,6 +104,8 @@ ServerSocket::ServerSocket(int i_Port,ConnectionHandlerFactory &i_ConnFactory) :
 	m_ConnFactory(i_ConnFactory)
 {
 	Initialize();
+
+	m_LastHeartbeat = time(NULL);
 
 	m_ListenSocket = socket(AF_INET,SOCK_STREAM,0);
 	if (m_ListenSocket == INVALID_SOCKET)
@@ -192,10 +200,25 @@ int ServerSocket::ConnectOne()
 	return new_fd;
 }
 
+void ServerSocket::SendHeartbeatsIfDue()
+{
+	time_t now = time(NULL);
+	if (now - m_LastHeartbeat < HEARTBEAT_INTERVAL_SECONDS) return;
+	m_LastHeartbeat = now;
+
+	std::map<int,ConnectionHandler *>::iterator conit;
+	for (conit = m_ConnectionHandlers.begin() ; conit != m_ConnectionHandlers.end() ; ++conit)
+	{
+		conit->second->SendLine("PING");
+	}
+}
+
 void ServerSocket::RunConnections()
 {
 	while(1)
 	{
+		SendHeartbeatsIfDue();
+
 		size_t i;
 		for (i = 0 ; i < m_DoomedHandlers.size() ; i++)
 		{

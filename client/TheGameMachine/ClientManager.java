@@ -274,6 +274,13 @@ public class ClientManager
       return false;
     }
 
+    // Server sends this periodically, purely so a NAT/middlebox sees
+    // traffic and doesn't expire the connection's idle mapping -- not a
+    // real gui packet, nothing to parse or dispatch.
+    if (instring.equals("PING")) {
+      return true;
+    }
+
     GuiPacketParser gpp;
     try {
       gpp = new GuiPacketParser(instring);

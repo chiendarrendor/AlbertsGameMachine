@@ -1,4 +1,5 @@
 
+#include <ctime>
 #include <map>
 #include <string>
 #include <vector>
@@ -76,6 +77,17 @@ public:
 	void RunConnections();
 
 private:
+	// How often (in wall-clock seconds) to send every open connection a
+	// trivial "PING" line -- purely so a NAT/middlebox between client and
+	// server sees periodic traffic and doesn't silently expire the
+	// connection's idle mapping. Checked every RunConnections() loop
+	// iteration (not just on a select() timeout), so it fires reliably
+	// even while other connections are actively busy. See the
+	// "Connection reset" investigation, 2026-10-25.
+	static const int HEARTBEAT_INTERVAL_SECONDS = 60;
+	time_t m_LastHeartbeat;
+	void SendHeartbeatsIfDue();
+
 	SOCKET m_ListenSocket;
 	bool m_Listening;
 	SOCKET m_LargestSocket;
