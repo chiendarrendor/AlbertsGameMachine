@@ -13,6 +13,7 @@ public class GameGui
   private ArrayList<GameNode> m_Windows;
   private HashMap<String,GameEventType> m_EventTypes;
   private ActionTransferManager m_ActionManager;
+  private ExternalAssets m_ExternalAssets;
   private PrintWriter m_ostream;
   private AttributeChecker m_eventvarnames;
   private StatusWindows m_StatusWindows;
@@ -197,6 +198,11 @@ public class GameGui
     return m_ActionManager;
   }
 
+  public ExternalAssets GetExternalAssets()
+  {
+    return m_ExternalAssets;
+  }
+
   public TabbedWindow GetTabbedWindow()
   {
     return m_tabs;
@@ -211,6 +217,7 @@ public class GameGui
     m_tabs = i_tabs;
     m_Namespace = i_namespace;
     m_ActionManager = new ActionTransferManager();
+    m_ExternalAssets = new ExternalAssets(m_ActionManager);
     m_ostream = i_pw;
     m_EventTypes = new HashMap<String,GameEventType>();
     m_Windows = new ArrayList<GameNode>();

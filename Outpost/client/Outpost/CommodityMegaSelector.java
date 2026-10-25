@@ -8,7 +8,7 @@ public class CommodityMegaSelector implements UserDefinedInterface
 {
     JLabel m_iconlabel = new JLabel();
 
-    public CommodityMegaSelector(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+    public CommodityMegaSelector(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
     {
         i_Panel.add(m_iconlabel);
     }

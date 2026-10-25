@@ -1,0 +1,103 @@
+Design Overview for Cross-Gui PubSub:
+
+Purpose:
+LockedGui.txt's "messages" use case needs one widget (an invisible one, living in
+ROOMGUI's own tree) to deliver a computed value -- the full set of every inhabitant
+across every room, which only ROOMGUI's own FSS can see -- to a widget living in an
+entirely separate, independently-updating GUI tree (the "messages" gui). Each GUI tree
+has its own ActionTransferManager, scoped specifically to feeding an <action>'s own
+<var> values from generator widgets to consumer ActionVarNodes within that one tree;
+there is no existing mechanism for one tree's widget to hand a value to a widget in a
+different tree. This is a new, separate concern from ActionTransferManager, not an
+extension of it, and gets its own manager class and its own channel-name namespace,
+distinct from ActionTransferManager's variable-name namespace.
+
+Overview:
+
+One single instance of this new manager (name TBD, something like
+CrossGuiTransferManager) is created once by ClientManager and lives for the entire life
+of the client connection -- same lifetime as ClientManager itself. Unlike
+ActionTransferManager, it is not per-GUIUnit.
+
+A widget acts as a publisher by calling something like:
+  Publish(String channelName, Object value)
+whenever it recomputes a value worth sharing (e.g. ROOMGUI's invisible inhabitant-set
+widget, every time it sees a new ROOMGUI FSS).
+
+A widget acts as a subscriber by registering a callback at construction time:
+  Subscribe(String channelName, Callback cb)
+
+Unlike ActionTransferManager/ActionVarNode (where the consumer side is primarily
+pull-based -- every ActionNode does a full resync pull of GetCurVarVals() on every
+delivery of its OWN gui tree, with push mostly a responsiveness nicety between
+deliveries), this new mechanism has to be push-primary. Producer and consumer live in
+different GUI trees with their own, independent FSS delivery cadences -- the consumer
+has no "next delivery of its own tree" that would naturally re-derive the producer's
+value, so it must be told the instant the producer has something new, not wait to ask
+for it.
+
+Because publisher and subscriber construction order relative to each other is not
+guaranteed (either the ROOMGUI tree or the "messages" tree could finish being built,
+and receive its first FSS, before the other one exists), the manager must cache the
+last-published value per channel and immediately hand it to any subscriber that
+registers after the fact, as if it had just been published. Without this, whichever
+side is built second would start in a genuinely unassigned state with no way to
+self-correct (unlike ActionVarNode, which has a pull-based fallback this mechanism
+doesn't).
+
+Channel names are their own namespace, separate from ActionTransferManager's variable
+names -- no risk of collision between the two mechanisms -- but channel names do need
+to stay unique across the whole client now, since they're no longer scoped to one gui
+tree's own XML.
+
+Threading:
+GUIUnit already marshals every bit of GUI-affecting work (HandleLine/
+HandleGuiPacketParser, and ParseXML's own widget construction) onto the Swing Event
+Dispatch Thread via invokeLater/invokeAndWait before anything ever touches widget
+state. The socket-reading thread (ClientManager.mainloop(), running on ClientPanel's
+background Thread) never calls into any widget code directly. As long as Publish/
+Subscribe are only ever called from code reached that way -- true for any call made
+from a widget's own constructor or HandleEvent -- the single EDT serializes every call
+for free, and the manager's internal state (its channel->callback-list map, its cache
+of last-published values) needs no synchronization.
+
+This safety is a discipline, not something enforced by the type system, so Publish/
+Subscribe should each begin with assert SwingUtilities.isEventDispatchThread() --
+there's no existing precedent for this kind of check anywhere in the client today, but
+it's cheap, and it turns a future off-EDT call (easy to introduce by accident, since
+this manager is reachable from multiple independent GUI trees rather than one widget's
+narrow call path) into a loud, immediate failure instead of an intermittent,
+hard-to-reproduce Swing threading bug.
+
+No Reset() story: both ends of any pub/sub pairing we have planned so far are LOCKED
+guis (ROOMGUI and "messages"), and LOCKED guis are never reset by definition. So this
+mechanism, as currently scoped, has no reset-interaction to design for. (If a LOCKED
+gui is ever paired with a non-LOCKED one in the future, this would need revisiting.)
+
+Plumbing: ExternalAssets
+
+Today every <javaclass> widget's constructor is matched by reflection
+(UserDefinedNode.ConstructUserDefinedInterface) against an exact 4th parameter type,
+currently ActionTransferManager, handed down from GameGui.GetActionTransferManager().
+Adding a second client-wide service that widgets might need access to means we need a
+seam for "things a widget gets handed" that can grow without changing every widget's
+constructor signature again the next time we add a third thing.
+
+ExternalAssets is a small wrapper object bundling ActionTransferManager (still
+constructed fresh per-GUIUnit/GameGui, as today) together with the one shared
+CrossGuiTransferManager instance (owned by ClientManager, threaded down through
+GUIUnit's and GameGui's constructors). GameGui builds and exposes this via a new
+accessor, replacing today's GetActionTransferManager(). UserDefinedNode's
+reflection-based constructor lookup swaps its 4th argument's type from
+ActionTransferManager to ExternalAssets.
+
+Every <javaclass> widget's constructor (35 files across Outpost, MerchantOfVenus, and
+ROOMGUI's own widgets, plus the two non-reflection call sites TabNode/ActionTabNode and
+the TestUserDefined harness) needs its declared 4th parameter type changed from
+ActionTransferManager to ExternalAssets. For the large majority of widgets that only
+need the ActionTransferManager (which is most of them today), the change is one line in
+the constructor body (m_atm = i_assets.GetActionTransferManager();) plus the
+signature's type -- nothing else in the widget needs to change. Only a widget that
+actually wants to publish/subscribe on the new bus (today: just the planned ROOMGUI
+inhabitant-set producer and the "messages" consumer) needs to call the new accessor for
+the CrossGuiTransferManager too.

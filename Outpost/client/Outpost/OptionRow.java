@@ -19,13 +19,13 @@ public class OptionRow implements UserDefinedInterface,ItemListener,ActionVariab
   private JCheckBox m_checkbox;
   private JLabel m_valueLabel;
 
-  public OptionRow(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public OptionRow(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     if (!i_Options.containsKey("varname")) throw new NodeInterfacePackageException("missing option varname");
     if (!i_Options.containsKey("optionpath")) throw new NodeInterfacePackageException("missing option optionpath");
     if (!i_Options.containsKey("label")) throw new NodeInterfacePackageException("missing option label");
 
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
     m_varname = i_Options.get("varname");
     m_optionQuery = new GuiPacketQuery(i_Options.get("optionpath"));
 

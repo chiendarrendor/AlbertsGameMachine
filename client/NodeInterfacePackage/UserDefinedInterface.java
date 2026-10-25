@@ -5,11 +5,12 @@ public interface UserDefinedInterface
 {
   // constructor in this form (interfaces do not include constructors)
   // should initialize whatever gui items into i_Panel are required.
-  // in addition, should register any ActionGenerators into i_atm
+  // in addition, should register any ActionGenerators into
+  // i_assets.GetActionTransferManager()
   // i_Options contain whatever XML attributes from the script
   // that were not a recognized attribute of a user defined node
   // (i.e. x,y, and hidden)
-  // public UserDefinedInterface(String i_DataLoc,HashMap i_Options,JPanel i_Panel,ActionTransferManager i_atm)
+  // public UserDefinedInterface(String i_DataLoc,HashMap i_Options,JPanel i_Panel,ExternalAssets i_assets)
   //   throws NodeInterfacePackageException;
 
   // should do whatever it is supposed to do when presented with this event.

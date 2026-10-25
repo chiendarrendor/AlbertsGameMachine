@@ -27,7 +27,7 @@ public class PlayerDisplay implements UserDefinedInterface
     private CommodityHand m_chand;
     private Factories m_factories;
     
-    public PlayerPane(String i_playername, String i_DataLoc, ActionTransferManager i_atm)
+    public PlayerPane(String i_playername, String i_DataLoc, ExternalAssets i_assets)
     {
       super(new LockLayout());
       // this is the standard var/value configuration for a UserDefinedInterface, which ItemList, CommodityHand, and Factories all implement)
@@ -37,15 +37,15 @@ public class PlayerDisplay implements UserDefinedInterface
       JPanel ipanel;
 
       ipanel = new JPanel();
-      m_ilist = new ItemList(inithash,i_DataLoc,ipanel,i_atm);
+      m_ilist = new ItemList(inithash,i_DataLoc,ipanel,i_assets);
       this.add(ipanel,new Point(0,0));
 
       ipanel = new JPanel();
-      m_chand = new CommodityHand(inithash,i_DataLoc,ipanel,i_atm);
+      m_chand = new CommodityHand(inithash,i_DataLoc,ipanel,i_assets);
       this.add(ipanel,new Point(0,90));
 
       ipanel = new JPanel();
-      m_factories = new Factories(inithash,i_DataLoc,ipanel,i_atm);
+      m_factories = new Factories(inithash,i_DataLoc,ipanel,i_assets);
       this.add(ipanel,new Point(0,200));
     }
 
@@ -74,16 +74,16 @@ public class PlayerDisplay implements UserDefinedInterface
   private JTabbedPane m_tabs;
   private Map<String,PlayerPane> m_playermap;
   private String m_DataLoc;
-  private ActionTransferManager m_atm;
+  private ExternalAssets m_assets;
 
-  public PlayerDisplay(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public PlayerDisplay(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     m_tabs = new JTabbedPane();
     i_Panel.add(m_tabs);
 
     m_playermap = new HashMap<>();;
     m_DataLoc = i_DataLoc;
-    m_atm = i_atm;
+    m_assets = i_assets;
   }
 
   private static GuiPacketQuery playergpq = new GuiPacketQuery("players[]");
@@ -108,7 +108,7 @@ public class PlayerDisplay implements UserDefinedInterface
       playersNotSeen.remove(pname);
 
       if (!m_playermap.containsKey(pname)) {
-        PlayerPane ppane = new PlayerPane(pname, m_DataLoc, m_atm);
+        PlayerPane ppane = new PlayerPane(pname, m_DataLoc, m_assets);
         m_playermap.put(pname, ppane);
         m_tabs.add(pname, ppane);
 

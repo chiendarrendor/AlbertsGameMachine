@@ -1,0 +1,46 @@
+Design Overview for Sequences:
+
+Purpose:
+There exist some collections of data in games that have the following characteristics:
+1) they grow without bound
+2) they are append-only
+3) while a player _might_ be interested in all of a collection, they will frequently only be interested in a certain subset, frequently the most recent
+
+This kind of thing does not work well with the FSS (full-state-send) because the growth-without-bound plays geometrically with the number of players.
+
+Two use cases at present:
+1) Outpost's "spend" mechanism
+2) ROOMGUI's text messaging system, obsoleted in git commit ac20178a6d00ba83d4615fe7416d83203d278d3f
+
+Overview:
+
+A sequence is an 0-based append-only, monotonically growing array of JSON objects that can be downloaded by the client, partially or totally, upon client request.  
+By default, no sequence is ever transmitted to the client, and the data does not appear anywhere in the FSS.
+
+define in the server XML:
+<sequence name="name">
+    <count>(count code body)</count>
+    (generator code body)
+</sequence>
+
+define in a <gamename><sequence name>SequenceSchema.json the format of one record.
+
+The game FSS will contain, in the fullState evelope, a "sequences" object that will contain, for each defined sequence, a "<sequence name>" : <count>, where count is calculated with the 
+sequence.count XML code body defined above (which is wrapped in a function call taking a player name, returning int)
+
+Count will be defined as the number of sequence objects in this sequence available for download (i.e. "how many is all of them")
+
+The game FSS will accept special actions mechanically distinguishable from normal game actions that takes three arguments: (sequence name, first sequence record index, last sequence record index + 1) These
+actions must contain the GUI name that any other game Action contains, so that it gets routed to the proper game process, but once inside the game process it must be handled specially and 
+in an independent namespace from normal game Actions (possible implementation, for a Sequence Query action, Action name is sequence name, and a boolean flag parallel to Action Name in the JSON
+selects whether it's a game action or a sequence action)
+
+The game process will respond with a special FSS with standard fullState wrapper, to the requesting individual only,
+but instead of the normal game's FSS body, it, will have an array of this sequence's records, along with the first record's index.  This
+array is produced by the <sequence> body, which is also wrapped in a function call taking player name.  We are going to be explicit here: each person who sends a Sequence request will
+get a response which might very well be specific to that player. (DM's in the text message system, for example)
+
+
+A client widget that wants to use a sequence updates its number of items every time it sees a change to the sequence count in the sequences FSS, and when it wants to render a given subset of the 
+items, it sends the special action with the index range it wants to render, and when the sequence-specific FSS message returns, it can update its on-screen objects with the data in the message.
+(might be worthwhile to have a special high-level class that the widget can register a callback to, so all the sequence-specific processing occurs in one place)

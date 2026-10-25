@@ -255,7 +255,7 @@ public class Factories implements UserDefinedInterface
     
 
 
-  public Factories(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public Factories(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     Toolkit tk = Toolkit.getDefaultToolkit();
     Image manimage = ImageLoader.MakeImageIcon(this.getClass(), "Man.PNG").getImage();
@@ -283,7 +283,7 @@ public class Factories implements UserDefinedInterface
     m_usedrobots = 0;
     m_maxmen = 0;
     m_maxrobots = 0;
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
 
     m_mainpanel = new JPanel();
     m_mainpanel.setOpaque(false);

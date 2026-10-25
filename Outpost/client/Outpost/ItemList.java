@@ -16,7 +16,7 @@ public class ItemList implements UserDefinedInterface
   private String m_PlayerName;
   private int m_robotnumber;
 
-  public ItemList(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public ItemList(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     ItemByNumber.DoOnce(i_DataLoc);
 

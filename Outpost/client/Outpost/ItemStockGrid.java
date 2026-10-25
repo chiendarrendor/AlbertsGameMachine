@@ -17,7 +17,7 @@ public class ItemStockGrid implements UserDefinedInterface
   private JLabel[] m_icons = new JLabel[14];
   private JLabel[] m_counts = new JLabel[14];
 
-  public ItemStockGrid(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public ItemStockGrid(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     ItemByNumber.DoOnce(i_DataLoc);
 

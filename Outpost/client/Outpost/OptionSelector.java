@@ -26,9 +26,9 @@ public class OptionSelector implements UserDefinedInterface,ActionVariableGenera
   public OptionSelector(HashMap<String,String> i_Options,
                        String i_DataLoc,
                        JPanel i_Panel,
-                       ActionTransferManager i_atm)
+                       ExternalAssets i_assets)
   {
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
     m_onecount = true;
 
     if (!i_Options.containsKey("varname")) throw new NodeInterfacePackageException("missing option varname");

@@ -17,7 +17,7 @@ public class PlayerWindow implements UserDefinedInterface
   HashMap<String,JLabel> m_itemcounts;
 
   public PlayerWindow(HashMap<String,String> i_Options,String i_DataLoc,
-                      JPanel i_Panel,ActionTransferManager i_atm)
+                      JPanel i_Panel,ExternalAssets i_assets)
   {
     i_Panel.setLayout(new BorderLayout());
     JPanel statuspanel = new JPanel();

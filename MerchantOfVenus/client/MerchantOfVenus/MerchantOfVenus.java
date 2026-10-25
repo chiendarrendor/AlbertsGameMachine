@@ -18,7 +18,7 @@ public class MerchantOfVenus implements UserDefinedInterface
   DiceDisplay dd;
   ControlPanel cp;
   
-  public MerchantOfVenus (HashMap<String,String>i_Options, String i_DataLoc, JPanel i_Panel, ActionTransferManager i_atm)
+  public MerchantOfVenus (HashMap<String,String>i_Options, String i_DataLoc, JPanel i_Panel, ExternalAssets i_assets)
   {
     IconManager.Initialize(i_DataLoc);
     b = new Board(i_DataLoc);
@@ -33,11 +33,11 @@ public class MerchantOfVenus implements UserDefinedInterface
     i_Panel.setLayout(springs);
 
     PopAndLockPanel plp = new PopAndLockPanel();
-    cp = new ControlPanel(plp,i_DataLoc,i_atm,plData,spaceData,baseData,b);
+    cp = new ControlPanel(plp,i_DataLoc,i_assets.GetActionTransferManager(),plData,spaceData,baseData,b);
 
 
     JPanel combo = new JPanel(new LockLayout());
-    dbo = new DynamicBoardOverlay(i_DataLoc,b,plData,i_atm,cp,spaceData);
+    dbo = new DynamicBoardOverlay(i_DataLoc,b,plData,i_assets.GetActionTransferManager(),cp,spaceData);
 
     Point ul = new Point(0,0);
 

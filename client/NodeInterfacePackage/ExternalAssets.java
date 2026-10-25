@@ -1,0 +1,22 @@
+package NodeInterfacePackage;
+
+// Bundles everything a UserDefinedInterface widget's constructor might need
+// from the client-wide/gui-tree-wide world, so that adding a new such thing
+// (e.g. a future cross-gui pub/sub manager) doesn't require changing every
+// widget constructor's signature a second time -- only this class grows.
+// GameGui builds one of these per gui tree (see GetExternalAssets()), the
+// same way it already builds one ActionTransferManager per tree.
+public class ExternalAssets
+{
+  private ActionTransferManager m_atm;
+
+  public ExternalAssets(ActionTransferManager i_atm)
+  {
+    m_atm = i_atm;
+  }
+
+  public ActionTransferManager GetActionTransferManager()
+  {
+    return m_atm;
+  }
+}

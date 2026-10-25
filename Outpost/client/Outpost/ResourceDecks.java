@@ -15,7 +15,7 @@ public class ResourceDecks implements UserDefinedInterface
   private HashMap<Integer, Integer>m_draws;
   private HashMap<Integer, Integer>m_discards;
 
-  public ResourceDecks(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public ResourceDecks(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     m_draws = new HashMap<Integer,Integer>();
     m_discards = new HashMap<Integer,Integer>();

@@ -30,12 +30,12 @@ public class ShipList implements UserDefinedInterface,ActionVariableGenerator,Sh
   private String m_lastState = null;
   private int m_lastBidderId = Integer.MIN_VALUE;
 
-  public ShipList(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public ShipList(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     ItemByNumber.DoOnce(i_DataLoc);
 
     m_Selection = null;
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
     m_atm.AddVariableGenerator(s_name,this);
 
     m_panel = new JPanel();

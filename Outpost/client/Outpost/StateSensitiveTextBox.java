@@ -56,9 +56,9 @@ public class StateSensitiveTextBox implements UserDefinedInterface,DocumentListe
   public StateSensitiveTextBox(HashMap<String,String> i_Options,
                                String i_DataLoc,
                                JPanel i_Panel,
-                               ActionTransferManager i_atm)
+                               ExternalAssets i_assets)
   {
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
 
     if (!i_Options.containsKey("varname")) throw new NodeInterfacePackageException("missing option varname");
     m_ActionVariableName = i_Options.get("varname");

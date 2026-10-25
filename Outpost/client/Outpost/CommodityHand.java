@@ -31,9 +31,9 @@ public class CommodityHand implements UserDefinedInterface,ActionListener
   private Vector<JCheckBox> m_boxes;
   private String m_lastPString = null;
 
-  public CommodityHand(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public CommodityHand(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
     m_listener = null;
     m_IAM = false;
     m_vci = new Vector<CommodityInfo>();

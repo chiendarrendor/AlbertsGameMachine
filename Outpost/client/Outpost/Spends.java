@@ -22,7 +22,7 @@ public class Spends implements UserDefinedInterface
   JScrollBar m_jsb;
   JPanel m_parPanel;
 
-  public Spends(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public Spends(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     m_parPanel = i_Panel;
     m_parPanel.setLayout(new BorderLayout());

@@ -24,9 +24,9 @@ public class RoomPage implements UserDefinedInterface
   GuiPacketQuery namegpq = new GuiPacketQuery("{ME}");
   JsonPath namepath = JsonPath.compile("name");
 
-  public RoomPage(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public RoomPage(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
-    m_atm = i_atm;
+    m_atm = i_assets.GetActionTransferManager();
     m_iam = null;
 
     m_mainpanel = new JPanel(new FlowLayout(FlowLayout.LEFT,5,5));

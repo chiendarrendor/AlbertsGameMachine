@@ -1,0 +1,9 @@
+problem: currently we have developed the code in the client so that it will only ever handle 2 gui objects, the roomgui, and one game, and this
+has been fine so far, except now we might want a third gui "messages".
+
+Solution:  we have made a distinction between roomgui, which is always present, and game guis where, if we get a new game gui it replaces 
+the prior game guis.  We can generalize this concept of "always present" to the idea of a game gui being LOCKED.  This would be a parameter
+defined in the FSS outermost envelope, and the client behavior would be to maintain _every_ LOCKED gui, but only one non-locked gui.
+If we make roomgui and messages LOCKED (and possibly others) we can add functionality to the non-game aspects of the client without having
+to make changes to the server-side roomgui logic every time we want to do something.
+

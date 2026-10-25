@@ -23,7 +23,7 @@ public class UserDefinedNode extends GameNode
     super(i_Parent,i_hidden);
 
     Point p = new  Point(i_x,i_y);
-    ActionTransferManager atm = i_gamegui.GetActionTransferManager();
+    ExternalAssets assets = i_gamegui.GetExternalAssets();
 
     JPanel panel = new JPanel();
 
@@ -33,7 +33,7 @@ public class UserDefinedNode extends GameNode
     SetComponent(panel);
 
 
-    m_udi = ConstructUserDefinedInterface(i_ClassName,i_DataLoc,i_Options,panel,atm,i_gamegui.getRemoteClassLoader());
+    m_udi = ConstructUserDefinedInterface(i_ClassName,i_DataLoc,i_Options,panel,assets,i_gamegui.getRemoteClassLoader());
 
   }
 
@@ -58,7 +58,7 @@ public class UserDefinedNode extends GameNode
                                                              String i_DataLoc,
                                                              HashMap<String,String> i_Options,
                                                              JPanel i_Panel,
-                                                             ActionTransferManager i_atm,
+                                                             ExternalAssets i_assets,
                                                              ClassLoader i_remoteClassLoader)
     throws GameXMLException
   {
@@ -74,7 +74,7 @@ public class UserDefinedNode extends GameNode
       contypearg[0] = i_Options.getClass();
       contypearg[1] = i_DataLoc.getClass();
       contypearg[2] = i_Panel.getClass();
-      contypearg[3] = i_atm.getClass();
+      contypearg[3] = i_assets.getClass();
 
       Constructor<?> con = newclass.getConstructor(contypearg);
 
@@ -82,7 +82,7 @@ public class UserDefinedNode extends GameNode
       conargs[0] = i_Options;
       conargs[1] = i_DataLoc;
       conargs[2] = i_Panel;
-      conargs[3] = i_atm;
+      conargs[3] = i_assets;
 
       newo = con.newInstance(conargs);
     }

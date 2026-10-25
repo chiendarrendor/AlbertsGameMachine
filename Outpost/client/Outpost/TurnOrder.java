@@ -102,7 +102,7 @@ public class TurnOrder implements UserDefinedInterface
   }
 
   public TurnOrder(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,
-                   ActionTransferManager i_atm)
+                   ExternalAssets i_assets)
   {
     m_label = new JLabel();
     i_Panel.add(m_label);

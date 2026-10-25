@@ -10,7 +10,7 @@ public class TestUserDefined implements UserDefinedInterface
   private JPanel m_panel;
   private Color m_startcolor;
   public TestUserDefined(HashMap<String,String> i_Options,String i_dataloc,
-                         JPanel i_Panel,ActionTransferManager i_atm)
+                         JPanel i_Panel,ExternalAssets i_assets)
   {
     m_panel = new JPanel();
     i_Panel.add(m_panel);

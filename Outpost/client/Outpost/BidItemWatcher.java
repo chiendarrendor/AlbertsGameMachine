@@ -12,16 +12,16 @@ public class BidItemWatcher implements UserDefinedInterface,ActionVariableConsum
   private int[] m_shipitems = null;
   private boolean m_consumevariable;
 
-  public BidItemWatcher(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ActionTransferManager i_atm)
+  public BidItemWatcher(HashMap<String,String> i_Options,String i_DataLoc,JPanel i_Panel,ExternalAssets i_assets)
   {
     m_consumevariable = i_Options.containsKey("ConsumeVariable") &&
       i_Options.get("ConsumeVariable").equals("true");
 
     ItemByNumber.DoOnce(i_DataLoc);
-    
+
     if (m_consumevariable)
     {
-      i_atm.AddVariableConsumer(s_name,this);
+      i_assets.GetActionTransferManager().AddVariableConsumer(s_name,this);
     }
 
     i_Panel.add(new JLabel("on"));
