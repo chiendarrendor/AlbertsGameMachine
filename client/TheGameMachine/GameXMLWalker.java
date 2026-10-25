@@ -9,7 +9,6 @@ public class GameXMLWalker
 {
   private GameGui m_gamegui;
   private HashMap<String,org.w3c.dom.Node> m_noderegistry;
-  private AttributeChecker m_eventvarnames;
   private ActionTabNode m_actionwindownode;
   private PriorityMap m_CloneVars;
   private String m_FilePrefix;
@@ -72,7 +71,6 @@ public class GameXMLWalker
     m_Name = i_Name;
     m_gamegui = i_gamegui;
     m_noderegistry = new HashMap<String,org.w3c.dom.Node>();
-    m_eventvarnames = m_gamegui.GetAttributeChecker();
     m_CloneVars = new PriorityMap();
     m_FilePrefix = i_filePrefix;
 
@@ -93,8 +91,7 @@ public class GameXMLWalker
     {
       String cname = childNode.getNodeName();
 
-      if      (cname.equals("event"))   { WalkEventType(childNode); }
-      else if (cname.equals("actions")) { WalkActions(childNode); }
+      if      (cname.equals("actions")) { WalkActions(childNode); }
       else if (cname.equals("window"))  { WalkWindow(childNode); }
       else if (cname.equals("tab"))     { WalkTabNode(childNode); }
       else if (cname.equals("define"))  { WalkDefine(childNode); }
@@ -104,60 +101,6 @@ public class GameXMLWalker
         throw new GameXMLException("Unknown Top-level node " + cname);
       }
     }
-  }
-
-  private void WalkEventType(org.w3c.dom.Node i_Node) throws GameXMLException
-  {
-    AttributeChecker acheck = new AttributeChecker();
-    acheck.AddAttribute("name",true);
-    acheck.ValidateAttributes(i_Node);
-
-    String evname = DOMUtil.GetAttributeWithName(i_Node,"name");
-
-    if (m_gamegui.GetEventType(evname) != null)
-    {
-      throw new GameXMLException("Duplicate Event Type " + evname);
-    }
-
-    GameEventType et = m_gamegui.CreateEventType(evname);
-	
-    DOMChildIterator cit = new DOMChildIterator(i_Node);
-    org.w3c.dom.Node childNode;
-
-    while((childNode = cit.GetNext()) != null)
-    {
-      String cname = childNode.getNodeName();
-      if      (cname.equals("var")) { WalkEventVar(childNode,et); }
-      else if (cname.equals("#text") || cname.equals("#comment")) { }
-      else 
-      {
-        throw new GameXMLException("Unknown event subnode " + cname);
-      }
-    }
-  }
-
-  private void WalkEventVar(org.w3c.dom.Node i_Node,GameEventType i_et) throws GameXMLException
-  {
-    AttributeChecker acheck = new AttributeChecker();
-    acheck.AddAttribute("name",true);
-    acheck.ValidateAttributes(i_Node);
-
-    String varname = DOMUtil.GetAttributeWithName(i_Node,"name");
-
-    if (i_et.HasVar(varname))
-    {
-      throw new GameXMLException("Duplicate var name " + varname);
-    }
-
-    if (i_Node.hasChildNodes())
-    {
-      throw new GameXMLException("Event Var has child nodes!");
-    }
-    i_et.AddVar(varname);
-
-    // keeping track of event names; this is the set of legal attribute names
-    // for an EventHandler Element Node.
-    m_eventvarnames.AddAttribute(varname,false);
   }
 
   private void WalkDefine(org.w3c.dom.Node i_Node) throws GameXMLException
@@ -281,7 +224,6 @@ public class GameXMLWalker
       else if (cname.equals("panel"))     { WalkPanelNode(childNode,i_PanelNode); }
       else if (cname.equals("forupto"))   { WalkForUpToNode(childNode,i_PanelNode); }
       else if (cname.equals("foreach"))   { WalkForEachNode(childNode,i_PanelNode); }
-      else if (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,i_PanelNode); }
       else if (cname.equals("javaclass")) { WalkUserDefinedNode(childNode,i_PanelNode); }
       else if (cname.equals("#text") || cname.equals("#comment"))   { }
       else
@@ -314,8 +256,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,inode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Image " + cname);
@@ -350,7 +291,6 @@ public class GameXMLWalker
       String cname = childNode.getNodeName();
       if      (cname.equals("#text")) { i_GameNode.AddText(childNode.getNodeValue()); }
       else if (cname.equals("#cdata-section")) { i_GameNode.AddText(childNode.getNodeValue()); }
-      else if (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,i_GameNode); }
       else if (cname.equals("#comment")) { }
       else if (cname.equals("replace"))
       {
@@ -451,8 +391,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,nnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Named " + cname);
@@ -493,109 +432,6 @@ public class GameXMLWalker
 
     WalkPanelChildren(i_XMLNode,pnode);
   }
-
-  private void WalkEventHandlerNode(org.w3c.dom.Node i_XMLNode,EventHandlerNode i_ParentGameNode) throws GameXMLException
-  {
-    if (i_ParentGameNode.GetEventHandler() != null)
-    {
-      throw new GameXMLException("node has duplicate eventhandlers!");
-    }
-
-    if (i_XMLNode.hasAttributes() && i_XMLNode.getAttributes().getLength() != 0)
-    {
-      
-      
-
-      throw new GameXMLException("eventhandler shouldn't have attributes: (" + 
-                                 i_XMLNode.getAttributes().getLength() + ") " + i_XMLNode.toString() );
-    }
-
-    GameEventHandler handler = new GameEventHandler();
-    i_ParentGameNode.SetEventHandler(handler);
-
-    DOMChildIterator cit = new DOMChildIterator(i_XMLNode);
-    org.w3c.dom.Node childNode;
-
-    boolean sawPass = false;
-    boolean sawBlock = false;
-
-    while((childNode = cit.GetNext()) != null)
-    {
-      String cname = childNode.getNodeName();
-
-      if (cname.equals("showif") ||
-          cname.equals("hideif") ||
-          cname.equals("showifnot") ||
-          cname.equals("hideifnot") ||
-          cname.equals("showhide") ||
-          cname.equals("hideshow"))
-      {
-        WalkEventHandlerUnit(childNode,handler);
-      }
-      else if (cname.equals("passif") ||
-               cname.equals("passifnot"))
-      {
-        sawPass = true;
-        WalkEventHandlerUnit(childNode,handler);
-      }
-      else if (cname.equals("blockif") ||
-               cname.equals("blockifnot"))
-      {
-        sawBlock = true;
-        WalkEventHandlerUnit(childNode,handler);
-      }
-      else if (cname.equals("#text") || cname.equals("#comment"))
-      {
-      }
-      else
-      {
-        throw new GameXMLException("Unknown Event Handler Type: " + cname);
-      }
-    }
-    if (sawPass && sawBlock)
-    {
-      throw new GameXMLException("Can't have both pass and block in the same event handler.");
-    }
-  }
-
-  private void WalkEventHandlerUnit(org.w3c.dom.Node i_Node,GameEventHandler i_handler) throws GameXMLException
-  {
-    m_eventvarnames.ValidateAttributes(i_Node);
-
-    if (i_Node.hasChildNodes())
-    {
-      throw new GameXMLException("Event Handler Unit " + i_Node.getNodeName() + " shouldn't have child nodes");
-    }
-
-    String utype = i_Node.getNodeName();
-    int ut;
-
-    if      (utype.equals("showif"))      ut = GameEventHandler.UNIT_SHOW;
-    else if (utype.equals("hideif"))      ut = GameEventHandler.UNIT_HIDE;
-    else if (utype.equals("showifnot"))   ut = GameEventHandler.UNIT_SHOW_IF_NOT;
-    else if (utype.equals("hideifnot"))   ut = GameEventHandler.UNIT_HIDE_IF_NOT;
-    else if (utype.equals("showhide"))    ut = GameEventHandler.UNIT_SHOWHIDE;
-    else if (utype.equals("hideshow"))    ut = GameEventHandler.UNIT_HIDESHOW;
-    else if (utype.equals("passif"))      ut = GameEventHandler.UNIT_PASSIF;
-    else if (utype.equals("passifnot"))   ut = GameEventHandler.UNIT_PASSIFNOT;
-    else if (utype.equals("blockif"))     ut = GameEventHandler.UNIT_BLOCKIF;
-    else if (utype.equals("blockifnot"))  ut = GameEventHandler.UNIT_BLOCKIFNOT;
-    else
-    {
-      throw new GameXMLException("How did we get here?");
-    }
-
-    i_handler.AddEntry(ut);
-
-    if (!i_Node.hasAttributes()) return;
-    int i;
-    for (i = 0 ; i < i_Node.getAttributes().getLength() ; ++i)
-    {
-      org.w3c.dom.Node attrnode = i_Node.getAttributes().item(i);
-      i_handler.AddVarVal(attrnode.getNodeName(),attrnode.getNodeValue());
-    }
-  }
-
 
   private void WalkForUpToNode(org.w3c.dom.Node i_XMLNode,GameNode i_ParentGameNode) throws GameXMLException
   {
@@ -783,8 +619,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,tbnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of TextBox " + cname);
@@ -821,8 +656,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,selnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Selection " + cname);
@@ -870,8 +704,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,selnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Selection " + cname);
@@ -907,8 +740,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,selnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of MinMax Var Selection " + cname);
@@ -944,8 +776,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,selnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Selection " + cname);
@@ -978,8 +809,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,selnode); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of Selection " + cname);
@@ -1054,8 +884,7 @@ public class GameXMLWalker
     while((childNode = cit.GetNext()) != null)
     {
       String cname = childNode.getNodeName();
-      if      (cname.equals("eventhandler")) { WalkEventHandlerNode(childNode,udn); }
-      else if (cname.equals("#text") || cname.equals("#comment"))   { }
+      if      (cname.equals("#text") || cname.equals("#comment"))   { }
       else
       {
         throw new GameXMLException("Unknown subnode of javaclass " + cname);

@@ -15,7 +15,6 @@ public class GameGui
   private ActionTransferManager m_ActionManager;
   private ExternalAssets m_ExternalAssets;
   private PrintWriter m_ostream;
-  private AttributeChecker m_eventvarnames;
   private StatusWindows m_StatusWindows;
   private TabbedWindow m_tabs;
   private String m_Namespace;
@@ -221,35 +220,21 @@ public class GameGui
     m_ostream = i_pw;
     m_EventTypes = new HashMap<String,GameEventType>();
     m_Windows = new ArrayList<GameNode>();
-    m_eventvarnames = new AttributeChecker();
-
-    // special events for Action handling.
-    m_eventvarnames.AddAttribute("eventname",false);
 
     GameEventType et = this.CreateEventType("NEWSTATE");
     et.AddVar("statename");
     et.AddVar("statedesc");
-    m_eventvarnames.AddAttribute("statename",false);
-    m_eventvarnames.AddAttribute("statedesc",false);
 
     et = this.CreateEventType("LEGALACTION");
     et.AddVar("actionname");
-    m_eventvarnames.AddAttribute("actionname",false);
 
     et = this.CreateEventType("RESET");
 
     et = this.CreateEventType("MESSAGE");
     et.AddVar("messagetext");
-    m_eventvarnames.AddAttribute("messagetext",false);
 
     et = this.CreateEventType("ERROR");
     et.AddVar("errortext");
-    m_eventvarnames.AddAttribute("errortext",false);
-  }
-
-  public AttributeChecker GetAttributeChecker()
-  {
-    return m_eventvarnames;
   }
 }
 

@@ -55,9 +55,8 @@ public class ClientManager
 
       System.out.println("Login Process Completed");
 
-      while(true)
+      while(HandleOneLine())
       {
-        HandleOneLine();
       }
     }
     catch(ClientManagerException cme)
@@ -88,6 +87,12 @@ public class ClientManager
     try
     {
 	    m_connSocket = new Socket(i_HostName,i_Port);
+	    // Nothing else on this connection is periodic -- without this, a
+	    // NAT/middlebox between client and server (irrelevant back when
+	    // server and client always ran on the same machine) can silently
+	    // drop a long-idle connection with neither side ever sending a
+	    // real FIN/RST, see the "Connection reset" investigation, 2026-10-25.
+	    m_connSocket.setKeepAlive(true);
 
 	    m_out = new PrintWriter(m_connSocket.getOutputStream(), true);
 	    m_in = new BufferedReader(new InputStreamReader(m_connSocket.getInputStream()));
@@ -241,27 +246,48 @@ public class ClientManager
   // m_currentroom
   // m_gamename
 
-  private void HandleOneLine()
+  // Returns false once the connection itself is dead (clean close or a
+  // socket-level exception, e.g. a NAT/middlebox silently dropping a long
+  // idle connection -- see the "Connection reset" investigation, 2026-10-25)
+  // so mainloop() stops hammering a permanently broken socket instead of
+  // immediately retrying the same failing read forever (which, since
+  // ShowDebug is a modal dialog, previously manifested as the popup
+  // reappearing the instant you dismissed it). Returns true for anything
+  // recoverable -- a single malformed/unparseable line shouldn't end the
+  // session, only the connection itself dying should.
+  private boolean HandleOneLine()
   {
-    GuiPacketParser gpp = null;
+    String instring;
     try {
-      String instring = m_in.readLine();
-      if (instring == null) {
-        m_statuswindows.ShowDebug("Error: Server Closed Connection");
-        return;
+      instring = m_in.readLine();
+    } catch (IOException ioe) {
+      if (m_statuswindows != null) {
+        m_statuswindows.ShowDebug("Connection to server lost: " + ioe);
       }
+      return false;
+    }
+
+    if (instring == null) {
+      if (m_statuswindows != null) {
+        m_statuswindows.ShowDebug("Connection to server lost: server closed the connection");
+      }
+      return false;
+    }
+
+    GuiPacketParser gpp;
+    try {
       gpp = new GuiPacketParser(instring);
     } catch (Exception ex) {
       if (m_statuswindows != null) {
         m_statuswindows.ShowDebug("Error: " + ex);
       }
-      return;
+      return true;
     }
 
     // if we get here, we have a valid GPP.
     if (gpp.getGuiType() == GuiPacketParser.GuiType.LOGIN) {
       m_statuswindows.ShowDebug("Warning: Why did we get a Login packet?");
-      return;
+      return true;
     }
 
     // if we get here, we either have a room gui or a game gui
@@ -270,6 +296,7 @@ public class ClientManager
     } else {
       HandleGamePacket(gpp);
     }
+    return true;
   }
 
   private JsonPath myroomnamepath = JsonPath.compile("myroom.name");

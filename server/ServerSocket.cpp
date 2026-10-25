@@ -169,12 +169,24 @@ int ServerSocket::ConnectOne()
 	struct sockaddr_in their_addr; // connector's address information
 	size_t sin_size = sizeof(struct sockaddr_in); 
 	
-	SOCKET new_fd = ACCEPT(m_ListenSocket, (struct sockaddr *)&their_addr,&sin_size); 
- 
+	SOCKET new_fd = ACCEPT(m_ListenSocket, (struct sockaddr *)&their_addr,&sin_size);
+
 	if (new_fd == INVALID_SOCKET)
 	{
 		CloseListener();
 		std::cerr << "Can't accept socket: " << ERRSTRING << std::endl;
+		return new_fd;
+	}
+
+	// Nothing else on this connection is periodic -- without this, a
+	// NAT/middlebox between client and server (irrelevant for a client and
+	// server running on the same machine, i.e. every game played before this)
+	// can silently drop a long-idle connection with neither side ever
+	// sending a real FIN/RST.
+	BOOL bOptVal = TRUE;
+	if (setsockopt(new_fd, SOL_SOCKET, SO_KEEPALIVE,
+		(const char *)&bOptVal,sizeof(BOOL)) == SOCKET_ERROR ) {
+		std::cerr << "Can't set keepalive on accepted socket: " << ERRSTRING << std::endl;
 	}
 
 	return new_fd;

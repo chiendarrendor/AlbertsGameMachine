@@ -1,6 +1,6 @@
 package TheGameMachine;
 
-public interface ReplaceableTextNode extends EventHandlerNode
+public interface ReplaceableTextNode
 {
   void AddText(String i_text);
   EventStringReplacer.Replacement AddReplacer(String i_replacestring,

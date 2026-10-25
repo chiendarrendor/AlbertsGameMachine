@@ -20,7 +20,7 @@ VALIDATOR=perl -I${TCOMDIR} ${TCOMDIR}/validate_action_schema.pl
 # The fragments cpp -P splices into OutpostClient.xml -- not just the
 # top-level file -- so both the splice itself and the action-schema
 # validation below correctly rebuild when any of them changes.
-CLIENTXMLFRAGMENTS=../client/events.xml ../client/actions.xml ../client/Options.xml \
+CLIENTXMLFRAGMENTS=../client/actions.xml ../client/Options.xml \
 	../client/Players.xml ../client/ResourceRules.xml
 
 MAINTESTOBJ=testmain.o

@@ -1,0 +1,139 @@
+  <event name="PLAYER">
+    <var name="PLAYER.Name"/>
+    <var name="PLAYER.PlayerId"/>
+  </event>
+
+  <event name="MOVERROR">
+    <var name="MOVERROR.Error"/>
+  </event>
+ 
+  <event name="IAM">
+    <var name="IAM.PlayerId"/>
+  </event>
+
+  <event name="OPTIONS">
+    <var name="OPTIONS.WinMoney"/>
+  </event>
+
+  <event name="PLAYEROKSTARTUP">
+    <var name="PLAYEROKSTARTUP.PlayerId"/>
+    <var name="PLAYEROKSTARTUP.IsOk"/>
+  </event>
+
+  <event name="TURNORDER">
+    <var name="TURNORDER.order"/>
+  </event>
+
+  <event name="PLAYERMONEY">
+    <var name="PLAYERMONEY.PlayerId"/>
+    <var name="PLAYERMONEY.Money"/>
+    <var name="PLAYERMONEY.Barter"/>
+    <var name="PLAYERMONEY.Worth"/>
+  </event>
+
+  <event name= "PLAYERRACE">
+    <var name= "PLAYERRACE.PlayerId"/>
+    <var name= "PLAYERRACE.RaceId"/>
+  </event>
+
+  <event name= "ADDTOPLAYER">
+    <var name= "ADDTOPLAYER.PlayerId"/>
+    <var name= "ADDTOPLAYER.TokenEncoding"/>
+  </event>
+
+  <event name= "SUBTRACTFROMPLAYER">
+    <var name= "SUBTRACTFROMPLAYER.PlayerId"/>
+    <var name= "SUBTRACTFROMPLAYER.TokenEncoding"/>
+  </event>
+
+  <event name= "ADDTOTRADEBASE">
+    <var name= "ADDTOTRADEBASE.RaceId"/>
+    <var name= "ADDTOTRADEBASE.TokenEncoding"/>
+    <var name= "ADDTOTRADEBASE.FromCup"/>
+  </event>
+
+  <event name= "SUBTRACTFROMTRADEBASE">
+    <var name= "SUBTRACTFROMTRADEBASE.RaceId"/>
+    <var name= "SUBTRACTFROMTRADEBASE.TokenEncoding"/>
+  </event>
+
+  <event name= "SOLARSYSTEMPRIVACY">
+    <var name= "SOLARSYSTEMPRIVACY.SolarSystemName"/>
+    <var name= "SOLARSYSTEMPRIVACY.Secrecy"/>
+  </event>
+
+  <event name= "BASELOCATION">
+    <var name= "BASELOCATION.SolarSystemName"/>
+    <var name= "BASELOCATION.RaceId"/>
+  </event>
+
+  <event name= "QBOXPRIVACY">
+    <var name= "QBOXPRIVACY.SpaceName"/>
+    <var name= "QBOXPRIVACY.Secrecy"/>
+  </event>
+
+  <event name= "QBOXCONTENTS">
+    <var name= "QBOXCONTENTS.SpaceName"/>
+    <var name= "QBOXCONTENTS.SpaceEncoding"/>
+  </event>
+
+  <event name= "PLAYERLOCATION">
+    <var name= "PLAYERLOCATION.PlayerId"/>
+    <var name= "PLAYERLOCATION.SpaceName"/>
+  </event>
+
+  <event name= "SWITCHABLES">
+    <var name= "SWITCHABLES.Switchables"/>
+  </event>
+
+  <event name= "SELECTEDSWITCHABLES">
+    <var name= "SELECTEDSWITCHABLES.PlayerId"/>
+    <var name= "SELECTEDSWITCHABLES.Switchables"/>
+  </event>
+
+  <event name= "DESTINATION">
+    <var name= "DESTINATION.CurSpacePenalty"/>
+    <var name= "DESTINATION.IsFirst"/>
+    <var name= "DESTINATION.Destinations"/>
+  </event>
+
+  <event name= "DICE">
+    <var name= "DICE.DiceString"/>
+  </event>
+
+  <event name= "MPLEFT">
+    <var name= "MPLEFT.MpLeft"/>
+  </event>
+
+  <event name= "PLAYERWINS">
+    <var name= "PLAYERWINS.PlayerId"/>
+  </event> 
+
+  <event name= "CURPLAYER">
+    <var name= "CURPLAYER.PlayerId"/>
+  </event>
+
+  <event name= "PILOTNUMBERCHOICE">
+    <var name="PILOTNUMBERCHOICE.PilotNumbers"/>
+  </event>
+
+  <event name="PILOTNUMBERCHOSEN">
+    <var name="PILOTNUMBERCHOSEN.PlayerId"/>
+    <var name="PILOTNUMBERCHOSEN.PilotNumber"/>
+    <var name="PILOTNUMBERCHOSEN.IsPermanent"/>
+  </event>
+
+  <event name="REMAININGTRANSCOUNT">
+    <var name="REMAININGTRANSCOUNT.PlayerId"/>
+    <var name="REMAININGTRANSCOUNT.NumBuys"/>
+    <var name="REMAININGTRANSCOUNT.NumSells"/>
+  </event>
+
+  <event name="FACTORYOWNER">
+    <var name="FACTORYOWNER.RaceId"/>
+    <var name="FACTORYOWNER.PlayerId"/>
+  </event>
+  
+  <event name="AGEPLAYER">
+    <var name="AGEPLAYER.PlayerId"/>
+  </event>

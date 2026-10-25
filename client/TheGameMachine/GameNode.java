@@ -8,7 +8,7 @@ import NodeInterfacePackage.GameEvent;
 import MySwing.ImageLoader;
 
 
-abstract public class GameNode implements EventHandlerNode
+abstract public class GameNode
 {
   private Component m_VisibilityComponent;
   private Component m_DrawComponent;
@@ -16,7 +16,6 @@ abstract public class GameNode implements EventHandlerNode
   private java.util.List<GameNode> m_Children;
   protected boolean m_IsVisible;
   private boolean m_OrigVisible;
-  private GameEventHandler m_handler;
   private boolean m_ResetLocked;
 
   public void dispose()
@@ -39,7 +38,6 @@ abstract public class GameNode implements EventHandlerNode
   {
     m_VisibilityComponent = null;
     m_DrawComponent = null;
-    m_handler = null;
     m_Parent = i_Parent;
     m_Children = new ArrayList<GameNode>();
     m_IsVisible = true;
@@ -63,35 +61,9 @@ abstract public class GameNode implements EventHandlerNode
 
   }
 
-  public GameEventHandler GetEventHandler()
-  {
-    return m_handler;
-  }
-
-  public void SetEventHandler(GameEventHandler i_handler)
-  {
-    m_handler = i_handler;
-  }
-
   public void HandleEvent(GameEvent i_event)
   {
     MyHandleEvent(i_event);
-
-    if (m_handler != null)
-    {
-	    m_handler.ParseEvent(i_event);
-
-	    if (m_handler.IsVisible())
-	    {
-        AlterVisibility(true);
-	    }
-	    else if (m_handler.IsInvisible())
-	    {
-        AlterVisibility(false);
-	    }
-
-	    if (!m_handler.EventPasses()) return;
-    }
 
     int i;
 
