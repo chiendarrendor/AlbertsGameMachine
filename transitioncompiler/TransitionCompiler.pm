@@ -87,6 +87,7 @@ sub HandleBaseChild
     if ($node->getNodeName eq "event") { return $this->HandleEventNode($node); }
     if ($node->getNodeName eq "refresh") { return $this->HandleRefreshNode($node); }
     if ($node->getNodeName eq "preface") { return $this->HandlePrefaceNode($node); }
+    if ($node->getNodeName eq "sequence") { return $this->HandleSequenceNode($node); }
 
     print "Unknown Base Child Node ",$node->getNodeName,"\n";
     return undef;
@@ -119,6 +120,85 @@ sub HandleRefreshNode
     $this->{REFRESH} = $text;
     return 1;
 }
+
+sub HandleSequenceNode
+{
+    my ($this,$node) = @_;
+
+    my $name = $node->getAttribute("name");
+    if (!$name)
+    {
+	print "sequence node has no name attribute.\n";
+	return undef;
+    }
+
+    if (exists $this->{SEQUENCES}->{$name})
+    {
+	print "Duplicate Sequence with name $name\n";
+	return undef;
+    }
+
+    my $seq = {};
+    $seq->{NAME} = $name;
+
+    my $children = GetChildren($node);
+    if (!$children)
+    {
+	print "sequence $name has no children!\n";
+	return undef;
+    }
+
+    for (my $i = 0 ; $i < $children->getLength ; ++$i)
+    {
+	my $child = $children->item($i);
+
+	if ($child->getNodeName eq "#text" && $child->getNodeValue =~ /^\s+$/) { next; }
+	if ($child->getNodeName eq "#comment") { next; }
+
+	if ($child->getNodeName eq "count")
+	{
+	    my $text = GetNodeText($child);
+	    if (!$text)
+	    {
+		print "sequence $name count node parse failed.\n";
+		return undef;
+	    }
+	    $seq->{COUNT} = $text;
+	    next;
+	}
+
+	if ($child->getNodeName eq "body")
+	{
+	    my $text = GetNodeText($child);
+	    if (!$text)
+	    {
+		print "sequence $name body node parse failed.\n";
+		return undef;
+	    }
+	    $seq->{BODY} = $text;
+	    next;
+	}
+
+	print "sequence $name has unknown child node ",$child->getNodeName,"\n";
+	return undef;
+    }
+
+    if (!exists $seq->{COUNT})
+    {
+	print "sequence $name has no count node.\n";
+	return undef;
+    }
+
+    if (!exists $seq->{BODY})
+    {
+	print "sequence $name has no body node.\n";
+	return undef;
+    }
+
+    $this->{SEQUENCES}->{$name} = $seq;
+    return 1;
+}
+
 
 sub HandleEventNode
 {

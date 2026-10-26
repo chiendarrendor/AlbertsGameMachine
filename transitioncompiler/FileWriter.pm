@@ -208,6 +208,41 @@ sub WriteFiles
 
     print GIHPP "  boost::json::object GetClientState(const std::string &i_PlayerName,const StateName &i_StateName) const;\n";
     print GIHPP "\n";
+
+    # <sequence> methods claim their own corner of the generated namespace --
+    # "<Name>Count"/"<Name>Body", no underscore -- distinct in both direction
+    # and spelling from every other generated name pattern here (the
+    # per-transition "<Name>_IsLegal"/"<Name>_IsAuto"/"<Name>_ExecuteAction"/
+    # "<Name>_Transition" family all use a leading underscore before a
+    # different word; the one fixed, ungenerated name is "GetClientState").
+    # A sequence named e.g. "ClientState" would generate "ClientStateCount"/
+    # "ClientStateBody", textually distinct from "GetClientState" itself; a
+    # sequence reusing a <state> name (data members, not functions, with no
+    # suffix at all) is likewise never ambiguous. See docs/Sequences.txt.
+    foreach my $seqname (keys %{$tcom->{SEQUENCES}})
+    {
+	print GIHPP "  int ${seqname}Count(const std::string &i_PlayerName) const;\n";
+	print GIHPP "  boost::json::array ${seqname}Body(const std::string &i_PlayerName,size_t i_start,size_t i_end) const;\n";
+    }
+
+    # The glue layer DLLGame.hpp's generic code actually calls: it has no
+    # way to write "m_GameInfo.SpendsCount(...)" literally (a game's
+    # sequence names don't exist at the generic-template level, only here
+    # in generated code), so it needs one fixed-name entry point per
+    # operation that dispatches on a runtime string instead -- the same
+    # problem StateWalker::Execute already solves for transitions, just via
+    # an if-chain here rather than a registered object collection, since no
+    # game is expected to have many sequences. Generated unconditionally
+    # (even with zero <sequence>s) so DLLGame can call it uniformly; an
+    # unrecognized name is a GameActionError, same convention every other
+    # generated rejection already uses, so whatever calls this can catch it
+    # exactly like DLLGame::HandleAction already catches one from a <body>.
+    # Fixed names, not per-sequence ones, so collision is already covered by
+    # the per-sequence-name reasoning above -- the only theoretical overlap
+    # is a sequence literally named "Sequence", which would just overload
+    # (different parameter count), not collide.
+    print GIHPP "  int SequenceCount(const std::string &i_SequenceName,const std::string &i_PlayerName) const;\n";
+    print GIHPP "  boost::json::array SequenceBody(const std::string &i_SequenceName,const std::string &i_PlayerName,size_t i_start,size_t i_end) const;\n";
     print GIHPP "\n";
 
     foreach my $evname (keys %{$tcom->{EVENTS}})
@@ -237,7 +272,47 @@ sub WriteFiles
     print DLLCPP $tcom->{REFRESH},"\n";
     print DLLCPP "}\n";
     print DLLCPP "\n";
-    
+
+    foreach my $seqname (keys %{$tcom->{SEQUENCES}})
+    {
+	my $seq = $tcom->{SEQUENCES}->{$seqname};
+
+	# <count> is a bare expression (like <allowed>/<auto>), so it needs
+	# wrapping in a return statement; <body> is a full statement block
+	# with its own return (like <refresh>), so it's spliced as-is.
+	print DLLCPP "int ${name}GameInfo::${seqname}Count(const std::string &i_PlayerName) const\n";
+	print DLLCPP "{\n";
+	print DLLCPP "  return ",$seq->{COUNT},";\n";
+	print DLLCPP "}\n";
+	print DLLCPP "\n";
+
+	print DLLCPP "boost::json::array ${name}GameInfo::${seqname}Body(const std::string &i_PlayerName,size_t i_start,size_t i_end) const\n";
+	print DLLCPP "{\n";
+	print DLLCPP $seq->{BODY},"\n";
+	print DLLCPP "}\n";
+	print DLLCPP "\n";
+    }
+
+    print DLLCPP "int ${name}GameInfo::SequenceCount(const std::string &i_SequenceName,const std::string &i_PlayerName) const\n";
+    print DLLCPP "{\n";
+    foreach my $seqname (keys %{$tcom->{SEQUENCES}})
+    {
+	print DLLCPP "  if (i_SequenceName == \"$seqname\") return ${seqname}Count(i_PlayerName);\n";
+    }
+    print DLLCPP "  throw GameActionError(\"Unknown sequence: \" + i_SequenceName);\n";
+    print DLLCPP "}\n";
+    print DLLCPP "\n";
+
+    print DLLCPP "boost::json::array ${name}GameInfo::SequenceBody(const std::string &i_SequenceName,const std::string &i_PlayerName,size_t i_start,size_t i_end) const\n";
+    print DLLCPP "{\n";
+    foreach my $seqname (keys %{$tcom->{SEQUENCES}})
+    {
+	print DLLCPP "  if (i_SequenceName == \"$seqname\") return ${seqname}Body(i_PlayerName,i_start,i_end);\n";
+    }
+    print DLLCPP "  throw GameActionError(\"Unknown sequence: \" + i_SequenceName);\n";
+    print DLLCPP "}\n";
+    print DLLCPP "\n";
+
     foreach $state (keys %{$tcom->{STATE}})
     {
 	print DLLCPP "const StateName ${name}GameInfo::$state = \"$state\";\n";

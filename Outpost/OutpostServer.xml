@@ -1184,21 +1184,6 @@
       }
       result["commodityStock"] = commodityStock;
 
-      boost::json::array spends;
-      for (size_t i = 0 ; i < GetSpends().size() ; ++i)
-      {
-        const Spend &s = GetSpends()[i];
-        boost::json::object spendobj;
-        spendobj["turnNum"] = s.GetTurnNum();
-        spendobj["playerId"] = static_cast<int>(s.GetPlayerNum());
-        spendobj["spendType"] = static_cast<int>(s.GetSpendType());
-        spendobj["spendItem"] = s.GetSpendItem();
-        spendobj["spendCost"] = s.GetSpendCost();
-        spendobj["resources"] = s.GetCommodityHand().GetHandDescription(true,true);
-        spends.push_back(spendobj);
-      }
-      result["spends"] = spends;
-
       if (i_StateName == InitialState || i_StateName == ValidateSetup)
       {
         return result;
@@ -1299,4 +1284,28 @@
       return result;
     ]]>
   </refresh>
+
+  <!-- sequence count takes i_PlayerName -->
+  <!-- sequence body takes i_PlayerName, int i_start, int i_end, both already validated to be in [0, count) and i_start < i_end-->
+  <sequence name="Spends">
+    <count>(int)GetSpends().size()</count>
+    <body> <![CDATA[
+      boost::json::array spends;
+      for (size_t i = i_start ; i < i_end ; ++i)
+      {
+        const Spend &s = GetSpends()[i];
+        boost::json::object spendobj;
+        spendobj["turnNum"] = s.GetTurnNum();
+        spendobj["playerId"] = static_cast<int>(s.GetPlayerNum());
+        spendobj["spendType"] = static_cast<int>(s.GetSpendType());
+        spendobj["spendItem"] = s.GetSpendItem();
+        spendobj["spendCost"] = s.GetSpendCost();
+        spendobj["resources"] = s.GetCommodityHand().GetHandDescription(true,true);
+        spends.push_back(spendobj);
+      }
+      return spends;
+    ]]>
+    </body>
+  </sequence>
+
 </game>

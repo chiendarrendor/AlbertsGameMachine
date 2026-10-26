@@ -27,6 +27,22 @@ public:
   virtual void HandleAction(const std::string &i_Name,const ActionParser &i_ap,
                              const std::set<std::string> &i_Roster);
 
+  // Not part of the Game interface -- GameServerMain.hpp calls this directly
+  // on the concrete DLLGame it owns, never through a Game&. GameProcessProxy
+  // (the server-side stand-in for a real game process) never needs its own
+  // version either: it forwards the whole handleAction RPC byte-for-byte
+  // regardless of "type", so the transition/sequence distinction only ever
+  // matters on this side of the process boundary.
+  // i_Params is the raw, untrusted client-supplied "start"/"end" -- extracted
+  // and validated here, not by the caller, since this is the only place with
+  // access to BuildStateWalkerEnvelope/GetOutputPort() to respond gracefully
+  // if they're missing, non-numeric, or negative. Letting any of that
+  // propagate uncaught would crash the whole game process (GameProcessProxy
+  // reads a crashed process as the game dying and tears down the entire
+  // room), not just reject this one request.
+  void HandleSequenceRequest(const std::string &i_PlayerName,const std::string &i_SequenceName,
+                              const boost::json::object &i_Params);
+
   virtual bool LoadFile(const std::string &i_FileName);
   virtual bool SaveFile(const std::string &i_FileName) const;
 
@@ -137,6 +153,15 @@ boost::json::object DLLGame<T_GameSet,T_DLLGameInfo>::BuildStateWalkerEnvelope
   envelope["stateDesc"] = m_StateWalker.GetCurStateDesc();
   envelope["legalActions"] = legalactions;
   envelope["gameInstanceId"] = m_StateWalker.GetInstanceId();
+  // Mirrors the incoming action's own "type" (see ActionParser/GameGui.
+  // SendAction) so the client can tell what kind of request produced this
+  // response and interpret "body"/"error" accordingly -- same spirit as
+  // "gui" already telling the client whether "body" is ROOMGUI's
+  // {rooms,myroom} shape or a real game's GetClientState() shape.
+  // Every caller of this helper today is transition-shaped (SendFullState,
+  // every HandleAction rejection path); HandleSequenceRequest is the one
+  // exception and overrides this itself.
+  envelope["type"] = "transition";
   return envelope;
 }
 
@@ -262,5 +287,72 @@ void DLLGame<T_GameSet,T_DLLGameInfo>::HandleAction
   {
     SendFullState(*playerit);
   }
+}
+
+// A sequence request is a read-only query, not a state-mutating action -- it
+// never touches m_StateWalker at all, and the response goes only to the
+// requester, never the whole roster, unlike HandleAction above. Reuses the
+// same "body"/"error" fields a transition resend uses, distinguished by the
+// envelope's own "type" (set to "sequence" here, overriding
+// BuildStateWalkerEnvelope's "transition" default) -- same spirit as "gui"
+// already telling the client whether "body" is ROOMGUI's shape or a real
+// game's. The client checks "type" before deciding how to handle "error":
+// quietly, for whatever's managing this pending request, not through
+// whatever user-visible channel a rejected transition's "error" goes through
+// today (a modal dialog -- ClientManager.java's ShowDebug) -- a sequence
+// request is typically a widget fetching data in the background (e.g.
+// scrolling a history list), not a direct user action, so it shouldn't pop
+// up an intrusive error the user never asked for.
+template<class T_GameSet,class T_DLLGameInfo>
+void DLLGame<T_GameSet,T_DLLGameInfo>::HandleSequenceRequest
+(const std::string &i_PlayerName,const std::string &i_SequenceName,
+ const boost::json::object &i_Params)
+{
+  boost::json::object envelope = BuildStateWalkerEnvelope(i_PlayerName);
+  envelope["type"] = "sequence";
+
+  try
+  {
+    // Extracted and range-checked as plain signed ints first, deliberately,
+    // rather than trusting boost::json's own unsigned-conversion behavior to
+    // reject a negative value -- our own explicit check here is obvious to a
+    // reader and gives a clear message, instead of depending on library
+    // internals nobody reading this code would think to go verify. Only
+    // cast to size_t once both are known non-negative, right at the point
+    // SequenceCount/SequenceBody actually need it.
+    int start = i_Params.at("start").to_number<int>();
+    int end = i_Params.at("end").to_number<int>();
+    if (start < 0 || end < 0)
+    {
+      throw GameActionError("start/end must not be negative for sequence " + i_SequenceName);
+    }
+
+    int count = m_GameInfo.SequenceCount(i_SequenceName,i_PlayerName);
+    if (start >= end || end > count)
+    {
+      throw GameActionError("Illegal range for sequence " + i_SequenceName);
+    }
+
+    boost::json::object body;
+    body["sequence"] = i_SequenceName;
+    body["firstIndex"] = start;
+    body["records"] = m_GameInfo.SequenceBody(i_SequenceName,i_PlayerName,
+                                               static_cast<size_t>(start),static_cast<size_t>(end));
+    envelope["body"] = std::move(body);
+  }
+  catch (const GameActionError &e)
+  {
+    envelope["error"] = e.what();
+  }
+  // Missing/non-numeric "start"/"end" (a malformed or hostile request, since
+  // real requests only ever come from our own client code) throws from
+  // boost::json itself, not GameActionError -- caught here too so it can't
+  // escape uncaught and crash the whole game process over one bad request.
+  catch (const std::exception &e)
+  {
+    envelope["error"] = std::string("Malformed sequence request: ") + e.what();
+  }
+
+  GetOutputPort().UniCastJson(i_PlayerName,envelope);
 }
 

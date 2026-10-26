@@ -90,6 +90,10 @@ public class GameGui
     JSONObject envelope = new JSONObject();
     envelope.put("namespace",namespace);
     envelope.put("action",i_ActionName);
+    // Every action sent today names a transition -- "sequence" is the only
+    // other value, used by the (not yet built) sequence range-fetch request,
+    // which doesn't go through this generic ActionNode-driven call site.
+    envelope.put("type","transition");
     envelope.put("params",i_Params);
 
     m_ostream.print(envelope.toString());

@@ -190,29 +190,71 @@ int RunGameServerMain(int argc,char **argv,int i_AutoRecursionDepth,
 
     if (method == "handleAction")
     {
+      // "type" only exists inside a handleAction request -- GameProcessProxy
+      // never attaches it to load/save/isDone/getStatusString/sendFullState,
+      // so it can't be read until method == "handleAction" is already known
+      // (params.at("type") would throw for any of those). Nested, not a
+      // flat "method == X && type == Y" chain, for exactly that reason.
       std::string player(params.at("player").as_string().c_str());
-      std::string action(params.at("action").as_string().c_str());
-      const boost::json::object &actionParams = params.at("params").as_object();
+      std::string type(params.at("type").as_string().c_str());
 
-      std::set<std::string> roster;
-      const boost::json::array &rosterArray = params.at("roster").as_array();
-      boost::json::array::const_iterator rosterit;
-      for (rosterit = rosterArray.begin() ; rosterit != rosterArray.end() ; ++rosterit)
+      if (type == "transition")
       {
-        roster.insert(std::string(rosterit->as_string().c_str()));
-      }
+        std::string action(params.at("action").as_string().c_str());
+        const boost::json::object &actionParams = params.at("params").as_object();
 
-      ActionParser ap(action,actionParams);
-      game.HandleAction(player,ap,roster);
-      // DLLGame::HandleAction reports a rejected action as a targeted
-      // UniCastJson envelope (state/stateDesc/legalActions/error) straight
-      // to the sender, not a distinguished RPC failure -- this request
-      // always completes normally from the RPC's point of view. See the
-      // "one open question" note in the spec/GameServerMain design
-      // discussion: this doesn't match "ERROR is a special case"'s native
-      // RPC-error framing literally, but produces identical client-visible
-      // behavior, since GameProcessProxy dispatches any interleaved event
-      // (error or not) before ever inspecting this response.
+        std::set<std::string> roster;
+        const boost::json::array &rosterArray = params.at("roster").as_array();
+        boost::json::array::const_iterator rosterit;
+        for (rosterit = rosterArray.begin() ; rosterit != rosterArray.end() ; ++rosterit)
+        {
+          roster.insert(std::string(rosterit->as_string().c_str()));
+        }
+
+        ActionParser ap(action,actionParams);
+        game.HandleAction(player,ap,roster);
+        // DLLGame::HandleAction reports a rejected action as a targeted
+        // UniCastJson envelope (state/stateDesc/legalActions/error) straight
+        // to the sender, not a distinguished RPC failure -- this request
+        // always completes normally from the RPC's point of view. See the
+        // "one open question" note in the spec/GameServerMain design
+        // discussion: this doesn't match "ERROR is a special case"'s native
+        // RPC-error framing literally, but produces identical client-visible
+        // behavior, since GameProcessProxy dispatches any interleaved event
+        // (error or not) before ever inspecting this response.
+      }
+      else if (type == "sequence")
+      {
+        // Action name doubles as the sequence name (Sequences.txt); "start"/
+        // "end" (the [start, end) range) live in the inner params object,
+        // same as any transition's own typed <var> values. Passed through
+        // raw and unvalidated -- HandleSequenceRequest extracts and
+        // range-checks them itself, since only it has the envelope-building
+        // access needed to reject a malformed request gracefully instead of
+        // letting an extraction failure escape uncaught here.
+        std::string sequenceName(params.at("action").as_string().c_str());
+        const boost::json::object &actionParams = params.at("params").as_object();
+
+        game.HandleSequenceRequest(player,sequenceName,actionParams);
+        // Same non-distinguished-RPC-failure treatment as the transition
+        // case above: HandleSequenceRequest reports a rejection (unknown
+        // sequence, illegal range, malformed start/end) via UniCastJson to
+        // the requester, not an RPC-level error.
+      }
+      else
+      {
+        // Unlike a rejected transition/sequence request (both legitimate,
+        // reported to the player via UniCastJson above), an unrecognized
+        // type can only mean a protocol bug -- type only ever comes from
+        // GameGui.SendAction's own hardcoded literal or the eventual
+        // sequence-request code, never raw user input. Treated the same way
+        // as the "Unknown method" case below: a real RPC-level error.
+        boost::json::object response;
+        response["id"] = id;
+        response["error"] = "Unknown action type: " + type;
+        WriteMessage(o_rOut,response);
+        continue;
+      }
     }
     else if (method == "load")
     {

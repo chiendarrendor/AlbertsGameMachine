@@ -8,6 +8,7 @@ ActionParser::ActionParser(const std::string &i_RawJsonLine)
 
 	m_Namespace = std::string(obj.at("namespace").as_string().c_str());
 	m_ActionName = std::string(obj.at("action").as_string().c_str());
+	m_Type = std::string(obj.at("type").as_string().c_str());
 	m_Params = obj.at("params").as_object();
 }
 
@@ -25,6 +26,11 @@ const std::string &ActionParser::GetActionName() const
 const std::string &ActionParser::GetNamespace() const
 {
 	return m_Namespace;
+}
+
+const std::string &ActionParser::GetType() const
+{
+	return m_Type;
 }
 
 const boost::json::object &ActionParser::GetParams() const

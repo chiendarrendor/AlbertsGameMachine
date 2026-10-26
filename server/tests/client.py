@@ -1,7 +1,9 @@
 """Thin wrapper around one simulated player's raw TCP connection to the real
 server. Client->server traffic is the JSON envelope from Phase 2 of the wire
 redesign (see .claude/server_game_interface_spec.md's Action-namespacing
-section): {"namespace": ..., "action": ..., "params": {...}}.
+section): {"namespace": ..., "action": ..., "type": ..., "params": {...}}.
+"type" is "transition" for every action this harness sends -- "sequence" is
+the only other value, used by a sequence range-fetch request.
 
 Pre-login is its own tiny hand-written FSM (Albert + Claude, 2026-10-07; see
 the spec doc) instead of the old single-shot LOGIN/ALREADYLOGGEDIN lines: the
@@ -76,8 +78,18 @@ class Client:
     def send_action(self, namespace, action, **params):
         """Builds and sends the standard Action envelope -- the normal way
         to talk to the server post-Phase-2, for anything other than LOGIN/
-        LOGOUTOTHER (see connect() above for those)."""
-        self.send(json.dumps({"namespace": namespace, "action": action, "params": params}))
+        LOGOUTOTHER (see connect() above for those). "type" is always
+        "transition" here -- see send_sequence_request for the other value."""
+        self.send(json.dumps({"namespace": namespace, "action": action,
+                               "type": "transition", "params": params}))
+
+    def send_sequence_request(self, namespace, sequence_name, start, end):
+        """The other "type" value -- a read-only range-fetch request, not a
+        state-mutating action. "action" doubles as the sequence name
+        (docs/Sequences.txt); "start"/"end" are the requested [start, end)
+        range."""
+        self.send(json.dumps({"namespace": namespace, "action": sequence_name,
+                               "type": "sequence", "params": {"start": start, "end": end}}))
 
     def recv(self, timeout=2.0):
         while b"\n" not in self._buf:

@@ -217,6 +217,7 @@ void GameProcessProxy::HandleAction(const std::string &i_Name,const ActionParser
   boost::json::object params;
   params["player"] = i_Name;
   params["action"] = i_ap.GetActionName();
+  params["type"] = i_ap.GetType();
   params["params"] = i_ap.GetParams();
 
   boost::json::array roster;

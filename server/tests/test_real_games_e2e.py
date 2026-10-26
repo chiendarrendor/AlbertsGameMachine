@@ -35,6 +35,7 @@ GAME_SCHEMAS = {
     "MerchantOfVenus": REPO_ROOT + "/MerchantOfVenus/MerchantOfVenusSchema.json",
 }
 ROOMGUI_SCHEMA = REPO_ROOT + "/roomgui/ROOMGUISchema.json"
+OUTPOST_SPENDS_SEQUENCE_SCHEMA = REPO_ROOT + "/Outpost/OutpostSpendsSequenceSchema.json"
 
 
 def assert_matches_schema(schema_path, instance):
@@ -86,6 +87,25 @@ def drain_until_roomgui(client, predicate, max_lines=200):
         if predicate(msg["fullState"]):
             return msg["fullState"]
     raise AssertionError("never saw a matching ROOMGUI state within %d lines" % max_lines)
+
+
+def drain_until_game(client, game_name, predicate, max_lines=200):
+    """Same idea as drain_until_roomgui, but for a specific game's own gui
+    name -- needed for the mid-game auto-transition cascades (e.g. the whole
+    TurnOrder->SupplyFill->StartResources->PromptMegaResources chain fires
+    within one HandleAction call), where more than one envelope can be
+    queued before the one actually worth inspecting."""
+    for _ in range(max_lines):
+        line = client.recv()
+        try:
+            msg = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(msg, dict) or msg.get("gui") != game_name:
+            continue
+        if predicate(msg["fullState"]):
+            return msg["fullState"]
+    raise AssertionError("never saw a matching %s state within %d lines" % (game_name, max_lines))
 
 
 @pytest.fixture
@@ -161,3 +181,131 @@ def test_real_game_join_round_trip(real_games_server, game_name):
     player_names = [p["name"] for p in envelope["fullState"]["body"]["players"]]
     assert "alice" in player_names
     assert_body_matches_schema(game_name, envelope["fullState"]["body"])
+
+
+def test_outpost_spends_sequence_round_trip(real_games_server):
+    """Drives a real 2-player Outpost game far enough to produce two real
+    Spend records (each player buys zero men -- a deterministic, free
+    ITEMPURCHASE spend that only needs nonzero hand value, see
+    Players::CanPlayerPurchase/GetMaxPurchasable -- rather than the
+    WATERMULLIGAN escape hatch, which needs a specific bad commodity draw
+    and isn't reliable to trigger in an automated test), then validates the
+    actual sequence range-fetch request/response against
+    OutpostSpendsSequenceSchema.json through the real wire protocol -- not
+    just the generated C++ method in isolation. See the "Sequence/Spend"
+    design discussion (docs/Sequences.txt) for why this needed its own test:
+    it's the only layer that both exercises the real socket protocol and has
+    schema-validation tooling (test_real_game_join_round_trip only proves the
+    wire protocol up through JOIN; outposttest already owns deep gameplay
+    coverage, but has no schema-validation tooling at all).
+    """
+    port = real_games_server
+    alice = _connect(port, "alice")
+    bob = _connect(port, "bob")
+    drain_until_roomgui(alice, lambda fs: True)
+    drain_until_roomgui(bob, lambda fs: True)
+
+    alice.send_action("roommanager", "NEWROOM", RoomName="GameRoom")
+    drain_until_roomgui(alice, lambda fs: room_state(fs, "GameRoom") is not None)
+    drain_until_roomgui(bob, lambda fs: room_state(fs, "GameRoom") is not None)
+    alice.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
+    drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "alice") == "GameRoom")
+    drain_until_roomgui(bob, lambda fs: inhabitant_room(fs, "alice") == "GameRoom")
+    bob.send_action("roommanager", "CHANGEROOM", TargetRoom="GameRoom")
+    drain_until_roomgui(alice, lambda fs: inhabitant_room(fs, "bob") == "GameRoom")
+    drain_until_roomgui(bob, lambda fs: inhabitant_room(fs, "bob") == "GameRoom")
+
+    def read_both():
+        """Reads exactly one game envelope on *each* of alice's and bob's own
+        sockets, by real identity, never positionally -- act() below sends
+        from whichever of the two is the acting player, but every successful
+        action still resends to both, so both must always be drained in a
+        fixed, name-bound order (never "actor_fs, other_fs", which silently
+        swaps identity whenever the acting player isn't always the same one,
+        exactly the bug this harness hit while writing this test)."""
+        return (drain_until_game(alice, "Outpost", lambda fs: True),
+                drain_until_game(bob, "Outpost", lambda fs: True))
+
+    def act(actor, action, **params):
+        actor.send_action("Outpost", action, **params)
+        return read_both()
+
+    alice.send_action("room", "NEWGAME", NewGame="Outpost")
+    alice_fs, bob_fs = read_both()
+
+    alice_fs, bob_fs = act(alice, "JOIN")
+    alice_fs, bob_fs = act(bob, "JOIN")
+
+    options = {
+        "discard": False, "refinery": False, "oneupgrade": False, "activebid": False,
+        "supplyharshness": 0, "robots": 1, "researchmega": False, "smallresearch": False,
+        "smallmicro": False, "blinddraws": False, "stock": 1,
+    }
+    alice_fs, bob_fs = act(alice, "OPTIONS", **options)
+    alice_fs, bob_fs = act(alice, "VALIDATESETUP")
+    assert alice_fs["state"] == "ValidateSetup"
+
+    alice_fs, bob_fs = act(alice, "LIKEOPTIONS")
+    # bob's own LIKEOPTIONS is the one that makes GetPlayers().AllOk() true,
+    # auto-firing STARTGAME and the whole TurnOrder->SupplyFill->
+    # StartResources->PromptMegaResources auto-cascade in this same call.
+    alice_fs, bob_fs = act(bob, "LIKEOPTIONS")
+
+    # MegaResources is the only state production can rest in -- every other
+    # state in this chain (PromptMegaResources included) is <auto>, so it
+    # never survives to be the state a broadcast actually reports.
+    while alice_fs["state"] == "MegaResources":
+        current = alice if alice_fs["body"]["myPlayerId"] == alice_fs["body"]["currentTurnPlayerId"] else bob
+        alice_fs, bob_fs = act(current, "NUMMEGAS", i_count=0)
+
+    assert alice_fs["state"] == "Purchase"
+
+    current = alice if alice_fs["body"]["myPlayerId"] == alice_fs["body"]["currentTurnPlayerId"] else bob
+    waiting = bob if current is alice else alice
+
+    # The non-current-turn player can only act out of turn order after
+    # internalizing (Players::IsPlayerInternalizing) -- see INTERNALIZE's
+    # <allowed> clause and Albert's own explanation of this mechanic.
+    alice_fs, bob_fs = act(waiting, "INTERNALIZE")
+
+    def no_discard_string(fs):
+        """i_discardstring isn't "delete nothing" when empty -- CommodityHand::
+        ApplyDeletes requires exactly one '0'/'1' per card currently in hand
+        (CommodityHand.cpp:107, "Mismatched delete string length" otherwise),
+        so "delete nothing" is one '0' per card in myHand, not "" ."""
+        inner = fs["body"]["myHand"].strip("|")
+        count = len(inner.split("-")) if inner else 0
+        return "0" * count
+
+    # Both players buy zero men -- a real, free Spend(ITEMPURCHASE) each, see
+    # OutpostServer.xml's BUYMEN transition body. i_nummen=0 means
+    # HandDeleter's own cost/weight checks are trivially satisfied (0 < 0 is
+    # false), so this only needs CanPlayerPurchase (nonzero hand value) to
+    # hold, not any specific commodity draw.
+    current_fs = alice_fs if current is alice else bob_fs
+    alice_fs, bob_fs = act(current, "BUYMEN", i_nummen=0, i_discardstring=no_discard_string(current_fs))
+    waiting_fs = bob_fs if current is alice else alice_fs
+    alice_fs, bob_fs = act(waiting, "BUYMEN", i_nummen=0, i_discardstring=no_discard_string(waiting_fs))
+
+    # Two real Spend records should now exist -- validate the actual range-
+    # fetch response, through the real wire protocol, against the schema.
+    alice.send_sequence_request("Outpost", "Spends", 0, 2)
+    response = recv_envelope(alice)["fullState"]
+    assert response["type"] == "sequence"
+    assert "error" not in response
+    body = response["body"]
+    assert body["sequence"] == "Spends"
+    assert body["firstIndex"] == 0
+    assert len(body["records"]) == 2
+    for record in body["records"]:
+        assert_matches_schema(OUTPOST_SPENDS_SEQUENCE_SCHEMA, record)
+        assert record["spendType"] == 0  # ITEMPURCHASE, per Spend.hpp's SpendType enum
+
+    # The error path -- requesting past the real count -- goes through
+    # "error", not "body", same shape as a rejected transition, but still
+    # distinguished from one by "type".
+    alice.send_sequence_request("Outpost", "Spends", 0, 99)
+    response = recv_envelope(alice)["fullState"]
+    assert response["type"] == "sequence"
+    assert "body" not in response
+    assert "error" in response

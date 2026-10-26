@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OutpostSpendsSequenceRecord",
+  "description": "The shape of one record in Outpost's \"Spends\" sequence (see docs/Sequences.txt) -- a historical log of every commodity-hand spend this game. Unlike a per-player sequence, this one's <count>/<body> ignore i_PlayerName entirely: every viewer sees the exact same records, since spend history has never been secret information. No longer part of the regular FSS body (OutpostSchema.json) at all -- by default nothing about this sequence is sent except its count, under sequences.Spends in the fullState envelope; a client downloads a range of these records on demand via the sequence request mechanism.",
+  "type": "object",
+  "properties": {
+    "turnNum": {"type":"integer"},
+    "playerId": {"type":"integer"},
+    "spendType": {"type":"integer"},
+    "spendItem": {"type":"integer"},
+    "spendCost": {"type":"integer"},
+    "resources": {"type":"string", "description": "Public (non-secret) description of the commodities spent."}
+  },
+  "required": ["turnNum","playerId","spendType","spendItem","spendCost","resources"],
+  "additionalProperties": false
+}

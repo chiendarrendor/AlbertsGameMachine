@@ -366,6 +366,10 @@ void RoomManager::SendRoomActionError(const std::string &i_Name,const std::strin
   envelope["stateDesc"] = ROOMGUI_STATEDESC;
   envelope["legalActions"] = ComputeLegalActions(i_Name);
   envelope["gameInstanceId"] = ROOMGUI_INSTANCE_ID;
+  // ROOMGUI has no sequence concept, so this is always "transition" -- added
+  // purely for consistency with a real game's envelope (DLLGame::
+  // BuildStateWalkerEnvelope), which always carries this field now.
+  envelope["type"] = "transition";
   envelope["error"] = i_Error;
 
   i_Connections.SendLineToName(i_Name,
@@ -411,6 +415,7 @@ void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &
     envelope["stateDesc"] = ROOMGUI_STATEDESC;
     envelope["legalActions"] = LegalActionsFor(*nameit,perRoomActions);
     envelope["gameInstanceId"] = ROOMGUI_INSTANCE_ID;
+    envelope["type"] = "transition";
     envelope["body"] = body;
 
     i_Connections.SendLineToName(*nameit,

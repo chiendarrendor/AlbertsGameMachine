@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "OutpostClientState",
-  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId/supplyShip/itemStock/commodityStock/spends only) and the full in-game snapshot (everything else too, some fields nullable depending on state). supplyShip, itemStock, commodityStock, and spends are the exceptions to the pre-STARTGAME/in-game split -- all four are always present (empty/zeroed before GetUnownedItems() is initialized, simply reflecting CommodityManager's fixed constructor-time deck data for commodityStock, or simply empty until any spend has happened for spends) rather than being omitted like every other in-game field.",
+  "description": "Game-specific body of Outpost's per-viewer full-state send (Phase 3). This describes only the developer-written GetClientState() payload, not the generic StateWalker/envelope wrapper around it. Two valid shapes: pre-STARTGAME setup (options/players/myPlayerId/supplyShip/itemStock/commodityStock only) and the full in-game snapshot (everything else too, some fields nullable depending on state). supplyShip, itemStock, and commodityStock are the exceptions to the pre-STARTGAME/in-game split -- all three are always present (empty/zeroed before GetUnownedItems() is initialized, or simply reflecting CommodityManager's fixed constructor-time deck data for commodityStock) rather than being omitted like every other in-game field. spends is no longer part of this body at all -- see docs/Sequences.txt and OutpostSpendsSequenceSchema.json.",
   "type": "object",
   "properties": {
     "options": {
@@ -128,23 +128,6 @@
         "additionalProperties": false
       }
     },
-    "spends": {
-      "type": "array",
-      "description": "Historical log of every commodity-hand spend this game. Always present, even pre-STARTGAME: it's simply [] until GetSpends() has anything in it, not omitted.",
-      "items": {
-        "type": "object",
-        "properties": {
-          "turnNum": {"type":"integer"},
-          "playerId": {"type":"integer"},
-          "spendType": {"type":"integer"},
-          "spendItem": {"type":"integer"},
-          "spendCost": {"type":"integer"},
-          "resources": {"type":"string", "description": "Public (non-secret) description of the commodities spent."}
-        },
-        "required": ["turnNum","playerId","spendType","spendItem","spendCost","resources"],
-        "additionalProperties": false
-      }
-    },
     "myHand": {
       "description": "This viewer's own real commodity hand (never another player's) -- null if the viewer isn't seated.",
       "type": ["string", "null"]
@@ -184,6 +167,6 @@
       "items": { "type": "integer" }
     }
   },
-  "required": ["options", "players", "myPlayerId", "supplyShip", "itemStock", "commodityStock", "spends"],
+  "required": ["options", "players", "myPlayerId", "supplyShip", "itemStock", "commodityStock"],
   "additionalProperties": false
 }

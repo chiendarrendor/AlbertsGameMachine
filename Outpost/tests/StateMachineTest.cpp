@@ -1903,8 +1903,6 @@ void CheckInGamePublicCardset1(const boost::json::object &i_result)
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("playerId").as_int64() , 0);
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("itemId").as_int64() , 7);
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("cost").as_int64() , 75);
-
-  BOOST_CHECK_EQUAL(i_result.at("spends").as_array().size() , 0u);
 }
 
 // Same as cardset1 except commodities 4/7/9's drawCount, which the second
@@ -1967,8 +1965,6 @@ void CheckInGamePublicCardset2(const boost::json::object &i_result)
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("playerId").as_int64() , 0);
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("itemId").as_int64() , 7);
   BOOST_CHECK_EQUAL(purchaseData[2].as_object().at("cost").as_int64() , 75);
-
-  BOOST_CHECK_EQUAL(i_result.at("spends").as_array().size() , 0u);
 }
 
 void CheckNoPrivateInfo(const boost::json::object &i_result)
