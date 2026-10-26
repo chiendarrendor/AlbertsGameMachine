@@ -4,7 +4,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A compiled, reusable query expression over org.json's JSONObject/JSONArray
@@ -22,10 +24,14 @@ import java.util.List;
  * Grammar: a path is a chain of segments -- '.field', '["field"]' (identical
  * meaning, just a different spelling for keys that aren't valid bare
  * identifiers), '[N]' (array index), '[]' (map: apply the rest of the path to
- * every element of an array, collecting the results), and a terminal '#size'
- * (element count of an array, or key count of an object). There is no
- * distinguished "root" segment -- evaluate(root) simply starts walking from
- * whatever value is passed in.
+ * every element of an array, collecting the results into a List), '{}' (dict:
+ * apply the rest of the path to every *value* of an object, collecting the
+ * results into a Map<String,Object> keyed by the object's own field names --
+ * for an object used as an arbitrary-keys lookup table rather than a
+ * fixed-shape struct, e.g. a game's per-viewer FSS "sequences" field), and a
+ * terminal '#size' (element count of an array, or key count of an object).
+ * There is no distinguished "root" segment -- evaluate(root) simply starts
+ * walking from whatever value is passed in.
  *
  * Missing-value semantics: a path's *final* value being JSON null is a
  * normal, successful result (mirrors how both game schemas use explicit
@@ -216,6 +222,10 @@ public final class JsonPath
       {
         return stepMap(current, m.subpath(), i); // map always consumes the rest
       }
+      else if (step instanceof DictStep d)
+      {
+        return stepDict(current, d.subpath(), i); // dict always consumes the rest
+      }
       else if (step instanceof SizeStep)
       {
         return stepSize(current, i); // #size is always last
@@ -269,6 +279,28 @@ public final class JsonPath
       // A failure here is a failure of the whole map -- it propagates
       // straight up, not swallowed per-element. See the class-level note.
       results.add(unwrapNull(evaluateSteps(i_subpath, arr.get(j))));
+    }
+    return results;
+  }
+
+  private Object stepDict(Object i_current, List<Step> i_subpath, int i_at)
+  {
+    requireNavigable(i_current, i_at);
+    if (!(i_current instanceof JSONObject obj))
+    {
+      throw fail(i_at, JsonQueryException.Reason.TYPE_MISMATCH,
+          "expected an object for '{}', found " + describe(i_current));
+    }
+    // org.json's JSONObject deliberately iterates its keys in an unspecified
+    // (hash-based) order, not insertion order -- LinkedHashMap here just
+    // gives a stable, ordinary Map type to return, not a promise that this
+    // order matches the original JSON text.
+    Map<String, Object> results = new LinkedHashMap<String, Object>();
+    for (String key : obj.keySet())
+    {
+      // A failure here is a failure of the whole dict, not swallowed
+      // per-key -- same as '[]'. See the class-level note.
+      results.put(key, unwrapNull(evaluateSteps(i_subpath, obj.get(key))));
     }
     return results;
   }

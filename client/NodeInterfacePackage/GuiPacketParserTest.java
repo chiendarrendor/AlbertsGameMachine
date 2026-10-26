@@ -103,6 +103,7 @@ public class GuiPacketParserTest
       + "\"fullState\":{\"state\":\"ROOM\",\"stateDesc\":\"Room Navigation\","
       + "\"legalActions\":[\"NEWROOM\",\"CHANGEROOM\"],"
       + "\"gameInstanceId\":\"00000000-0000-0000-0000-000000000000\","
+      + "\"type\":\"transition\",\"sequences\":{},"
       + "\"body\":{"
       + "\"rooms\":["
       +   "{\"name\":\"Great Hall\",\"gameName\":\"\",\"isDone\":true,\"gameTypes\":[\"Outpost\"],\"savedGames\":[]},"
@@ -143,6 +144,7 @@ public class GuiPacketParserTest
         + "\"fullState\":{\"state\":\"ROOM\",\"stateDesc\":\"Room Navigation\","
         + "\"legalActions\":[\"NEWROOM\",\"CHANGEROOM\"],"
         + "\"gameInstanceId\":\"00000000-0000-0000-0000-000000000000\","
+        + "\"type\":\"transition\",\"sequences\":{},"
         + "\"error\":\"Don't know which room you mean\"}}");
 
     check("ROOMGUI error message", "Don't know which room you mean".equals(gpp.getErrorMessage()));
@@ -156,6 +158,7 @@ public class GuiPacketParserTest
       + "\"fullState\":{\"state\":\"InitialState\",\"stateDesc\":\"Setting up\","
       + "\"legalActions\":[\"JOIN\",\"VALIDATESETUP\"],"
       + "\"gameInstanceId\":\"11111111-1111-1111-1111-111111111111\","
+      + "\"type\":\"transition\",\"sequences\":{},"
       + "\"body\":{\"myPlayerId\":0,\"options\":{}}}}";
 
   private static void testGameGuiSuccess()
@@ -183,6 +186,7 @@ public class GuiPacketParserTest
         + "\"fullState\":{\"state\":\"InitialState\",\"stateDesc\":\"Setting up\","
         + "\"legalActions\":[\"JOIN\"],"
         + "\"gameInstanceId\":\"11111111-1111-1111-1111-111111111111\","
+        + "\"type\":\"transition\",\"sequences\":{},"
         + "\"error\":\"That is not a legal move.\"}}");
 
     check("GAMEGUI error message", "That is not a legal move.".equals(gpp.getErrorMessage()));

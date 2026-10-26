@@ -1,0 +1,8 @@
+#! /bin/bash
+
+cd /home/ec2-user/AlbertsGameMachine
+
+(cd server; make)
+(cd client; make install)
+(cd roomgui ; make install)
+(cd Outpost/tca ; make serverinstall ; make clientinstall)

@@ -3,6 +3,7 @@ package org.doghouse.jsonpath;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Plain, dependency-free test runner -- no JUnit or similar is vendored
@@ -47,6 +48,7 @@ public class JsonPathTest
     testNavigateThroughNullFailsAndDefaults(body);
     testSizeOperator(body);
     testMapOperator(body);
+    testDictOperator(body);
     testIndexOutOfBounds(body);
     testQuotedKeyLookup(body);
     testAbsentKeyFails(body);
@@ -102,6 +104,32 @@ public class JsonPathTest
     List<String> names = JsonPath.compile("rooms[].name").evaluateStringList(body);
     check("[] projects a field across every array element",
         names.size() == 2 && names.get(0).equals("Great Hall") && names.get(1).equals("GameRoom"));
+  }
+
+  private static void testDictOperator(JSONObject body)
+  {
+    Object result = JsonPath.compile("qboxes{}.contents").evaluate(body);
+    check("'{}' requires the preceding value to be an object", result instanceof Map);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> contents = (Map<String, Object>) result;
+    check("'{}' collects one entry per key, keyed by the object's own field names",
+        contents.size() == 2);
+    check("'{}' applies the rest of the path to each value",
+        "stuff".equals(contents.get("Great Hall")));
+    check("a value resolving to a final null is a successful entry, not a dropped one",
+        contents.containsKey("Venus") && contents.get("Venus") == null);
+
+    boolean threw = false;
+    try
+    {
+      JsonPath.compile("rooms{}").evaluate(body);
+    }
+    catch (JsonQueryException e)
+    {
+      threw = true;
+      check("'{}' applied to an array reports the right reason", e.getReason() == JsonQueryException.Reason.TYPE_MISMATCH);
+    }
+    check("'{}' applied to something other than an object throws", threw);
   }
 
   private static void testIndexOutOfBounds(JSONObject body)
@@ -173,6 +201,9 @@ public class JsonPathTest
     check("content after a '[]' map must start a new segment", throwsSyntaxError("rooms[]foo"));
     check("'#size' must be the last segment of a path", throwsSyntaxError("rooms#size.foo"));
     check("an unbalanced bracket is a syntax error", throwsSyntaxError("rooms[1"));
+    check("content after a '{}' dict must start a new segment", throwsSyntaxError("qboxes{}foo"));
+    check("an unbalanced brace is a syntax error", throwsSyntaxError("qboxes{"));
+    check("'{}' permits nothing between the braces", throwsSyntaxError("qboxes{x}"));
     check("an empty path is a syntax error", throwsSyntaxError(""));
   }
 

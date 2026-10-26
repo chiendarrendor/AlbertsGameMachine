@@ -144,6 +144,7 @@ public class ClientManager
     JSONObject envelope = new JSONObject();
     envelope.put("namespace","login");
     envelope.put("action","AUTHENTICATE");
+    envelope.put("type","transition");
     envelope.put("params",params);
 
     m_out.print(envelope.toString());
@@ -156,6 +157,7 @@ public class ClientManager
     JSONObject envelope = new JSONObject();
     envelope.put("namespace","login");
     envelope.put("action","LOGOUTOTHER");
+    envelope.put("type","transition");
     envelope.put("params",params);
 
     m_out.print(envelope.toString());

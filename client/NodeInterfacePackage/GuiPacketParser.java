@@ -5,6 +5,7 @@ import org.json.JSONException;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import org.doghouse.jsonpath.JsonPath;
 
 public class GuiPacketParser
@@ -12,8 +13,11 @@ public class GuiPacketParser
   // for now, we're assuming that the room we're standing in only holds
   // one game, so if it's not login or roomgui, it must be for a specific game.
   public enum GuiType { LOGIN, ROOMGUI, GAMEGUI };
+  public enum FullStateType { TRANSITION, SEQUENCE };
 
   private GuiType m_type;
+
+  private JSONObject m_rawbody;
 
   // data for login:
   private String m_loginconnect;
@@ -34,6 +38,8 @@ public class GuiPacketParser
 
   private String m_error;
   private JSONObject m_body;
+  private FullStateType m_fullStateType;
+  private Map<String,Integer> m_sequencemap;
 
   public GuiType getGuiType() { return m_type; }
 
@@ -54,6 +60,9 @@ public class GuiPacketParser
   public String getUUID() { return m_uuid; }
   public boolean hasLegalAction(String actionName) { return m_legalactions.contains(actionName); }
   public JSONObject getBody() { return m_body; }
+  public JSONObject getRawBody() { return m_rawbody; } // this returns the JSONified version of the whole body
+  public FullStateType getFullStateType() { return m_fullStateType; }
+  public Map<String,Integer> getSequenceMap() { return m_sequencemap; }
 
   // this class instanciates repeatedly to parse incoming JSON objects, so our
   // JsonPath objects must compile before the first constructor call.
@@ -73,41 +82,50 @@ public class GuiPacketParser
   private static JsonPath errorpath = JsonPath.compile("fullState.error");
   private static JsonPath bodypath = JsonPath.compile("fullState.body");
   private static JsonPath uuidpath = JsonPath.compile("fullState.gameInstanceId");
-  
+  private static JsonPath fullStateTypePath = JsonPath.compile("fullState.type");
+  private static JsonPath sequencespath = JsonPath.compile("fullState.sequences{}");
 
+
+  @SuppressWarnings("unchecked")
   public GuiPacketParser(String i_string)
   {
     // this throws a JSONException if it's not properly formed JSON, which is appropriate.
-    JSONObject packetJSON = new JSONObject(i_string); 
+    m_rawbody = new JSONObject(i_string);
 
-    String gui = (String)guipath.evaluate(packetJSON);
+    String gui = (String)guipath.evaluate(m_rawbody);
     if (gui == null) throw new JSONException("packet has no gui field");
     
 
     if (gui.equals("LOGIN")) {
       m_type = GuiType.LOGIN;
-      m_loginconnect = (String)loginconnectpath.evaluate(packetJSON);
-      m_loginauthenticated = (Boolean)loginauthenticatedpath.evaluate(packetJSON); 
-      m_loginotherconnections = (Integer)loginotherconnectionspath.evaluate(packetJSON); 
-      m_loginerror = loginerrorpath.evaluateString(packetJSON, null);
+      m_loginconnect = (String)loginconnectpath.evaluate(m_rawbody);
+      m_loginauthenticated = (Boolean)loginauthenticatedpath.evaluate(m_rawbody); 
+      m_loginotherconnections = (Integer)loginotherconnectionspath.evaluate(m_rawbody); 
+      m_loginerror = loginerrorpath.evaluateString(m_rawbody, null);
     } else {
       m_type = gui.equals("ROOMGUI") ? GuiType.ROOMGUI : GuiType.GAMEGUI;
       m_gamename = gui;
-      m_me = (String)recipientpath.evaluate(packetJSON);
-      m_xmlloc = (String)xmllocpath.evaluate(packetJSON);
-      m_xmlfile = (String)xmlfilepath.evaluate(packetJSON);
-      m_statename = (String)statenamepath.evaluate(packetJSON);
-      m_statedesc = (String)statedescpath.evaluate(packetJSON);
-      m_uuid = (String)uuidpath.evaluate(packetJSON);
+      m_me = (String)recipientpath.evaluate(m_rawbody);
+      m_xmlloc = (String)xmllocpath.evaluate(m_rawbody);
+      m_xmlfile = (String)xmlfilepath.evaluate(m_rawbody);
+      m_statename = (String)statenamepath.evaluate(m_rawbody);
+      m_statedesc = (String)statedescpath.evaluate(m_rawbody);
+      m_uuid = (String)uuidpath.evaluate(m_rawbody);
+      m_sequencemap = (Map<String,Integer>)sequencespath.evaluate(m_rawbody);
 
-      List<String> legalActions = legalactionpath.evaluateStringList(packetJSON);
+      String fst = (String)fullStateTypePath.evaluate(m_rawbody);
+      if (fst.equals("transition")) m_fullStateType = FullStateType.TRANSITION;
+      else if (fst.equals("sequence")) m_fullStateType = FullStateType.SEQUENCE;
+      else throw new JSONException("non-login packet doesn't have type");
+
+      List<String> legalActions = legalactionpath.evaluateStringList(m_rawbody);
 
       for (String legalAction : legalActions) {
         m_legalactions.add(legalAction);
       }
 
-      m_error = errorpath.evaluateString(packetJSON, null);
-      m_body = (JSONObject)bodypath.evaluate(packetJSON, null);
+      m_error = errorpath.evaluateString(m_rawbody, null);
+      m_body = (JSONObject)bodypath.evaluate(m_rawbody, null);
     }
   }
 }

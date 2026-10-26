@@ -259,6 +259,13 @@ def test_outpost_spends_sequence_round_trip(real_games_server):
         alice_fs, bob_fs = act(current, "NUMMEGAS", i_count=0)
 
     assert alice_fs["state"] == "Purchase"
+    # No spend has happened yet -- the envelope's "sequences" object (parallel
+    # to "legalActions", built by BuildStateWalkerEnvelope) is how a widget
+    # watching a sequence learns there's more data to fetch, so its count
+    # needs to track the real one at every step, not just the final number
+    # the explicit range-fetch request returns.
+    assert alice_fs["sequences"] == {"Spends": 0}
+    assert bob_fs["sequences"] == {"Spends": 0}
 
     current = alice if alice_fs["body"]["myPlayerId"] == alice_fs["body"]["currentTurnPlayerId"] else bob
     waiting = bob if current is alice else alice
@@ -284,8 +291,13 @@ def test_outpost_spends_sequence_round_trip(real_games_server):
     # hold, not any specific commodity draw.
     current_fs = alice_fs if current is alice else bob_fs
     alice_fs, bob_fs = act(current, "BUYMEN", i_nummen=0, i_discardstring=no_discard_string(current_fs))
+    assert alice_fs["sequences"] == {"Spends": 1}
+    assert bob_fs["sequences"] == {"Spends": 1}
+
     waiting_fs = bob_fs if current is alice else alice_fs
     alice_fs, bob_fs = act(waiting, "BUYMEN", i_nummen=0, i_discardstring=no_discard_string(waiting_fs))
+    assert alice_fs["sequences"] == {"Spends": 2}
+    assert bob_fs["sequences"] == {"Spends": 2}
 
     # Two real Spend records should now exist -- validate the actual range-
     # fetch response, through the real wire protocol, against the schema.

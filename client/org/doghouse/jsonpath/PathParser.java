@@ -6,12 +6,15 @@ import java.util.List;
 /**
  * Recursive-descent parser for the JsonPath grammar:
  *
- *   path    := segment ('.' segment | '[' index ']' | '#' op)*
+ *   path    := segment ('.' segment | '[' index ']' | '{' '}' | '#' op)*
  *   segment := identifier
  *   index   := (empty)        -- map: '[]'
  *            | digits          -- array position: '[3]'
  *            | '"' chars '"'   -- object key literal: '["Great Hall"]'
  *   op      := "size"
+ *
+ * '{}' (dict) has no variants the way '[...]' does -- it's always exactly
+ * the two characters, nothing can appear between the braces.
  *
  * There is no notion of a distinguished "root" segment -- the first segment
  * is parsed and evaluated exactly like every later one. What a path's first
@@ -70,6 +73,11 @@ final class PathParser
         {
           return;
         }
+      }
+      else if (c == '{')
+      {
+        io_steps.add(parseBrace());
+        return; // '{}' always consumes the rest, same as '[]'
       }
       else if (c == '#')
       {
@@ -136,6 +144,16 @@ final class PathParser
     int index = Integer.parseInt(m_source.substring(start, m_pos));
     expect(']');
     return new IndexStep(index);
+  }
+
+  // Precondition: m_source.charAt(m_pos) == '{'.
+  private Step parseBrace()
+  {
+    m_pos++; // consume '{'
+    expect('}');
+    List<Step> subpath = new ArrayList<Step>();
+    parseRest(subpath);
+    return new DictStep(subpath);
   }
 
   private String parseIdentifier()

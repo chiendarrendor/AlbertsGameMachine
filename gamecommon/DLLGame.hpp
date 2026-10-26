@@ -153,6 +153,14 @@ boost::json::object DLLGame<T_GameSet,T_DLLGameInfo>::BuildStateWalkerEnvelope
   envelope["stateDesc"] = m_StateWalker.GetCurStateDesc();
   envelope["legalActions"] = legalactions;
   envelope["gameInstanceId"] = m_StateWalker.GetInstanceId();
+  // One generic {name: count} object, parallel to legalActions, for every
+  // <sequence> this game declares (empty for a game with none) -- a
+  // sequence-watching widget's whole mechanism for learning there's more
+  // data worth fetching is this count changing between deliveries
+  // (docs/Sequences.txt). Present unconditionally here, same as legalActions
+  // itself, rather than only on the success path -- a rejected action or a
+  // sequence response both still carry the same generic envelope siblings.
+  envelope["sequences"] = m_GameInfo.SequenceCounts(i_PlayerName);
   // Mirrors the incoming action's own "type" (see ActionParser/GameGui.
   // SendAction) so the client can tell what kind of request produced this
   // response and interpret "body"/"error" accordingly -- same spirit as

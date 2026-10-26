@@ -19,7 +19,7 @@ JAVASOURCES := $(wildcard $(SUBJAVA))
 # (see org/doghouse/jsonpath/JsonPathTest.java), printing per-check results
 # and exiting non-zero on any failure. Hand-maintained, same spirit as the
 # explicit TESTOBJS lists the C++ side's Makefiles already use.
-TESTCLASSES = org.doghouse.jsonpath.JsonPathTest NodeInterfacePackage.GuiPacketQueryTest NodeInterfacePackage.GuiPacketParserTest
+TESTCLASSES = org.doghouse.jsonpath.JsonPathTest NodeInterfacePackage.GuiPacketQueryTest NodeInterfacePackage.GuiPacketParserTest NodeInterfacePackage.SequenceManagerTest
 
 # javac's own transitive reachability analysis (compile a handful of 'root'
 # files and let it pull in whatever they reference) is not reliable as a way

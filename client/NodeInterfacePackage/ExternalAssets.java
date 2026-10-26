@@ -9,14 +9,24 @@ package NodeInterfacePackage;
 public class ExternalAssets
 {
   private ActionTransferManager m_atm;
+  private SequenceManager m_sm;
 
-  public ExternalAssets(ActionTransferManager i_atm)
+  public ExternalAssets(ActionTransferManager i_atm, SequenceManager i_sm)
   {
     m_atm = i_atm;
+    m_sm = i_sm;
   }
+
+  // temporary until we actually get SequenceManager wired in.
+  public ExternalAssets(ActionTransferManager i_atm) { this(i_atm,null); }
 
   public ActionTransferManager GetActionTransferManager()
   {
     return m_atm;
+  }
+
+  public SequenceManager GetSequenceManager()
+  {
+    return m_sm;
   }
 }

@@ -243,6 +243,14 @@ sub WriteFiles
     # (different parameter count), not collide.
     print GIHPP "  int SequenceCount(const std::string &i_SequenceName,const std::string &i_PlayerName) const;\n";
     print GIHPP "  boost::json::array SequenceBody(const std::string &i_SequenceName,const std::string &i_PlayerName,size_t i_start,size_t i_end) const;\n";
+    # Every defined sequence's current count, by name, all at once -- what
+    # BuildStateWalkerEnvelope (gamecommon/DLLGame.hpp) actually calls to
+    # populate the envelope's "sequences" object (docs/Sequences.txt: a
+    # sequence-watching widget's whole mechanism for learning there's more
+    # data to fetch is this count changing between deliveries). Plural, not
+    # "SequenceCount" again -- no parameter collision risk either way, since
+    # the arg lists differ, but the name itself stays unambiguous.
+    print GIHPP "  boost::json::object SequenceCounts(const std::string &i_PlayerName) const;\n";
     print GIHPP "\n";
 
     foreach my $evname (keys %{$tcom->{EVENTS}})
@@ -310,6 +318,17 @@ sub WriteFiles
 	print DLLCPP "  if (i_SequenceName == \"$seqname\") return ${seqname}Body(i_PlayerName,i_start,i_end);\n";
     }
     print DLLCPP "  throw GameActionError(\"Unknown sequence: \" + i_SequenceName);\n";
+    print DLLCPP "}\n";
+    print DLLCPP "\n";
+
+    print DLLCPP "boost::json::object ${name}GameInfo::SequenceCounts(const std::string &i_PlayerName) const\n";
+    print DLLCPP "{\n";
+    print DLLCPP "  boost::json::object result;\n";
+    foreach my $seqname (keys %{$tcom->{SEQUENCES}})
+    {
+	print DLLCPP "  result[\"$seqname\"] = ${seqname}Count(i_PlayerName);\n";
+    }
+    print DLLCPP "  return result;\n";
     print DLLCPP "}\n";
     print DLLCPP "\n";
 
