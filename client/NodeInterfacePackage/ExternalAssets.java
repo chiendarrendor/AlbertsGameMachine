@@ -17,9 +17,6 @@ public class ExternalAssets
     m_sm = i_sm;
   }
 
-  // temporary until we actually get SequenceManager wired in.
-  public ExternalAssets(ActionTransferManager i_atm) { this(i_atm,null); }
-
   public ActionTransferManager GetActionTransferManager()
   {
     return m_atm;

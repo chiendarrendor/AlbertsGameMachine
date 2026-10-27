@@ -6,6 +6,7 @@ import Utilities.StringUtility;
 import javax.swing.JOptionPane;
 import org.json.JSONObject;
 import NodeInterfacePackage.GuiPacketParser;
+import NodeInterfacePackage.ActionContentType;
 import org.doghouse.jsonpath.JsonPath;
 
 
@@ -299,6 +300,15 @@ public class ClientManager
       return true;
     }
 
+    if (gpp.getErrorMessage() != null) {
+      if (gpp.getActionContentType() == ActionContentType.TRANSITION) {
+        m_statuswindows.ShowDebug("Error from Server: " + gpp.getErrorMessage());
+      } else {
+        System.out.println("Error in Sequence Request: " + gpp.getErrorMessage());
+      }
+      return true;
+    }
+    
     // if we get here, we either have a room gui or a game gui
     if (gpp.getGuiType() == GuiPacketParser.GuiType.ROOMGUI) {
       HandleRoomPacket(gpp);
@@ -313,10 +323,6 @@ public class ClientManager
 
 
   private void HandleRoomPacket(GuiPacketParser gpp) {
-    if (gpp.getErrorMessage() != null) {
-      m_statuswindows.ShowDebug("Error in Room Gui: " + gpp.getErrorMessage());
-      return;
-    }
 
     if (m_rooms == null) {
       m_rooms = new GUIUnit(m_out,m_statuswindows,m_tabs,gpp);
@@ -350,16 +356,12 @@ public class ClientManager
     }
 
     if (m_gameuuid != null && !m_gameuuid.equals(gpp.getUUID())) {
-      m_game.HandleLine("RESET");
+      m_game.Reset();
     }
 
 
     m_gameuuid = gpp.getUUID();
     m_gamename = gpp.getGameName();
-
-    if (gpp.getErrorMessage() != null) {
-      m_statuswindows.ShowDebug("Error in Game Gui: " + gpp.getErrorMessage());
-    } 
 
     m_game.HandleGuiPacketParser(gpp);
   }

@@ -6,6 +6,6 @@
 #include "ResourceRules.xml"
 
 <tab title="Purchase History" layout="border">
-  <javaclass classname="Spends"/>
+  <javaclass classname="JLabelSpends"/>
 </tab>
 </gameboard>

@@ -41,11 +41,15 @@ public class GUITester {
         System.out.println("GUI parsed");
       }
 
+      // TODO, if we ever use this again: GUIUnit's old line-based HandleLine()
+      // (comma-separated event text typed at this stdin prompt) is gone along
+      // with GameGui's comma-event parsing -- driving this tester now means
+      // feeding it a full GuiPacketParser via HandleGuiPacketParser(gpp)
+      // instead, the same way ClientManager does for the real wire protocol.
       while(true)
       {
         String instring = m_in.readLine();
-        testgui.HandleLine(instring);
-      }          
+      }
     } catch (IOException ioe) {
       // I/O error
       ioe.printStackTrace();

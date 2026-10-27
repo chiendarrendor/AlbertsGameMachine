@@ -97,6 +97,12 @@ def test_login_and_room_navigation_needs_no_game_process(server):
     # Regression test for the bug Albert found 2026-10-24: GetLegalRoomActions
     # used to only check m_pGame/IsDone(), never the room itself.
     assert envelope["fullState"]["legalActions"] == ["NEWROOM", "CHANGEROOM"]
+    # Regression test for the bug Albert found 2026-10-27: ROOMGUI's envelope
+    # never carried "sequences" at all (RoomManager::BroadcastRoomGuiIfChanged
+    # never set it), even though GuiPacketParser requires it unconditionally
+    # for every non-LOGIN packet. ROOMGUI has no sequences of its own, so this
+    # is always empty -- only its presence is new here.
+    assert envelope["fullState"]["sequences"] == {}
 
     alice.send_action("roommanager", "NEWROOM", RoomName="Clubhouse")
     fullstate = drain_until_roomgui(alice, lambda fs: room_state(fs, "Clubhouse") is not None)
@@ -129,6 +135,9 @@ def test_newgame_rejected_in_great_hall(server):
     envelope = recv_envelope(alice)
     assert envelope["gui"] == "ROOMGUI"
     assert envelope["fullState"]["error"] == "Cannot start a game in Great Hall."
+    # Same "sequences" regression as above, covering RoomManager::
+    # SendRoomActionError's envelope (the other ROOMGUI envelope-building site).
+    assert envelope["fullState"]["sequences"] == {}
 
 
 def test_logoutother_drops_stale_session(server):

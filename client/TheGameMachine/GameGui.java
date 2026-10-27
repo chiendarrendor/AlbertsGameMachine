@@ -4,15 +4,14 @@ import java.io.*;
 
 import NodeInterfacePackage.*;
 import DOMUtilities.*;
-import Utilities.StringUtility;
 import org.json.JSONObject;
 
-public class GameGui
+public class GameGui implements ActionSender
 {
   private ClassLoader m_remoteClassLoader;
   private ArrayList<GameNode> m_Windows;
-  private HashMap<String,GameEventType> m_EventTypes;
   private ActionTransferManager m_ActionManager;
+  private SequenceManager m_SequenceManager;
   private ExternalAssets m_ExternalAssets;
   private PrintWriter m_ostream;
   private StatusWindows m_StatusWindows;
@@ -56,8 +55,14 @@ public class GameGui
     }
   }
 
-
-
+  // called when a game instance's UUID changes under an already-open GUI
+  // (a new game replacing a finished one in the same room) -- the widgets
+  // need to drop whatever per-instance state they're holding before the
+  // first full state of the new instance arrives.
+  public void Reset()
+  {
+    ResetWindows();
+  }
 
   // The 5 reserved room-management actions live in namespaces the server
   // hardcodes ("roommanager"/"room" -- see RoomManager.cpp/Room::HandleAction)
@@ -79,7 +84,11 @@ public class GameGui
     return null;
   }
 
-  public void SendAction(String i_ActionName, JSONObject i_Params)
+  public void SendAction(String i_ActionName, JSONObject i_Params) { 
+    SendAction(i_ActionName, i_Params, ActionContentType.TRANSITION); 
+  }
+  
+  public void SendAction(String i_ActionName, JSONObject i_Params, ActionContentType i_ContentType) 
   {
     String namespace = ReservedNamespaceFor(i_ActionName);
     if (namespace == null)
@@ -93,7 +102,7 @@ public class GameGui
     // Every action sent today names a transition -- "sequence" is the only
     // other value, used by the (not yet built) sequence range-fetch request,
     // which doesn't go through this generic ActionNode-driven call site.
-    envelope.put("type","transition");
+    envelope.put("type",i_ContentType.getName());
     envelope.put("params",i_Params);
 
     m_ostream.print(envelope.toString());
@@ -103,83 +112,10 @@ public class GameGui
 
   public void HandleFullState(GuiPacketParser gpp) {
     GameEvent ge = new GameEvent(gpp);
+    m_SequenceManager.update(gpp);
     SendEventToWindows(ge);
   }
 
-
-  public void HandleEvent(String s)
-  {
-    // ShowDebug("Event Is: " + s);
-
-    String[] tokens = s.split(",",-1);
-    if (tokens.length == 0)
-    {
-	    ShowDebug("Empty Message: " + s);
-	    return;
-    }
-
-    int i;
-    for (i = 0 ; i < tokens.length ; ++i)
-    {
-	    tokens[i] = StringUtility.ReComma(tokens[i].trim());
-    }
-
-    String eventname = tokens[0];
-
-    GameEventType et = m_EventTypes.get(eventname);
-    if (et==null)
-    {
-	    // ShowDebug("Unknown Event: " + s);
-	    return;
-    }
-
-    if (et.GetNumVars() != tokens.length - 1)
-    {
-	    ShowDebug("Event " + eventname + " should have " + et.GetNumVars() + " arguments: " + s);
-	    return;
-    }
-
-    GameEvent ge = new GameEvent(eventname);
-
-    for (i = 1 ; i < tokens.length ; ++i) 
-    {
-	    ge.AddVariable(et.GetVarName(i-1),tokens[i]);
-    }
-
-    //    System.out.println("Event Parsed: ");
-    //    Iterator<String> keysetit = ge.GetKeys().iterator();
-    //    while (keysetit.hasNext())
-    //    {
-    //	    String key = (String)keysetit.next();
-    //      	    System.out.println("   Key: " + key + ": " + ge.GetVarValue(key));
-    //    }
-
-    if (eventname.equals("RESET"))
-    {
-      ResetWindows();
-      return;
-    }
-
-    if (eventname.equals("ERROR"))
-    {
-      ShowDebug("Server Error shouldn't get here! " + ge.GetVarValue("messagetext"));
-      return;
-    }
-
-    SendEventToWindows(ge);
-  }
-
-  public GameEventType GetEventType(String i_evName)
-  {
-    return m_EventTypes.get(i_evName);
-  }
-
-  public GameEventType CreateEventType(String i_evName)
-  {
-    GameEventType et = new GameEventType(i_evName);
-    m_EventTypes.put(i_evName,et);
-    return et;
-  }
 
   public void AddWindow(GameNode i_Window)
   {
@@ -220,25 +156,10 @@ public class GameGui
     m_tabs = i_tabs;
     m_Namespace = i_namespace;
     m_ActionManager = new ActionTransferManager();
-    m_ExternalAssets = new ExternalAssets(m_ActionManager);
+    m_SequenceManager = new SequenceManager(this);
+    m_ExternalAssets = new ExternalAssets(m_ActionManager, m_SequenceManager);
     m_ostream = i_pw;
-    m_EventTypes = new HashMap<String,GameEventType>();
     m_Windows = new ArrayList<GameNode>();
-
-    GameEventType et = this.CreateEventType("NEWSTATE");
-    et.AddVar("statename");
-    et.AddVar("statedesc");
-
-    et = this.CreateEventType("LEGALACTION");
-    et.AddVar("actionname");
-
-    et = this.CreateEventType("RESET");
-
-    et = this.CreateEventType("MESSAGE");
-    et.AddVar("messagetext");
-
-    et = this.CreateEventType("ERROR");
-    et.AddVar("errortext");
   }
 }
 

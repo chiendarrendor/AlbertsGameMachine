@@ -46,6 +46,7 @@ public class SequenceManagerTest
     testUnregisterStopsFurtherCallbacks();
     testSequencesAreIsolatedByName();
     testResetClearsCachedStateButKeepsCallbacksRegistered();
+    testRequestItemsSendsCorrectSequenceAction();
 
     System.out.println();
     System.out.println(s_failures == 0 ? "ALL PASS" : s_failures + " FAILURE(S)");
@@ -70,6 +71,32 @@ public class SequenceManagerTest
       itemIndexes.add(i_index);
       items.add(i_content);
     }
+  }
+
+  // --- a recording stand-in for GameGui's real ActionSender implementation ---
+
+  private static class RecordingActionSender implements ActionSender
+  {
+    List<String> actionNames = new ArrayList<>();
+    List<JSONObject> params = new ArrayList<>();
+    List<ActionContentType> contentTypes = new ArrayList<>();
+
+    public void SendAction(String i_ActionName, JSONObject i_Params)
+    {
+      SendAction(i_ActionName, i_Params, ActionContentType.TRANSITION);
+    }
+
+    public void SendAction(String i_ActionName, JSONObject i_Params, ActionContentType i_ContentType)
+    {
+      actionNames.add(i_ActionName);
+      params.add(i_Params);
+      contentTypes.add(i_ContentType);
+    }
+  }
+
+  private static SequenceManager newManager()
+  {
+    return new SequenceManager(new RecordingActionSender());
   }
 
   // --- envelope builders, matching BuildStateWalkerEnvelope/HandleSequenceRequest's real shape ---
@@ -145,7 +172,7 @@ public class SequenceManagerTest
 
   private static void testRegisterBeforeAnyDataReplaysZero()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
 
     sm.register(cb, "Spends");
@@ -158,7 +185,7 @@ public class SequenceManagerTest
 
   private static void testTransitionUpdateIncrementsCount()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
 
@@ -170,7 +197,7 @@ public class SequenceManagerTest
 
   private static void testUnchangedCountIsNotReannounced()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
 
@@ -183,7 +210,7 @@ public class SequenceManagerTest
 
   private static void testSequenceUpdateDeliversItemsInOrder()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
 
@@ -201,7 +228,7 @@ public class SequenceManagerTest
 
   private static void testReDeliveredItemIsNotReannounced()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
 
@@ -215,7 +242,7 @@ public class SequenceManagerTest
 
   private static void testLateRegistrationReplaysCachedStateOnlyToNewCallback()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback early = new RecordingCallback();
     sm.register(early, "Spends");
 
@@ -240,7 +267,7 @@ public class SequenceManagerTest
 
   private static void testErrorSequencePacketIsIgnored()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
 
@@ -253,7 +280,7 @@ public class SequenceManagerTest
 
   private static void testUnregisterStopsFurtherCallbacks()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
     sm.unregister(cb, "Spends");
@@ -266,7 +293,7 @@ public class SequenceManagerTest
 
   private static void testSequencesAreIsolatedByName()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback spendsCb = new RecordingCallback();
     RecordingCallback otherCb = new RecordingCallback();
     sm.register(spendsCb, "Spends");
@@ -282,7 +309,7 @@ public class SequenceManagerTest
 
   private static void testResetClearsCachedStateButKeepsCallbacksRegistered()
   {
-    SequenceManager sm = new SequenceManager();
+    SequenceManager sm = newManager();
     RecordingCallback cb = new RecordingCallback();
     sm.register(cb, "Spends");
     sm.update(transitionPacket("Spends", 2));
@@ -298,5 +325,22 @@ public class SequenceManagerTest
         + "to a callback that was never re-registered (Reset() doesn't unregister callbacks)",
         cb.counts.get(cb.counts.size() - 1) == 2
             && cb.counts.size() == 3); // replay(0), pre-Reset(2), post-Reset(2) again
+  }
+
+  private static void testRequestItemsSendsCorrectSequenceAction()
+  {
+    RecordingActionSender sender = new RecordingActionSender();
+    SequenceManager sm = new SequenceManager(sender);
+
+    sm.requestItems("Spends", 2, 5);
+
+    check("requestItems sends exactly one action", sender.actionNames.size() == 1);
+    check("requestItems uses the sequence name as the action name (GameServerMain.hpp's "
+        + "\"sequence\" dispatch: action doubles as the sequence name)",
+        "Spends".equals(sender.actionNames.get(0)));
+    check("requestItems marks the action as a SEQUENCE, not a TRANSITION",
+        sender.contentTypes.get(0) == ActionContentType.SEQUENCE);
+    check("requestItems' params carry the [start, end) range HandleSequenceRequest expects",
+        sender.params.get(0).getInt("start") == 2 && sender.params.get(0).getInt("end") == 5);
   }
 }

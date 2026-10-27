@@ -370,6 +370,9 @@ void RoomManager::SendRoomActionError(const std::string &i_Name,const std::strin
   // purely for consistency with a real game's envelope (DLLGame::
   // BuildStateWalkerEnvelope), which always carries this field now.
   envelope["type"] = "transition";
+  // Same reasoning -- GuiPacketParser parses "sequences" unconditionally for
+  // every non-LOGIN packet, so this has to be present (even empty) here too.
+  envelope["sequences"] = boost::json::object();
   envelope["error"] = i_Error;
 
   i_Connections.SendLineToName(i_Name,
@@ -416,6 +419,7 @@ void RoomManager::BroadcastRoomGuiIfChanged(GameServerConnectionHandlerFactory &
     envelope["legalActions"] = LegalActionsFor(*nameit,perRoomActions);
     envelope["gameInstanceId"] = ROOMGUI_INSTANCE_ID;
     envelope["type"] = "transition";
+    envelope["sequences"] = boost::json::object();
     envelope["body"] = body;
 
     i_Connections.SendLineToName(*nameit,

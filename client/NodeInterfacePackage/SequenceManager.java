@@ -60,6 +60,7 @@ public class SequenceManager {
     }
 
     private Map<String,SequenceInfo> sequences = new HashMap<>();
+    private ActionSender m_actionSender;
 
     private SequenceInfo gocSequence(String name) {
         if (!sequences.containsKey(name)) sequences.put(name,new SequenceInfo());
@@ -67,7 +68,8 @@ public class SequenceManager {
     }
 
 
-    public SequenceManager() {
+    public SequenceManager(ActionSender i_ActionSender) {
+        m_actionSender = i_ActionSender;
     }
 
     private  void updateSequenceCounts(GuiPacketParser i_gpp) {
@@ -97,9 +99,9 @@ public class SequenceManager {
 
     // assumes that this is some sort of game gui packet (not a LOGIN)
     public void update(GuiPacketParser i_gpp) {
-        switch(i_gpp.getFullStateType()) {
-            case GuiPacketParser.FullStateType.TRANSITION: updateSequenceCounts(i_gpp); return;
-            case GuiPacketParser.FullStateType.SEQUENCE: updateSequenceItems(i_gpp); return;
+        switch(i_gpp.getActionContentType()) {
+            case ActionContentType.TRANSITION: updateSequenceCounts(i_gpp); return;
+            case ActionContentType.SEQUENCE: updateSequenceItems(i_gpp); return;
             default:
                 // TODO again don't know what do do here yet.
         }
@@ -115,5 +117,16 @@ public class SequenceManager {
 
     public void Reset() {
         sequences.forEach((key, value) -> { value.Reset(); });
+    }
+
+    public void requestItems(String sequenceName, int i_start, int i_end) {
+        // GameServerMain.hpp's "sequence" dispatch: the action name doubles as
+        // the sequence name, and "start"/"end" (the [start, end) range) are the
+        // only params it reads -- see HandleSequenceRequest in DLLGame.hpp.
+        JSONObject body = new JSONObject();
+        body.put("start", i_start);
+        body.put("end", i_end);
+
+        m_actionSender.SendAction(sequenceName, body, ActionContentType.SEQUENCE);
     }
 }

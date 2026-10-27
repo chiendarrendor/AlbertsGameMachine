@@ -13,7 +13,6 @@ public class GuiPacketParser
   // for now, we're assuming that the room we're standing in only holds
   // one game, so if it's not login or roomgui, it must be for a specific game.
   public enum GuiType { LOGIN, ROOMGUI, GAMEGUI };
-  public enum FullStateType { TRANSITION, SEQUENCE };
 
   private GuiType m_type;
 
@@ -38,7 +37,7 @@ public class GuiPacketParser
 
   private String m_error;
   private JSONObject m_body;
-  private FullStateType m_fullStateType;
+  private ActionContentType m_actionContentType;
   private Map<String,Integer> m_sequencemap;
 
   public GuiType getGuiType() { return m_type; }
@@ -61,7 +60,7 @@ public class GuiPacketParser
   public boolean hasLegalAction(String actionName) { return m_legalactions.contains(actionName); }
   public JSONObject getBody() { return m_body; }
   public JSONObject getRawBody() { return m_rawbody; } // this returns the JSONified version of the whole body
-  public FullStateType getFullStateType() { return m_fullStateType; }
+  public ActionContentType getActionContentType() { return m_actionContentType; }
   public Map<String,Integer> getSequenceMap() { return m_sequencemap; }
 
   // this class instanciates repeatedly to parse incoming JSON objects, so our
@@ -113,10 +112,7 @@ public class GuiPacketParser
       m_uuid = (String)uuidpath.evaluate(m_rawbody);
       m_sequencemap = (Map<String,Integer>)sequencespath.evaluate(m_rawbody);
 
-      String fst = (String)fullStateTypePath.evaluate(m_rawbody);
-      if (fst.equals("transition")) m_fullStateType = FullStateType.TRANSITION;
-      else if (fst.equals("sequence")) m_fullStateType = FullStateType.SEQUENCE;
-      else throw new JSONException("non-login packet doesn't have type");
+      m_actionContentType = ActionContentType.getType((String)fullStateTypePath.evaluate(m_rawbody));
 
       List<String> legalActions = legalactionpath.evaluateStringList(m_rawbody);
 

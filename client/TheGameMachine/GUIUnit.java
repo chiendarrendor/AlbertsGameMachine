@@ -19,18 +19,12 @@ public class GUIUnit
 {
   class PassIntoGui implements Runnable
   {
-    private String m_contents = null;
-    private GuiPacketParser m_gpp = null;
+    private GuiPacketParser m_gpp;
     private GameGui m_gamegui;
-    public PassIntoGui(String i_contents,GameGui i_gamegui) { m_contents = i_contents; m_gamegui = i_gamegui;}
     public PassIntoGui(GuiPacketParser gpp, GameGui i_gamegui) { m_gpp = gpp ; m_gamegui = i_gamegui; }
     public void run()
     {
-      if (m_gpp != null) {
-        m_gamegui.HandleFullState(m_gpp);
-      } else {
-        m_gamegui.HandleEvent(m_contents);
-      }
+      m_gamegui.HandleFullState(m_gpp);
     }
   }
 
@@ -145,9 +139,11 @@ public class GUIUnit
     return parsed;
   }
 
-  void HandleLine(String i_line)
+  // called when a game instance's UUID changes under an already-open GUI --
+  // see GameGui.Reset()'s own comment for why.
+  public void Reset()
   {
-    javax.swing.SwingUtilities.invokeLater(new PassIntoGui(i_line,m_gamegui));
+    javax.swing.SwingUtilities.invokeLater(new Runnable() { public void run() { m_gamegui.Reset(); } });
   }
 
   public void HandleGuiPacketParser(GuiPacketParser gpp) {
