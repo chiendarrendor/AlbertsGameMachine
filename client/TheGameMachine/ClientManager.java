@@ -2,6 +2,8 @@ package TheGameMachine;
 
 import java.io.*;
 import java.net.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import Utilities.StringUtility;
 import javax.swing.JOptionPane;
 import org.json.JSONObject;
@@ -44,6 +46,24 @@ public class ClientManager
     m_tabs = new TabbedWindow(550,550,topdloc);
     m_tabs.RefreshMe();
     m_statuswindows = new StatusWindows(m_tabs);
+
+    // TabbedWindow (like every WindowNode-created frame) is deliberately
+    // DO_NOTHING_ON_CLOSE, same as a popped-out tab's own frame (see
+    // TabbedWindow.WindowWatcher) -- but unlike those, this is the one true
+    // main window, so closing it needs to actually end the application:
+    // clean up (close the socket, dispose every sub-window) via dispose(),
+    // then exit. This used to be handled, by accident, by a vestigial
+    // JFrame left over from the pre-Phase-3 Applet days (ClientApplication's
+    // "Test" window, EXIT_ON_CLOSE but otherwise unused) -- now removed, so
+    // this is the real mechanism instead.
+    m_tabs.addWindowListener(new WindowAdapter()
+    {
+      public void windowClosing(WindowEvent i_event)
+      {
+        dispose();
+        System.exit(0);
+      }
+    });
   }
 
   public void mainloop()

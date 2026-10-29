@@ -1,27 +1,4 @@
-<window title="Players" height="930" x="-0">
-  <text>
-    <replace from="rNUMr" eventvar="turnNum" initial="0"/>
-    Turn Number: rNUMr
-  </text>
-
-  <javaclass classname="ItemStockGrid" y="15"/>
-
-  <panel layout="hbox" y="230">
-    <text>
-      Supply Ship:
-    </text>
-    <javaclass classname="ShipList"/>
-  </panel>
-
-  <javaclass classname="TurnOrder" y="365"/>
-
-  <javaclass classname="PlayerDisplay" y="560"/>
-
-</window>
-
-<!--
-<window title="New Players" height="1000" x="-0" layout="border">
+<window title="Players" height="930" x="-0" layout="border">
   <javaclass classname="PlayerWindow"/>
 </window>
--->
 

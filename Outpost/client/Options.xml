@@ -1,19 +1,5 @@
 <tab title="Outpost Options">
-    <javaclass classname="OptionRow" y="0"   varname="Discard"       optionpath="options.discard"       label="Discard Before Buy"/>
-    <javaclass classname="OptionRow" y="20"  varname="Refinery"      optionpath="options.refinery"      label="Refinery"/>
-    <javaclass classname="OptionRow" y="40"  varname="OneUpgrade"    optionpath="options.oneupgrade"    label="One Upgrade Purchase Per Player Per Turn"/>
-    <javaclass classname="OptionRow" y="60"  varname="ActiveBid"     optionpath="options.activebid"     label="Only Active Players May Bid"/>
-    <javaclass classname="OptionRow" y="100" varname="ResearchMega"  optionpath="options.researchmega"  label="Research has Mega"/>
-    <javaclass classname="OptionRow" y="120" varname="SmallResearch" optionpath="options.smallresearch" label="Research resources are zero size"/>
-    <javaclass classname="OptionRow" y="140" varname="SmallMicro"    optionpath="options.smallmicro"    label="Microbiotics resources are zero size"/>
-    <javaclass classname="OptionRow" y="160" varname="BlindDraws"    optionpath="options.blinddraws"    label="Draws only visible at end of draw phase"/>
-    <javaclass classname="OptionSelector" x="0" y="200" varname="Robots" optionpath="options.robots"
-               values="First Robot Unlimited|Second Robot Unlimited|All Multiplicative"/>
-    <javaclass classname="OptionSelector" x="0" y="230" varname="Stocking" optionpath="options.stock"
-               values="Normal Item Stocking|4-10 Items have one Extra"/>
-    <javaclass classname="OptionSelector" x="0" y="260" varname="SupplyShipFilling" optionpath="options.supplyharshness"
-               values="Normal Ship Fill|One Strike|Two Strikes|Three Strikes|Four Strikes|Five Strikes"
-	       zerocount="true"/>
+    <javaclass classname = "OptionPanel" mode = "passive" />
 </tab>
 
 

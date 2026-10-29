@@ -48,7 +48,7 @@ CLIENTJAVA=CommodityHand.java Factories.java \
 	ItemList.java ShipList.java TurnOrder.java StateSensitiveTextBox.java \
 	OptionSelector.java BidItemWatcher.java Spends.java ResourceDecks.java \
 	PlayerDisplay.java PlayerWindow.java CommodityMegaSelector.java ItemStockGrid.java \
-	OptionRow.java JLabelSpends.java
+	OptionRow.java JLabelSpends.java OptionPanel.java
 
 JFILES=$(CLIENTJAVA:%=${CLIENTJAVADIR}/Outpost/%)
 

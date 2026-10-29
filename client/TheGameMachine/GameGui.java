@@ -111,8 +111,21 @@ public class GameGui implements ActionSender
   }
 
   public void HandleFullState(GuiPacketParser gpp) {
-    GameEvent ge = new GameEvent(gpp);
     m_SequenceManager.update(gpp);
+
+    // A "sequence" envelope's body is {sequence,firstIndex,records} -- a
+    // completely different shape from a normal game's body, and carries no
+    // new state (BuildStateWalkerEnvelope/HandleSequenceRequest both reflect
+    // whatever state already was current, unchanged). SequenceManager is the
+    // only thing that's ever supposed to consume it; every other widget in
+    // the tree assumes a normal transition body (e.g. BidItemWatcher
+    // querying "supplyShip[]"), so dispatching a sequence envelope down the
+    // general widget tree throws JsonQueryException (confirmed live,
+    // 2026-10-29 -- only surfaced once a real game actually got far enough
+    // to trigger a Spends sequence fetch).
+    if (gpp.getActionContentType() != ActionContentType.TRANSITION) return;
+
+    GameEvent ge = new GameEvent(gpp);
     SendEventToWindows(ge);
   }
 

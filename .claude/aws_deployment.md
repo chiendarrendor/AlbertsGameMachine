@@ -24,3 +24,13 @@ Part of [[project-overview]]. Describes the project's *current* production/live 
 - `roomgui/Makefile` → `rooms.xml` + `ROOMGUI.jar`
 
 While fixing `roomgui/Makefile`'s own staleness bug (see [[build-environment]]'s "Make-level staleness tracking" note — same fix applied here too), found the identical completeness gap documented there: `JAVAS=RoomPage.java` only explicitly listed one file, relying on javac transitively compiling whatever it references (`RoomWidget.java`, which worked) — but `ROOMGUI/LineFeedPanel.java` was never reachable from that one root and was silently missing from `ROOMGUI.jar` entirely. Compiles clean standalone; folded into `JAVAS` per the same completeness-over-reachability policy Albert already set for `client/Makefile`'s equivalent gap, without re-asking.
+
+**`deployall` (repo root, Albert, 2026-10-29): a one-shot script that deploys all four independently-deployable pieces in sequence**, so there's no longer any need to remember which of the four Makefiles to visit after a cross-cutting change:
+```
+cd /home/ec2-user/AlbertsGameMachine   # symlink to /mnt/gamemachine/AlbertsGameMachine, same checkout
+(cd server; make)
+(cd client; make install)
+(cd roomgui ; make install)
+(cd Outpost/tca ; make serverinstall ; make clientinstall)
+```
+Note `server`'s own step is a plain local `make` (compiles the EC2-resident server binary in place), not an S3 upload — the three `install`-named targets are the ones that actually push to `s3://albertsgamemachine/` and invalidate CloudFront, per this file's unified-`install`-naming note above. Since this does real AWS deploys (S3 + CloudFront invalidation) across every game's client, treat running it with the same care as any other deploy action — it's Albert's own call when to run it, not something to invoke unprompted.

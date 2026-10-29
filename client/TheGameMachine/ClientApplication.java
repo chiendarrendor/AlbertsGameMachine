@@ -1,7 +1,6 @@
 package TheGameMachine;
 
 import javax.swing.SwingUtilities;
-import javax.swing.JFrame;
 
 
 public class ClientApplication {
@@ -37,19 +36,17 @@ public class ClientApplication {
 
 
 
+    // ClientPanel is a leftover from the pre-Phase-3 Applet days -- it has
+    // no visible content of its own (just a bare AWT Panel) and never did;
+    // the real UI (TabbedWindow, plus a new JFrame per <window> XML tag) is
+    // created independently by ClientManager, which ClientPanel.start()
+    // constructs. Wrapping it in its own JFrame ("Test", renamed from
+    // nothing before this) was never doing anything but hosting the one
+    // real EXIT_ON_CLOSE in the whole app -- that's now ClientManager's own
+    // TabbedWindow's job instead, so this doesn't need a JFrame at all.
     private static void createAndShowGUI(String server, String uname, String password) {
-        System.out.println("Created GUI on EDT? "+
-                SwingUtilities.isEventDispatchThread());
-        JFrame f = new JFrame("Test");
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
         ClientPanel applet = new ClientPanel();
         applet.init(server,uname,password);
-        f.getContentPane().add(applet);
-
-        f.pack();
-        f.setVisible(true);
         applet.start();
-
     }
 }

@@ -3,7 +3,7 @@
   <panel>
     <image image="iIMAGEi" x="5"/>
     <minmaxvarselection varname="iOUTVARi" min="1" max="iINVARi" x="50"/>
-    <text>
+    <text x="100">
 	    <replace from="rCOSTr" eventvar="myPurchaseInfo.manCost" initial="0"/>
 	    @ rCOSTr each.
     </text>
@@ -24,7 +24,15 @@
 
 
 <actions>
-  <action name="OPTIONS" text="Apply Option Changes">
+  <!-- OPTIONS/JOIN/STANDARDBASIC/STANDARDEXPERT/UNJOIN/VALIDATESETUP/DONTLIKEOPTIONS/
+       LIKEOPTIONS are now fired from OptionPanel.java's own "go" buttons
+       (Players.xml), not an ActionNode button here; onstate="statedalwayshidden"
+       keeps each ActionNode's legality tracking/ActionGo() submission alive
+       (OptionPanel subscribes via ActionTransferManager.AddButtonPresser/
+       ButtonPressed) while never rendering its own panel. See .claude/TODO.md's
+       "Migrate Outpost's client GUI away from ActionNode/ActionTabNode-driven
+       buttons" entry. -->
+  <action name="OPTIONS" text="Apply Option Changes" onstate="statedalwayshidden">
     <var name="Discard"       paramname="discard" paramtype="bool" hidden="y" noreset="y" text="Discard Before Buy"/>
     <var name="Refinery"      paramname="refinery" paramtype="bool" hidden="y" noreset="y" text="Refinery"/>
     <var name="OneUpgrade"    paramname="oneupgrade" paramtype="bool" hidden="y" noreset="y" text="One Upgrade Purchase Per Player Per Turn"/>
@@ -37,13 +45,13 @@
     <var name="BlindDraws"    paramname="blinddraws" paramtype="bool" hidden="y" noreset="y" text="Draws only visible at end of draw phase"/>
     <var name="Stocking"      paramname="stock" paramtype="int" hidden="y" noreset="y" text="Initial Item Stocking Mechanism"/>
   </action>
-  <action name="JOIN" text="Join Game"/>
-  <action name="STANDARDBASIC" text="Select Basic Game Options"/>
-  <action name="STANDARDEXPERT" text="Select Expert Game Options"/>
-  <action name="UNJOIN" text="Leave Game"/>
-  <action name="VALIDATESETUP" text="Start Game"/>
-  <action name="DONTLIKEOPTIONS" text="I don't like the Selected Options" alerts="true"/>
-  <action name="LIKEOPTIONS" text="I like the Selected Options" alerts="true"/>
+  <action name="JOIN" text="Join Game" onstate="statedalwayshidden"/>
+  <action name="STANDARDBASIC" text="Select Basic Game Options" onstate="statedalwayshidden"/>
+  <action name="STANDARDEXPERT" text="Select Expert Game Options" onstate="statedalwayshidden"/>
+  <action name="UNJOIN" text="Leave Game" onstate="statedalwayshidden"/>
+  <action name="VALIDATESETUP" text="Start Game" onstate="statedalwayshidden"/>
+  <action name="DONTLIKEOPTIONS" text="I don't like the Selected Options" onstate="statedalwayshidden"/>
+  <action name="LIKEOPTIONS" text="I like the Selected Options" onstate="statedalwayshidden"/>
   <action name="WATERMULLIGAN" text="Mulligan Water Factory" alerts="true"/>
 
   <action name="BUYMEN" text="Buy Men" alerts="true">
